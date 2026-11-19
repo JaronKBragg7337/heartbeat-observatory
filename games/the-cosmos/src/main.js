@@ -489,7 +489,7 @@ playerPerson.ready.then((p) => {
 });
 
 // --- The crew: six people waiting at the port to be hired (src/crew).
-const portPeople=new PortPeople(port,people);
+const portPeople=new PortPeople(port,people);port.people=portPeople;
 if (ship.ready && !world.remote) {
   const c = new CrewSystem({ engine, ship, site: portSite, people, ground: groundRadius, walker, tier, playerLook });
   c.build().then(async () => { crew = c; ship.crew = c;

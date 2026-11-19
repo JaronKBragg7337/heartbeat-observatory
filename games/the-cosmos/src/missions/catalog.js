@@ -29,6 +29,7 @@ export const CALLISTO_GROUND = ['MAT-CALLISTO-REGOLITH', 'MAT-CALLISTO-RUBBLE', 
 
 export const THREADS = [
   { id: 'mars-port', world: 'mars', title: 'The Quiet Band', blurb: 'Marineris Port is neutral and short of everything. Something on the survey band is not on any list.' },
+  { id: 'mars-moons', world: 'mars', title: 'The Moon Round', blurb: 'Nine people on Phobos and a drill camp on Deimos live on what the port sends up. The regular boat is late.' },
   { id: 'earth-cold-fuel', world: 'earth', title: 'Cold Fuel', blurb: 'Twenty-eight percent of Skyward\'s cold fuel is gone. Two sides of one coast know where.' },
   { id: 'ceres-salt-water', world: 'ceres', title: 'Salt and Water', blurb: 'Ironclad needs the water, Greenhaven needs the metal. Neither will say so first.' },
   { id: 'moon-two-way', world: 'moon', title: 'The Two-Way Run', blurb: 'Fortis has the power and Technos has the parts. Everybody cashes it and nobody says cooperation.' },
@@ -95,6 +96,49 @@ export const MISSIONS = [
       ] },
     ],
     done: 'The scanner log keeps it: unexplained, unrepeated, never caught.' },
+
+  // ============================================================================ MARS: THE MOON ROUND (part 2, 11/19: plain paid work that takes a new pilot to
+  // each place of the Mars region in turn: Stickney East on Phobos, the survey camp on Deimos, then both in one run. Open from the first day.)
+  { id: 'mars-stores', thread: 'mars-moons', world: 'mars', giver: 'depot-clerk', title: 'Stores for Stickney', side: 'port', pay: 220,
+    brief: 'Fly a case of scrubber cartridges up to the Stickney East station on Phobos and hand it in at the airlock.',
+    pitch: 'Stickney East is nine people and three tanks on Phobos, and they breathe through cartridges I pack down here. The regular boat is late. You have a ship that flies. One case, to their airlock, today.',
+    take: 'Phobos, the pad at Stickney East. The airlock is the door with the lamp bar, east of the pad. Clip on when you get out: you weigh about as much as a bag of sugar up there.',
+    carry: 'a case of scrubber cartridges',
+    steps: [
+      { k: 'land', frame: 'phobos', text: 'Fly to Phobos (Course, Phobos) and set down on the Stickney East pad.', beat: 'Stickney (radio): We see you. Pad is yours. Mind the tether lines.' },
+      { k: 'go', to: { at: [35, -3], frame: 'phobos', name: 'the station airlock' }, r: 7, drop: true, text: 'Carry the case east across the pad to the station airlock (the door with the lamp bar).',
+        beat: 'The hatch opens a hand wide. A glove takes the case. "Tell the depot we counted them."' },
+    ],
+    done: 'Supply clerk (radio): They counted them. That is thanks, from Stickney. There is more of this work if you want it.' },
+
+  { id: 'mars-cores', thread: 'mars-moons', world: 'mars', giver: 'depot-clerk', title: 'Cores from Deimos', side: 'port', pay: 320, needs: ['mars-stores'],
+    brief: 'Fetch a rack of drill cores from the survey camp on Deimos and bring it to the weather desk in the tower.',
+    pitch: 'The survey camp on Deimos has been drilling line D-3 for a month and the cores sit in a rack because nobody goes that way. The tower wants them. It is farther than Phobos and there is less of everything when you arrive.',
+    take: 'Deimos, the survey camp. Land inside their marker circle. The driller is at the rig east of it. Bring the rack to the weather desk, up the tower.',
+    carry: null,
+    steps: [
+      { k: 'land', frame: 'deimos', text: 'Fly to Deimos (Course, Deimos) and set down inside the camp\'s marker circle.', beat: 'Deimos camp (radio): A ship. We had a bet on whether anybody was coming. Rig is east of you.' },
+      { k: 'go', to: { at: [33, 12], frame: 'deimos', name: 'the drill rig' }, r: 8, carry: 'a rack of drill cores', text: 'Walk east to the drill rig and take the rack of cores from the driller.',
+        beat: 'Driller: Twelve cores, top to bottom. The dark band at the end is why they want them. Do not turn the rack over.' },
+      { k: 'land', frame: 'mars', near: 'port', text: 'Take the cores home: land at Marineris Port.' },
+      { k: 'go', to: 'cab-weather', r: 5, drop: true, text: 'Take the rack to the weather desk (ride the lift up the control tower).', beat: 'Weather desk: Right way up. Good. Put it there.' },
+    ],
+    done: 'Weather desk: The dark band is ice, and it is older than the dust on top of it. Somebody will pay to know how much there is.' },
+
+  { id: 'mars-round', thread: 'mars-moons', world: 'mars', giver: 'depot-clerk', title: 'The moon round', side: 'port', pay: 400, needs: ['mars-cores'],
+    brief: 'One run, both moons: empties from Stickney East, a drill bit to the Deimos camp, and the paperwork home.',
+    pitch: 'You know both pads now. So here is the whole round, the one the late boat was supposed to fly: Stickney has empty cartridge cases to come down, Deimos has broken a bit and I have the new one here. Phobos first, then Deimos, then me.',
+    take: 'The bit is in your hold already. Stickney\'s empties are stacked in their cargo yard, north of the pad.',
+    carry: 'a boxed drill bit',
+    steps: [
+      { k: 'land', frame: 'phobos', text: 'Fly to Phobos and set down on the Stickney East pad.' },
+      { k: 'go', to: { at: [14, -36], frame: 'phobos', name: 'the cargo yard' }, r: 10, text: 'Walk north to the cargo yard and sign for the empty cases.', beat: 'Yard hand: Six empties, lashed and tagged. I will run them up your ramp. Deimos next? Say hello to the driller, she owes me a meal.' },
+      { k: 'land', frame: 'deimos', text: 'Fly on to Deimos and set down inside the camp\'s marker circle.' },
+      { k: 'go', to: { at: [33, 12], frame: 'deimos', name: 'the drill rig' }, r: 8, drop: true, text: 'Take the new drill bit to the driller at the rig.', beat: 'Driller: A bit. An actual bit. Tell the yard hand at Stickney the meal is on.' },
+      { k: 'land', frame: 'mars', near: 'port', text: 'Bring the round home: land at Marineris Port.' },
+      { k: 'go', to: 'depot-clerk', r: 5, text: 'Report to the supply desk (west of the pads).' },
+    ],
+    done: 'Supply clerk: That is the round, flown by one pilot in one day. The line boat takes three. I am putting your name on the board for the next one.' },
 
   // ============================================================================ EARTH: COLD FUEL (Skyward and Homeguard, one coast)
   { id: 'earth-line', thread: 'earth-cold-fuel', world: 'earth', giver: 'e-okafor', title: 'Walk the line', faction: 'skyward', side: 'home', trade: 'industry', oath: true, pay: 150, size: 1,

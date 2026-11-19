@@ -6,6 +6,7 @@ import { moduleShell, depotInterior, towerInterior, market, detailFuel, crewHall
 import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS, TOWER, TOWER_SPOTS, towerFloorAt, APRON, WALKWAY } from './portSpec.js';
 import { TowerElevator } from './towerElevator.js';
 import { reserveClearance, doorClearSpace } from '../ship/clearance.js';
+import { PortTraffic } from './traffic.js';
 
 const segments=['abcdef','bc','abdeg','abcdg'];
 // Phone fittings retain bevelled silhouettes; sub-centimetre chamfers on thin
@@ -333,6 +334,7 @@ export class PortSystem {
     const basis=new THREE.Matrix4().makeBasis(new THREE.Vector3(...Object.values(this.site.right)),new THREE.Vector3(...Object.values(this.site.up)),new THREE.Vector3(...Object.values(this.site.back)));
     this.quaternion=new THREE.Quaternion().setFromRotationMatrix(basis);
     this.engine.scene.add(this.root); this.engine.track({worldPos:this.site.center,quaternion:this.quaternion,object3d:this.root});
+    if(typeof this.engine.addUpdater==='function')this.traffic=new PortTraffic(this);     // ambient ships and the apron tug (decoration; ticks itself)
     const rec=this.registry.register({id:PORT_ID,bodyId:'mars',type:'STR',name:PORT_NAME,position:this.site.center,object3d:this.root,collision:'field',materialId:'MAT-PORT-CONCRETE',note:'210 x 176 m surveyed apron; 160 m continuous earthwork blend. Includes named pad/building records.'});
     this.registry.measure(rec.id,THREE);
     this.stats={drawCalls:0,triangles:0,geometryBytes:0,sunShadowDrawCalls:0,sunShadowTriangles:0};

@@ -1,0 +1,35 @@
+// The Moon Round (part 2): Mars's three plain paid jobs that take a pilot to Phobos, to Deimos, then to both in one run, played on the real
+// authority with real flights. Run: node test/moon-round-checks.mjs
+import { mkWorld } from './_mission-harness.mjs';
+const rows = []; const check = (name, ok, detail = '') => { rows.push(ok); console.log((ok ? '  PASS  ' : '  FAIL  ') + name + (ok ? '' : '  ' + detail)); };
+const H = await mkWorld(), { p, ship } = H.start('mars');
+const r = () => H.mine(p) || { done: {}, active: null }, act = (a) => H.act(p, a), cr = () => ship.economy.marks / 4;
+H.stand(p, 'depot-clerk'); const c0 = cr();
+let a = await act({ type: 'mission-accept', id: 'mars-cores' });
+check('the second job is not offered before the first is done', a.ok === false, JSON.stringify(a).slice(0, 120));
+a = await act({ type: 'mission-accept', id: 'mars-stores' });
+check('the supply clerk gives "Stores for Stickney" on the first day, with the case in your hands', a.ok !== false && r().active?.id === 'mars-stores' && /cartridges/.test(r().active.carry?.label || ''), JSON.stringify(a).slice(0, 160));
+let f = H.fly(p, 'phobos'); H.advance(1);
+check('landing on Phobos finishes the flight (' + f.simS + ' game seconds)', f.landed && f.frame === 'phobos' && r().active?.step === 1, JSON.stringify(f));
+H.stand(p, { at: [35, -3], frame: 'phobos' }); H.advance(1);
+check('at the station airlock the case is handed in and the job pays 220 credits', !!r().done['mars-stores'] && !r().active && cr() === c0 + 220, `${cr() - c0}`);
+f = H.fly(p, 'port'); H.advance(1); H.stand(p, 'depot-clerk');
+a = await act({ type: 'mission-accept', id: 'mars-cores' });
+check('then "Cores from Deimos" is offered', a.ok !== false && r().active?.id === 'mars-cores', JSON.stringify(a).slice(0, 160));
+f = H.fly(p, 'deimos'); H.advance(1);
+check('landing on Deimos finishes the flight (' + f.simS + ' game seconds)', f.landed && f.frame === 'deimos' && r().active?.step === 1, JSON.stringify(f));
+H.stand(p, { at: [33, 12], frame: 'deimos' }); H.advance(1);
+check('at the drill rig you take the rack of cores', r().active?.step === 2 && /cores/.test(r().active.carry?.label || ''));
+f = H.fly(p, 'port'); H.advance(1);
+check('landing at the port finishes the flight home', f.landed && f.frame === 'mars' && r().active?.step === 3);
+H.stand(p, 'cab-weather'); H.advance(1);
+check('the weather desk takes the rack and the job pays 320 credits', !!r().done['mars-cores'] && cr() === c0 + 540, `${cr() - c0}`);
+H.stand(p, 'depot-clerk'); a = await act({ type: 'mission-accept', id: 'mars-round' });
+check('then "The moon round" is offered, with the drill bit in your hands', a.ok !== false && r().active?.id === 'mars-round' && /bit/.test(r().active.carry?.label || ''), JSON.stringify(a).slice(0, 160));
+f = H.fly(p, 'phobos'); H.advance(1); H.stand(p, { at: [14, -36], frame: 'phobos' }); H.advance(1);
+check('Phobos: the cargo yard signs the empties over', r().active?.step === 2, JSON.stringify(r().active));
+f = H.fly(p, 'deimos'); H.advance(1); H.stand(p, { at: [33, 12], frame: 'deimos' }); H.advance(1);
+check('Deimos: the driller takes the bit', r().active?.step === 4 && !r().active.carry, JSON.stringify(r().active));
+f = H.fly(p, 'port'); H.advance(1); H.stand(p, 'depot-clerk'); H.advance(1);
+check('home: the round pays 400 credits and the chain is done', !!r().done['mars-round'] && !r().active && cr() === c0 + 940, `${cr() - c0}`);
+const failed = rows.filter((x) => !x).length; console.log(`\n${rows.length - failed} passed, ${failed} failed`); process.exit(failed ? 1 : 0);

@@ -1,7 +1,7 @@
 # The Cosmos: the game plan
 
 One page. What the full game is, what is real today, what comes next, and how we know it is done.
-Kept by the lead builder (Fable). Updated after every milestone. Last update: 2026-11-19, 5:00 PM (after the first take-off; Jaron's 4:15 PM direction folded into the order).
+Kept by the lead builder (Fable). Updated after every milestone. Last update: 2026-11-19, 5:50 PM (after the first half of part 2, a lived-in Mars region).
 
 **This is the current plan.** Nothing about the plan had been written since 10/10. It is built from, newest first:
 
@@ -45,14 +45,14 @@ Game 2, later, is the exact-real one.
 
 ## What exists today (live)
 
-- **Worlds you can walk on:** Mars (Marineris Port), Phobos, Deimos, the Moon (three landings: Tranquility, Shackleton, Daedalus),
+- **Worlds you can walk on:** Mars (Marineris Port, with ships and people moving), Phobos (Stickney East station), Deimos (a survey camp), the Moon (three landings: Tranquility, Shackleton, Daedalus),
   Ceres (Occator Works), Earth (a launch complex), Callisto (a camp under Jupiter). All real size, real gravity, real day length.
 - **Ground you can dig** in any direction, with real layers. Ice on the Moon, ore and salt on Ceres.
 - **Ships:** about ten, all walkable inside (Skiff lifeboat, Meridian, Shrike raider, Drayman hauler, Ares liner, Kestrel, more).
   Seats are how you use a ship. Guns, shields, power, fuel in free flight.
 - **Space flight:** take off, fly a course or fly free, land anywhere. The long-range drive reaches every built world with no cut.
 - **The opening** (steps 1 to 4 above) for Mars and Ceres starts.
-- **Jobs and short stories** on Mars, Earth, Ceres, the Moon and Callisto. Hiring desks on each. Joining a side by its first job.
+- **Jobs and short stories** on Mars (and from Mars to Phobos and Deimos), Earth, Ceres, the Moon and Callisto. Hiring desks on each. Joining a side by its first job.
 - **People** with real-looking bodies, names, voices and roles. NPCs hold every seat until a human takes it.
 - **Seats, the balance and home strength** per world (first pass, see `ROLES-AND-BALANCE.md`). Ten faction style sheets.
 - **Shared world:** a server holds the world, saves it, and lets players see and hear each other.
@@ -91,7 +91,7 @@ and the odd ones, phone and desktop).
 |---|---|---|---|
 | 0 | **Looks groundwork** | Suits outside, airless light and shadows, a night you can walk in, Mars bright in a moon's sky. | Shipped 11/19 (first version) |
 | 1 | **The first hour** | First launch to your own flying ship: liner, port, board, crash, dig out, ride, fit the lifeboat, first take-off. Clear at every step on a phone, with sound, and it resumes anywhere. | Production pass and the first take-off shipped 11/19 (see the bar table below). Left: a real phone, a controller through the opening |
-| 2 | **Mars and its moons, a lived-in region** | Marineris Port, the open desert, Phobos and Deimos, each with people at work you can see (walking, loading, driving), ships that come and go on their own, props and signs of work, lights at night, and a reason to go there. Mars's own jobs as a chain that leads you to each place in turn. Boulders and landmarks, clean views from orbit to ground, day and night. | Built but empty: every person stands still, nothing flies or drives by itself, Phobos and Deimos have no people and almost nothing built |
+| 2 | **Mars and its moons, a lived-in region** | Marineris Port, the open desert, Phobos and Deimos, each with people at work you can see (walking, loading, driving), ships that come and go on their own, props and signs of work, lights at night, and a reason to go there. Mars's own jobs as a chain that leads you to each place in turn. Boulders and landmarks, clean views from orbit to ground, day and night. | First half shipped 11/19: Stickney East is a station and Deimos has a survey camp, both with people; ships land and leave at the port by themselves and a tug drives the apron; five workers walk their beats; three jobs in a chain take you to both moons. Left: jobs that start ON the moons (their people cannot talk yet), a shop on Phobos, the open desert (nothing out there), boulders and the square patch from orbit, suits off indoors, landing dust, the bar below |
 | 3 | **Jobs, roles and missions as a ladder** | Missions that lead on from one another with rising rewards, roles a player can take and be known by (hauler, surveyor, digger, escort, trader), a repeating freight board on every world, trade between worlds, fuel and repairs that cost, buying a bigger ship, hiring crew. A goal to save for. | Pieces built (24 one-time missions, chained by `needs`); nothing repeats, no roles, no loop yet |
 | 4 | **Factions that do things** | Every side has its own people, ships, places and a goal you can watch it work toward: crews building, haulers running its routes, patrols, a home that grows or shrinks with the balance. Joining and switching, licenses and labels, seats and votes, the 90-day season. | First pass of seats and balance (numbers only: nothing a side does can be seen yet) |
 | 5 | **The game shell** | Every platform we can reach: phone first (iOS and Android), PC (mouse/keyboard and gamepad), the home-screen app, consoles later through the gamepad layer. One input layer, UI from 375 px to a TV. Settings (sound, controls, quality), quality tiers, save and resume that never loses anything, a clear message and solo play when the server is down, long-session memory, loading that explains itself. | Partly built. Controller support shipped 11/19 (first version) |
@@ -111,6 +111,7 @@ Tests: `test/first-hour-browser.mjs` and `test/first-flight-browser.mjs` (part 1
 | Part | Stranger understands | Refresh loses nothing | Phone frame rate, memory | No errors | Server down | 375 px and big screen | Touch, keys, pad | Home-screen app | Sound and feedback | Looks in a screenshot | Full test pass |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 The first hour | yes (words, arrows with names and distances; the lifeboat in 3 steps, the first take-off in 4) | yes (every stage, and after the first flight) | - (not measured on a real phone) | yes | part (says so, offers solo, offers the way back; solo ends the opening at Mars only) | part (375 px yes; big screen not looked at) | part (touch yes, keys yes, pad hints only) | part (tags and manifest; not run installed; sideways works in Chromium, went black in the WebKit test browser: check a real iPhone) | yes (press, dig, lift, latch, yes, no, crash, arrival, power on, first landing) | yes (day and night; the ship lights her own pad at night) | part (iPhone and Android profiles, golden path to the first landing and a refresh in every stage; no real phone) |
+| 2 Mars and its moons | part (the three jobs say where to go; not played by a stranger in a browser) | - | part (10 draw calls an outpost, one ship at a time on a phone; not measured on a real phone) | yes | part (ships, walkers and outposts are drawn by the client alone, so solo has them; the new jobs need the server) | part (375 px pictures; big screen not looked at) | - | - | no (ships land and leave in silence) | yes (day and night, phone size) | part (the job chain on the real authority 13/13; pictures of every piece; no play-through in a browser yet) |
 | 5 The game shell | - | - | part (a quality setting and a slow-device offer; memory not measured) | yes | yes (first launch; a drop in mid-game was already handled) | part | part (pad first version) | part | yes | - | part |
 
 ## "Full game" checklist
@@ -182,6 +183,7 @@ assisted flying with an expert switch (decided 10/3, partly built); private base
 
 | Date | What |
 |---|---|
+| 11/19 | Mars and its moons, lived-in (first half): a propellant and survey station at Stickney East on Phobos and a drill camp on Deimos, both with suited people at work; freighters and couriers that fly in, land, unload and leave at Marineris Port on a timetable every player shares, and a cargo tug on the apron; five port workers who walk their beats; and "The Moon Round", three paid jobs from the supply clerk that lead on from one another: stores to Phobos, drill cores from Deimos, then both moons in one run. |
 | 11/19 | The first take-off: after "power on" the game now walks a new pilot through it in four plain steps (get in by the ramp, with an arrow; the pilot seat and the door to it; hold LIFT; fly and LAND), then says the first flight is done and moves on to work. Fixed on the way: holding LIFT with the ramp down could leave the ship stuck on its pad (the ramp was asked up, down, up); at night the ground of an airless world could not be lit by any lamp, and a refresh on a night side could throw the game into safe mode; the ship now lights her own pad at night; two server messages no player should see are gone; the Ramp and Course buttons are big enough for a thumb. |
 | 11/19 | The game shell, first pieces: a plain "the shared world is not answering" screen with a "Play on your own for now" button, and an offer to return when the server answers again; a Picture quality setting (Auto, Fast, Full detail) and a one-time offer of Fast when the picture runs slow; "Add to Home Screen" from the game's page now opens the game itself, full screen. |
 | 11/19 | The first hour, production pass: buttons on a phone no longer show keyboard letters (a controller sees its own button names); every spoken line sits on a dark plate you can read over any scene; an arrow with a name and a distance points at the arrivals hall, the Kestrel, and each step of fitting your lifeboat ("Step 1 of 3"); the liner says how long until landing; sounds answer every press, dig, lift, choice, the crash and arriving home; fitting the second part says "Power on. Your lifeboat flies."; the status card opens with the next step; boarding the Kestrel puts you at a window (after the game server restarts). |

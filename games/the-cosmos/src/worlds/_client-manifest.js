@@ -3,16 +3,20 @@
 
 import c_callisto from './callisto/client.js';
 import c_ceres from './ceres/client.js';
+import c_deimos from './deimos/client.js';
 import c_earth from './earth/client.js';
 import c_moon from './moon/client.js';
 import c_moon_daedalus from './moon-daedalus/client.js';
 import c_moon_shackleton from './moon-shackleton/client.js';
+import c_phobos from './phobos/client.js';
 
 export const WORLD_CLIENTS = {
   'callisto': c_callisto,
   'ceres': c_ceres,
+  'deimos': c_deimos,
   'earth': c_earth,
   'moon': c_moon,
   'moon-daedalus': c_moon_daedalus,
   'moon-shackleton': c_moon_shackleton,
+  'phobos': c_phobos,
 };

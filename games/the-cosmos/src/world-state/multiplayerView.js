@@ -30,7 +30,7 @@ export class MultiplayerView {
     ship.remoteAuthority=true;ship.flight.remoteAuthority=true;
     this.installControls();this.buildHall();this.buildPanel();this.fleetView=new FleetView(this);this.shopView=new ShopView(this);
     this.account=new AccountView(this);       // Settings: guest or signed in, sign in/out, start fresh, saved characters
-    world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{/* the two answers to a pose sent in the half second around boarding or sitting are the client catching up, not news for the player */if(!r.ok&&!/^(Use the seat request|Board or leave through the boarding action)\.$/.test(r.msg||''))ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.reconcilePlayer=true;};
+    world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{/* the two answers to a pose sent in the half second around boarding or sitting are the client catching up, not news for the player */if(!r.ok&&!/^(Use the seat request|Board or leave through the boarding action|There is no such job)\.$/.test(r.msg||''))ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.reconcilePlayer=true;};
     world.onConnection=()=>this.reconcilePlayer=true;
     world.listeners.add(m=>this.apply(m));this.apply({state:world.snapshot,bricks:[...world.bricks.values()]});
   }

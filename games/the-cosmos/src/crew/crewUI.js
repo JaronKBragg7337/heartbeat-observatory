@@ -282,7 +282,7 @@ export class CrewUI {
         if(r)this.reply=r.msg;break;
       case 'mission-ask': this.view = 'work'; break;       // MISSIONS
       case 'mission-hires': this.view = 'hire'; break;
-      case 'mission-accept': r = await this._rq({ type: 'mission-accept', id: b.dataset.m }); if (r && r.ok) { this.reply = r.msg; this.view = 'main'; } break;
+      case 'mission-accept': r = await this._rq({ type: 'mission-accept', id: b.dataset.m }); if (r && r.ok) { this.reply = r.msg; this.view = 'main'; } else if (r && /no such job/i.test(r.msg || '')) { this.reply = 'The paperwork for that one is not through yet. Ask me again in a little while.'; this.view = 'main'; } /* a job newer than the running game server */ break;
       case 'mission-choose': r = await this._rq({ type: 'mission-choose', option: b.dataset.o }); if (r && r.ok) this.reply = r.msg; break;
       case 'desk-hire': r = await this._rq({ type: 'desk-hire', key: b.dataset.k }); if (r && r.ok) this.reply = r.msg; break;
       case 'lifeboat-part': r = await c.world?.dispatch({ type: 'lifeboat-part', part: b.dataset.part }); if (r) this.reply = r.msg; break;
