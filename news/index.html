@@ -66,8 +66,11 @@
       <button class="btn" id="fsBtn" type="button">⛶ Full screen</button>
       <a class="btn archive-link" href="/news/archive/">Every story, every source →</a>
       <span class="spacer"></span>
-      <button class="btn" id="dbgBtn" type="button" aria-pressed="false" title="Studio grid and asset IDs (3D standards debug layer)">Grid &amp; IDs</button>
+      <button class="btn notice-btn" id="noticeBtn" type="button" aria-expanded="false" aria-controls="noticePanel" hidden><span aria-hidden="true">⚠</span><span id="noticeLabel">Heads up</span></button>
+      <!-- Grid & IDs is the 3D standards debug layer, for the AIs' checks, not viewers (Jaron 11/19). It shows with ?grid=1. -->
+      <button class="btn" id="dbgBtn" type="button" aria-pressed="false" title="Studio grid and asset IDs (3D standards debug layer)" hidden>Grid &amp; IDs</button>
     </div>
+    <section class="notice-panel" id="noticePanel" hidden aria-live="polite"></section>
 
     <section class="now" aria-live="polite">
       <div class="lbl" id="nowLbl">Now</div>
@@ -97,7 +100,7 @@
         </div>
         <div id="madeLive">
           <p><b>AI Robot Vex</b> and <b>Alien Joe</b> are characters. The voices are free for now: Vex is a speech synthesizer rendered in code (eSpeak) with a robot effect chain; Joe uses your device's own speech voice, so he sounds a little different on an iPhone, an Android phone and a PC.</p>
-          <p>The studio is built in code with Three.js: desk, LED wall, lights and both anchors. Measurements and asset IDs are in the Grid &amp; IDs layer.</p>
+          <p>The studio is built in code with Three.js: desk, LED wall, lights and both anchors. Measurements and asset IDs live in a debug layer the AIs use for their checks.</p>
         </div>
         <p id="epMeta"></p>
       </section>

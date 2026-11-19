@@ -349,7 +349,49 @@ function jumpToSeg(si) {
 function swapEpisode() {
   ep = pendingEp; pendingEp = null;
   build(ep); lastSegIndex = -1; renderRundown(); buildTicker();
+  updateNotice();
 }
+
+// ---- viewer notice (Jaron 11/19) ------------------------------------------------------------------------------------
+// A "Heads up" button where Grid & IDs used to be. It only appears when something about the show playing isn't normal:
+//   1. it isn't today's show (Fort Wayne date). Before 8 AM Eastern that's normal (today's is being made); after 8 it's late.
+//   2. Claude didn't write it (the episode's writer field names a backup AI, e.g. "Codex (GPT-6 Luna), ... (MSI backup)").
+// Pressing the button opens a plain-words explanation. Checked again every minute, so it clears itself when things are normal.
+const SHOW_TZ = "America/Indiana/Indianapolis";
+function showClock() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: SHOW_TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false })
+    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+  const today = `${p.year}-${p.month}-${p.day}`;
+  const y = new Date(today + "T12:00:00Z"); y.setUTCDate(y.getUTCDate() - 1);
+  return { today, yesterday: y.toISOString().slice(0, 10), hour: Number(p.hour) % 24 };
+}
+const longDate = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+let todayIsReady = false, noticeKey = null;
+function updateNotice() {
+  const btn = $("noticeBtn"), panel = $("noticePanel");
+  if (!btn || !panel || !ep || !ep.date) return;
+  const c = showClock(), notes = [];
+  if (ep.date < c.today) {
+    const which = ep.date === c.yesterday ? "yesterday's show" : "an older show";
+    if (todayIsReady) notes.push({ t: `This is ${which}`, b: `You're watching the show from ${longDate(ep.date)}. Today's show is up now: <a href="/news/">reload to watch it</a>.` });
+    else if (c.hour < 8) notes.push({ t: `This is ${which}`, b: `You're watching the show from ${longDate(ep.date)}. Today's show is on its way: it's written and filmed overnight and goes up by 8 AM Eastern. Until then, the last show keeps playing.` });
+    else notes.push({ t: "Today's show is late", b: `You're watching the show from ${longDate(ep.date)}, not today's. Today's show didn't make it up on time. Please stand by: it will play here as soon as it's ready.` });
+  }
+  const w = String(ep.writer || "").trim();
+  if (w && !/^claude/i.test(w)) {
+    notes.push({ t: "Written by a backup AI", b: `Claude usually writes Heartbeat News. The ${longDate(ep.date)} show was written by ${esc(w.split(",")[0])} instead, because Claude's writer didn't run that morning. It worked from the same sources, listed under "Every story, every source".` });
+  }
+  const key = JSON.stringify(notes);
+  if (key === noticeKey) return;
+  noticeKey = key;
+  btn.hidden = !notes.length;
+  $("noticeLabel").textContent = notes.length > 1 ? `Heads up (${notes.length})` : "Heads up";
+  panel.innerHTML = notes.map((n) => `<h3>${n.t}</h3><p>${n.b}</p>`).join("");
+  if (!notes.length) { panel.hidden = true; btn.setAttribute("aria-expanded", "false"); }
+}
+$("noticeBtn").addEventListener("click", () => { const p = $("noticePanel"); p.hidden = !p.hidden; $("noticeBtn").setAttribute("aria-expanded", String(!p.hidden)); });
+setInterval(updateNotice, 60 * 1000);
+if (new URLSearchParams(location.search).get("grid") === "1") $("dbgBtn").hidden = false;   // the AIs' debug layer
 
 let lastT = now();
 function frame() {
@@ -592,6 +634,13 @@ async function boot() {
   const rendered = await renderedFor(ep.date);
   if (rendered && rendered.date !== ep.date) { try { ep = await loadEpisode(rendered.date); } catch (e) {} }   // yesterday's words with yesterday's video
   if (rendered) {
+    updateNotice();
+    // Playing an older filmed show: look for today's every 10 minutes so the notice can say "today's is up now, reload".
+    setInterval(async () => {
+      if (!ep || ep.date >= showClock().today) return;
+      try { const idx = await (await timeout(fetch(RENDERED_INDEX, { cache: "no-cache" }), 4000)).json(); todayIsReady = (idx.episodes || []).some((e) => e.date === showClock().today); } catch (e) {}
+      updateNotice();
+    }, 10 * 60 * 1000);
     playRendered(rendered);
     showSave(rendered).catch(() => {});
     $("madeRendered").hidden = false; $("madeLive").hidden = true;
@@ -616,6 +665,7 @@ async function boot() {
   onResize();
   const settingsP = loadAnchorSettings();
   build(ep);
+  updateNotice();
   renderRundown();
   buildTicker();
   tickClock(); setInterval(tickClock, 1000);

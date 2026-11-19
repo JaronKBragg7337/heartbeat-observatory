@@ -296,3 +296,15 @@ html.embed #screen { position: fixed; left: 0; top: 50%; transform: translateY(-
 .savebar { display: flex; flex-wrap: wrap; gap: 10px; }
 .savebar .tipbtn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid #c9a46a; background: #f4ead8; color: #3a2a18; font: 700 16px Barlow, sans-serif; cursor: pointer; }
 .savebar .tipbtn:disabled { opacity: .7; cursor: default; }
+
+/* Viewer notice (Jaron 11/19): only shows when the show playing isn't today's, or a backup AI wrote it instead of Claude. */
+.btn.notice-btn { background: #f2b43c; border-color: #f2b43c; color: #1d1405; font-weight: 700; }
+.btn.notice-btn:hover { background: #f7c55e; }
+.btn.notice-btn[aria-expanded="true"] { background: #f7c55e; border-color: #fff3d6; }
+.notice-panel { margin: 4px 0 14px; padding: 14px 16px; border: 1px solid rgba(242,180,60,0.55); border-left: 4px solid #f2b43c; border-radius: 14px; background: rgba(242,180,60,0.09); }
+.notice-panel h3 { margin: 0 0 4px; font: 800 18px/1.2 var(--cond); letter-spacing: 0.03em; text-transform: uppercase; color: #ffd58a; }
+.notice-panel p { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.5; }
+.notice-panel p + h3 { margin-top: 12px; }
+.notice-panel a { color: #ffd58a; }
+/* .btn sets display:inline-flex, which beats the hidden attribute; keep hidden buttons (notice, Grid & IDs) really hidden */
+.controls [hidden], .notice-panel[hidden] { display: none !important; }
