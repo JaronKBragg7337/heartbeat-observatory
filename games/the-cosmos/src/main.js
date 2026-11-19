@@ -838,7 +838,7 @@ window.addEventListener('keydown', (e) => {
 function refreshHud() {
   refreshHudBase();
   const goal = repair?.nextGoal(ship.ready && ship.aboard);
-  if (goal) { hud.insertAdjacentHTML('beforeend', `<div class="next-goal"><b>NEXT</b> ${goal.text.replace(/[<>&]/g, '')}</div>`); document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`); }
+  if (goal) { hud.insertAdjacentHTML('afterbegin', `<div class="next-goal"><b>NEXT</b> ${goal.text.replace(/[<>&]/g, '')}</div>`); document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`); }
 }
 function refreshHudBase() {
   const g = walker.geodetic;
