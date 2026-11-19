@@ -90,7 +90,7 @@ const CSS = `
   #ship-panel.fly #fl-read { flex: 1; font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; }
   #ship-panel.fly .chips { margin: 0; flex: none; }
   #ship-panel.fly #fl-warn { flex: 1 1 100%; white-space: normal; color: #ff8a73; font-size: 12px; line-height: 1.35; font-weight: 600; }
-  #ship-panel.fly .chip { min-height: 30px; padding: 2px 10px; }
+  #ship-panel.fly .chip { min-height: 40px; min-width: 56px; padding: 2px 10px; }
 }
 `;
 

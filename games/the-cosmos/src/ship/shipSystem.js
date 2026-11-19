@@ -1560,7 +1560,7 @@ export class ShipSystem {
     const neutral = !this.drones || this.drones.neutral;
     const cruising = this.drones && this.drones.suspended;
     const air = f.landed || (this.space && this.space.ff && this.space.ff.active) /* FREEFLIGHT: its own lines say it */ ? '' : cruising ? `<br><span class="dim">Cruise: raiders cannot follow a ship at this speed</span>` : neutral
-      ? `<br><span class="dim">Mars neutral airspace · hostile beyond ${NEUTRAL_AIRSPACE_M} m</span>`
+      ? `<br><span class="dim">${!this.space || !this.space.frameId || this.space.frameId === 'mars' ? 'Mars neutral airspace' : 'Port airspace'} · hostile beyond ${NEUTRAL_AIRSPACE_M} m</span>`
       : `<br><span class="load">HOSTILE SPACE · outside ${this.space && this.space.onMoon ? '' : 'Mars '}neutral airspace</span>`;
     const sp = this.space ? this.space.hudLines() : '';
     const high = f.agl > 20000, fmt = (m) => (m >= 1e5 ? `${(m / 1000).toFixed(0)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m.toFixed(0)} m`);

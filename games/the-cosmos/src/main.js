@@ -419,6 +419,7 @@ try {
 // ship-sized texture set for the port. Fallback still allows independent builds.
 const port = new PortSystem(engine, registry, portSite, tier, ship.matsExt).build();
 port.showcase=buildShowcase(port,ship.matsExt,tier);
+port.traffic?.setContext({ ship, world, opening: () => opening });       // ambient port traffic (src/port/traffic.js): what it must stay clear of, and when to hide
 portRef = port;
 // Persistence and economy use the existing ship pose through this small bridge.
 const worldBridge = new GameBridge(world,{edits,digger,walker,ship,site:portSite});
@@ -614,6 +615,13 @@ engine.scene.add(suitLamp);
 const suitBeam = new THREE.SpotLight(0xf2f5ff, 0, 0, 0.42, 0.55, 2);
 suitBeam.castShadow = false;
 engine.scene.add(suitBeam, suitBeam.target);
+// The ship's landing lamps (first take-off, 11/19): at night a ship on its pad was a lit toy on a black screen, and from the pilot seat there was no ground
+// to leave or come back to. One wide lamp under the hull, pointing down: a pool of light around her on the pad, and a patch that grows on the ground as she
+// comes down. On only when it is dark and she is near the ground.
+const shipLamp = new THREE.SpotLight(0xfff4e2, 0, 420, 1.05, 0.7, 0.6);
+shipLamp.castShadow = false;
+engine.scene.add(shipLamp, shipLamp.target);
+const _lampUp = { x: 0, y: 0, z: 0 };
 const sky = new THREE.HemisphereLight(
   body.atmosphere.skyColor, MATERIALS.regolith.color, 0.85);
 engine.scene.add(sky);
@@ -795,9 +803,15 @@ function updateSun(f) {
   // the helmet lamp comes on in a hole, and on the surface once the Sun is well down (night: a warm pool 24 m across)
   // (on an airless world the sky state reads "in space", so its night is the Sun under the local horizon, or Mars's shadow across it)
   const night = moonNow
-    ? Math.max(Math.max(0, Math.min(1, (-Math.asin(Math.max(-1, Math.min(1, sunDir.dot(up)))) * 180 / Math.PI - 2) / 8)), 1 - Math.max(0, Math.min(1, SUN.space.sky.state.vis ?? 1)))
+    ? Math.max(Math.max(0, Math.min(1, (3 - Math.asin(Math.max(-1, Math.min(1, sunDir.dot(up)))) * 180 / Math.PI) / 4)), 1 - Math.max(0, Math.min(1, SUN.space.sky.state.vis ?? 1)))      // no air, no twilight: with the Sun on the horizon the ground is already black between a few lit crests (was: lamps only from 2 degrees under it)
     : SUN.space && SUN.space.sky ? Math.max(0, Math.min(1, (-SUN.space.sky.state.elev - 2) / 8)) * (SUN.space.sky.state.s > 0.5 ? 1 : 0) : 0;
   suitLamp.intensity = 9 * Math.max(Math.min(1, Math.max(0, (below - 0.8) / 1.2)), 0.7 * night);
+  { const f = ship && ship.ready ? ship.flight : null, on = f && night > 0.05 && f.agl < 400 && (!ship.space || !ship.space.ff || !ship.space.ff.active);
+    shipLamp.intensity = on ? 16 * Math.min(1, night * 2) : 0;
+    if (on) { const c = engine.cameraWorldPos, u = f.dirToWorld({ x: 0, y: 1, z: 0 }, _lampUp), p = f.pos;
+      shipLamp.position.set(p.x - c.x + u.x * 6, p.y - c.y + u.y * 6, p.z - c.z + u.z * 6);
+      shipLamp.target.position.set(p.x - c.x - u.x * 20, p.y - c.y - u.y * 20, p.z - c.z - u.z * 20); } }
+  engine.graphics.expectDark = night > 0.3;      // a night side is a black picture by nature: the start-up check for an empty picture must not take it for a broken one
   // the beam: from the head (the camera in first person, the body's head in third), along the view
   { const dark = moonNow ? Math.max(night, Math.min(1, Math.max(0, (below - 0.8) / 1.2))) : 0;
     suitBeam.intensity = 420 * dark;

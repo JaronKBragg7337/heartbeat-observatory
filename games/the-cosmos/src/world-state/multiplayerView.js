@@ -30,7 +30,7 @@ export class MultiplayerView {
     ship.remoteAuthority=true;ship.flight.remoteAuthority=true;
     this.installControls();this.buildHall();this.buildPanel();this.fleetView=new FleetView(this);this.shopView=new ShopView(this);
     this.account=new AccountView(this);       // Settings: guest or signed in, sign in/out, start fresh, saved characters
-    world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{if(!r.ok)ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.reconcilePlayer=true;};
+    world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{/* the two answers to a pose sent in the half second around boarding or sitting are the client catching up, not news for the player */if(!r.ok&&!/^(Use the seat request|Board or leave through the boarding action)\.$/.test(r.msg||''))ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.reconcilePlayer=true;};
     world.onConnection=()=>this.reconcilePlayer=true;
     world.listeners.add(m=>this.apply(m));this.apply({state:world.snapshot,bricks:[...world.bricks.values()]});
   }
@@ -66,7 +66,10 @@ export class MultiplayerView {
     ship.stations.sit=loc=>{const s=ship.stations.seatNear(loc);if(s)this.request({type:'seat',seat:s.id});return null;};
     ship.stations.stand=()=>{this.request({type:'seat',seat:null});return null;};
     ship.takeSeat=id=>{this.request({type:'seat',seat:id});return false;};
-    ship.toggleRamp=key=>{this.request({type:'ramp',key});return true;};
+    // One ask at a time (first take-off, 11/19): a pilot holding LIFT with the ramp down asked for the ramp every frame until the answer came back,
+    // and each ask is a toggle, so the ramp went up, down, up and the ship sat on its pad.
+    ship.toggleRamp=key=>{const t=performance.now(),asked=this._rampAsk||(this._rampAsk={});if(t<(asked[key]||0))return true;asked[key]=t+1500;
+      Promise.resolve(this.request({type:'ramp',key})).finally(()=>{asked[key]=performance.now()+400;});return true;};
     this.port.elevator.tick=()=>0;
     this.port.elevator.request=destination=>{this.request({type:'elevator',destination});return true;};
     ship.stations.power=(key,value)=>{this.request({type:'power',key,value});return true;};

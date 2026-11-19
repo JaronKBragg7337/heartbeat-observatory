@@ -1,7 +1,7 @@
 # The Cosmos: the game plan
 
 One page. What the full game is, what is real today, what comes next, and how we know it is done.
-Kept by the lead builder (Fable). Updated after every milestone. Last update: 2026-11-19, 3:25 PM (after the first-hour production pass).
+Kept by the lead builder (Fable). Updated after every milestone. Last update: 2026-11-19, 5:00 PM (after the first take-off; Jaron's 4:15 PM direction folded into the order).
 
 **This is the current plan.** Nothing about the plan had been written since 10/10. It is built from, newest first:
 
@@ -76,6 +76,9 @@ Game 2, later, is the exact-real one.
 Changed 11/19 (Jaron, 1:59 PM): the target is a production-ready full game, built in whole parts, not a string of small fixes.
 Each part is a complete stretch of the game: built, wired, tested on a phone and a desktop, and shipped as one piece.
 The story still comes after the worlds it happens in (Jaron, 10/3).
+Order changed 11/19 (Jaron, 4:15 PM: "all factions working, jobs, missions, more things in environments"): after the first hour come the three parts
+that make the worlds feel alive, in this order: a lived-in Mars region, jobs and missions as a ladder, factions that visibly do things. The game shell
+keeps growing beside them (each part must pass its bar on every platform anyway). "Lived-in" is now part of what done means for every place.
 
 **Every part must pass the same bar before it counts as done:**
 a stranger understands it with no help; nothing is lost on a refresh or a dropped connection; it holds a steady frame rate on a
@@ -87,12 +90,12 @@ and the odd ones, phone and desktop).
 | # | Part | What "done" means | State |
 |---|---|---|---|
 | 0 | **Looks groundwork** | Suits outside, airless light and shadows, a night you can walk in, Mars bright in a moon's sky. | Shipped 11/19 (first version) |
-| 1 | **The first hour** | First launch to your own flying ship: liner, port, board, crash, dig out, ride, fit the lifeboat, first take-off. Clear at every step on a phone, with sound, and it resumes anywhere. | Production pass shipped 11/19 (see the bar table below). Left: the walk itself played by a real thumb, the first take-off, a real phone |
-| 2 | **Mars and its moons, a finished region** | Marineris Port, the open desert, Phobos and Deimos: jobs, shops, a reason to visit each, boulders and landmarks, clean views from orbit to ground, day and night. | Built; thin in places |
-| 3 | **Work and money, end to end** | Jobs as a real ladder with rewards, a repeating freight board on every world, trade between worlds, fuel and repairs that cost, buying a bigger ship, hiring crew. A goal to save for. | Pieces built; no loop yet |
-| 4 | **The game shell** | Every platform we can reach: phone first (iOS and Android), PC (mouse/keyboard and gamepad), the home-screen app, consoles later through the gamepad layer. One input layer, UI from 375 px to a TV. Settings (sound, controls, quality), quality tiers, save and resume that never loses anything, a clear message and solo play when the server is down, long-session memory, loading that explains itself. | Partly built. Controller support shipped 11/19 (first version) |
-| 5 | **The crossing and the other worlds** | The long-range drive, then the Moon, Ceres, Earth and Callisto each finished like part 2: opening start, shop, a way to leave, both sides' homes. | First passes built |
-| 6 | **Sides, seats and seasons** | Joining and switching, licenses and labels, seats and votes, the balance you can see in the place, the 90-day season. | First pass of seats and balance |
+| 1 | **The first hour** | First launch to your own flying ship: liner, port, board, crash, dig out, ride, fit the lifeboat, first take-off. Clear at every step on a phone, with sound, and it resumes anywhere. | Production pass and the first take-off shipped 11/19 (see the bar table below). Left: a real phone, a controller through the opening |
+| 2 | **Mars and its moons, a lived-in region** | Marineris Port, the open desert, Phobos and Deimos, each with people at work you can see (walking, loading, driving), ships that come and go on their own, props and signs of work, lights at night, and a reason to go there. Mars's own jobs as a chain that leads you to each place in turn. Boulders and landmarks, clean views from orbit to ground, day and night. | Built but empty: every person stands still, nothing flies or drives by itself, Phobos and Deimos have no people and almost nothing built |
+| 3 | **Jobs, roles and missions as a ladder** | Missions that lead on from one another with rising rewards, roles a player can take and be known by (hauler, surveyor, digger, escort, trader), a repeating freight board on every world, trade between worlds, fuel and repairs that cost, buying a bigger ship, hiring crew. A goal to save for. | Pieces built (24 one-time missions, chained by `needs`); nothing repeats, no roles, no loop yet |
+| 4 | **Factions that do things** | Every side has its own people, ships, places and a goal you can watch it work toward: crews building, haulers running its routes, patrols, a home that grows or shrinks with the balance. Joining and switching, licenses and labels, seats and votes, the 90-day season. | First pass of seats and balance (numbers only: nothing a side does can be seen yet) |
+| 5 | **The game shell** | Every platform we can reach: phone first (iOS and Android), PC (mouse/keyboard and gamepad), the home-screen app, consoles later through the gamepad layer. One input layer, UI from 375 px to a TV. Settings (sound, controls, quality), quality tiers, save and resume that never loses anything, a clear message and solo play when the server is down, long-session memory, loading that explains itself. | Partly built. Controller support shipped 11/19 (first version) |
+| 6 | **The crossing and the other worlds** | The long-range drive, then the Moon, Ceres, Earth and Callisto each finished and lived-in like part 2: opening start, shop, a way to leave, both sides' homes. | First passes built |
 | 7 | **Stations, the Belt, the station factions** | Docking, a station over Mars, Vesta and Psyche, the Long Walk, Corsair's Refuge. | Not built |
 | 8 | **Building, machines, weather** | Bases and stations built by drones, work machines, storms and disasters, caves you can see. | Not built |
 | 9 | **The main story** | The first crossing, Callisto, Europa, the ship seen up close. An ending one player can reach in a season. | Not built |
@@ -103,12 +106,12 @@ the square patch on Phobos seen from space; ships' hulls read as bricks; at Mars
 ## The production bar, part by part
 
 One row per part, one column per rule of the bar. "yes" = tested and passing, "part" = partly, "no" = not yet, "-" = not looked at.
-Tests: `test/first-hour-browser.mjs` (part 1), `test/shell-browser.mjs` and `test/gamepad-browser.mjs` (part 4), `test/phone-check.mjs` (all).
+Tests: `test/first-hour-browser.mjs` and `test/first-flight-browser.mjs` (part 1), `test/shell-browser.mjs` and `test/gamepad-browser.mjs` (the shell), `test/phone-check.mjs` (all).
 
 | Part | Stranger understands | Refresh loses nothing | Phone frame rate, memory | No errors | Server down | 375 px and big screen | Touch, keys, pad | Home-screen app | Sound and feedback | Looks in a screenshot | Full test pass |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 The first hour | yes (words, arrows with names and distances, steps 1 to 3) | yes (every stage) | - (not measured on a real phone) | yes | part (says so, offers solo, offers the way back; solo ends the opening at Mars only) | part (375 px yes; big screen not looked at) | part (touch yes, keys yes, pad hints only) | part (tags and manifest; not run installed; sideways works in Chromium, went black in the WebKit test browser: check a real iPhone) | yes (press, dig, lift, latch, yes, no, crash, arrival) | part (flight shows a window after the server restart) | part (iPhone and Android profiles, golden path to the fitted lifeboat and a refresh in every stage; no real phone, no take-off) |
-| 4 The game shell | - | - | part (a quality setting and a slow-device offer; memory not measured) | yes | yes (first launch; a drop in mid-game was already handled) | part | part (pad first version) | part | yes | - | part |
+| 1 The first hour | yes (words, arrows with names and distances; the lifeboat in 3 steps, the first take-off in 4) | yes (every stage, and after the first flight) | - (not measured on a real phone) | yes | part (says so, offers solo, offers the way back; solo ends the opening at Mars only) | part (375 px yes; big screen not looked at) | part (touch yes, keys yes, pad hints only) | part (tags and manifest; not run installed; sideways works in Chromium, went black in the WebKit test browser: check a real iPhone) | yes (press, dig, lift, latch, yes, no, crash, arrival, power on, first landing) | yes (day and night; the ship lights her own pad at night) | part (iPhone and Android profiles, golden path to the first landing and a refresh in every stage; no real phone) |
+| 5 The game shell | - | - | part (a quality setting and a slow-device offer; memory not measured) | yes | yes (first launch; a drop in mid-game was already handled) | part | part (pad first version) | part | yes | - | part |
 
 ## "Full game" checklist
 
@@ -179,6 +182,7 @@ assisted flying with an expert switch (decided 10/3, partly built); private base
 
 | Date | What |
 |---|---|
+| 11/19 | The first take-off: after "power on" the game now walks a new pilot through it in four plain steps (get in by the ramp, with an arrow; the pilot seat and the door to it; hold LIFT; fly and LAND), then says the first flight is done and moves on to work. Fixed on the way: holding LIFT with the ramp down could leave the ship stuck on its pad (the ramp was asked up, down, up); at night the ground of an airless world could not be lit by any lamp, and a refresh on a night side could throw the game into safe mode; the ship now lights her own pad at night; two server messages no player should see are gone; the Ramp and Course buttons are big enough for a thumb. |
 | 11/19 | The game shell, first pieces: a plain "the shared world is not answering" screen with a "Play on your own for now" button, and an offer to return when the server answers again; a Picture quality setting (Auto, Fast, Full detail) and a one-time offer of Fast when the picture runs slow; "Add to Home Screen" from the game's page now opens the game itself, full screen. |
 | 11/19 | The first hour, production pass: buttons on a phone no longer show keyboard letters (a controller sees its own button names); every spoken line sits on a dark plate you can read over any scene; an arrow with a name and a distance points at the arrivals hall, the Kestrel, and each step of fitting your lifeboat ("Step 1 of 3"); the liner says how long until landing; sounds answer every press, dig, lift, choice, the crash and arriving home; fitting the second part says "Power on. Your lifeboat flies."; the status card opens with the next step; boarding the Kestrel puts you at a window (after the game server restarts). |
 | 11/19 | Helmet lamp no longer stuck on in sunlight on moons (it washed the ground tan). |

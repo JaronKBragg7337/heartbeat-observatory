@@ -60,7 +60,12 @@ export class GraphicsHealth {
     if(++this.checked>90 || this.checked%10)return;
     const clear=this.clearColor||gl.getParameter(gl.COLOR_CLEAR_VALUE),expected=Array.from(clear).map(v=>Math.round(v*255)),pixels=[];
     for(const x of [.15,.35,.5,.65,.85])for(const y of [.15,.35,.5,.65,.85]){const p=new Uint8Array(4);gl.readPixels(Math.floor(gl.drawingBufferWidth*x),Math.floor(gl.drawingBufferHeight*y),1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);pixels.push(Array.from(p));}
-    const blank=blankFrame(pixels,expected);
+    let blank=blankFrame(pixels,expected);
+    // 25 points all black is also what a night side or open space looks like (first take-off, 11/19: a pilot on the night side of Ceres was thrown into
+    // safe mode on a refresh). Before calling the picture empty, read three whole rows: one star, lamp or lit edge anywhere on them means it was drawn.
+    if(blank&&this.expectDark){this.blankCount=0;return;}
+    if(blank){const w=gl.drawingBufferWidth,row=new Uint8Array(w*4);for(const y of [.25,.5,.75]){gl.readPixels(0,Math.floor(gl.drawingBufferHeight*y),w,1,gl.RGBA,gl.UNSIGNED_BYTE,row);
+      for(let i=0;i<row.length&&blank;i+=4)if(Math.abs(row[i]-expected[0])>3||Math.abs(row[i+1]-expected[1])>3||Math.abs(row[i+2]-expected[2])>3)blank=false;if(!blank)break;}}
     this.blankCount=blank?this.blankCount+1:0;
     if(this.blankCount>=3)this.problem('First frames contain only the clear color');
   }

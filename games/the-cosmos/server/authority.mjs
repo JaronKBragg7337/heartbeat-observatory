@@ -700,7 +700,8 @@ export class Authority {
       case 'engage':if(!p.aboardShipId||!['pilot','captain','nav','comms'].includes(p.pose.seat))throw Error('Use a bridge station to set a course.');
         if(Object.values(this.state.players).some(q=>q.aboardShipId===ship.id&&q.pose.sw.z>sim.def.dock.clearRampZ)||ship.crew.some(c=>c.status==='walking-aboard'&&c.localPose.z>sim.def.dock.clearRampZ))throw Error('Clear the ramp before departure.');sim.engage(a.destination);break;
       case 'ramp':{if(!['cargo','airlock'].includes(a.key))throw Error('Unknown ramp.');if(!sim.flight.landed)throw Error('Land before opening a ramp.');
-        if(!p.aboardShipId)this.near(p,this.site.toLocal(sim.flight.toWorld({...sim.def.dock.rampFoot,y:-1},{})),20);
+        // (first take-off, 11/19: this used the port's own 'near', which is Mars only, so on every other world an owner outside could not work the ramp)
+        if(!p.aboardShipId&&(p.frameId!==sim.frameId||distance(p.pose.worldPos,sim.flight.toWorld({...sim.def.dock.rampFoot,y:-1},{}))>24))throw Error('Stand by the ramp first.');
         if(ship.owner!==p.id&&!p.aboardShipId)throw Error('The owner controls the boarding ramp.');
         const ctl=sim.ship.rampCtl[a.key];if(ctl.target>.5&&sim.ship._rampOccupied(a.key))throw Error('Clear the ramp first.');
         if(ctl.target<.5)sim.ship._solveRamp(a.key);ctl.target=ctl.target>.5?0:1;sim.ship.state.ramps[a.key].target=ctl.target;break;}

@@ -30,7 +30,7 @@ export class GoalHint {
     this.el.style.transform='rotate('+Math.atan2(y,x)+'rad)';this.el.setAttribute('aria-label',goal.label);this.el.title=goal.label;
     if(!this.tag.hidden){const ax=w/2+x*scale,ay=h/2+y*scale,text=goal.label+' · '+(distance>=950?(distance/1000).toFixed(1)+' km':Math.round(distance)+' m');if(this.tag.textContent!==text)this.tag.textContent=text;
       // the name sits beside the arrow, toward the middle of the screen, and never leaves the screen
-      const tw=this.tag.offsetWidth||120,tx=Math.max(8,Math.min(w-tw-8,ax-tw/2)),ty=Math.max(64,Math.min(h-150,ay+(y*scale>h/4?-34:26)));
+      const tw=this.tag.offsetWidth||120,tx=Math.max(8,Math.min(w-tw-8,ax-tw/2)),hud=parseFloat(document.documentElement.style.getPropertyValue('--hud-bottom'))||0,ty=Math.max(tx<w*.75&&hud?hud+8:64,Math.min(h-150,ay+(y*scale>h/4?-34:26)));   // never across the status card
       this.tag.style.left=tx+'px';this.tag.style.top=ty+'px';}
   }
   dispose(){this.el.remove();this.tag.remove();}

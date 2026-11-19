@@ -29,7 +29,7 @@ export const PAD_KEYS = {
 export const PAD_HELP = 'Controller: left stick move · right stick look · A jump · X use · Y talk · LT run · RT fire · D-pad menus · B close';
 
 const DEAD = 0.2, STICK_KEY = 0.42, LOOK_RATE = 2.6;     // look: radians a second at full stick
-const FOCUSABLE = 'button, [role="button"], a[href], input, select, summary';
+const FOCUSABLE = 'button, [role="button"], [role="radio"], [role="tab"], [role="option"], [role="checkbox"], [tabindex="0"], a[href], input, select, summary';      // (the arrivals board's sides are radios, not buttons: a pad could not choose one)
 
 export class GamepadControls {
   /** @param desktop DesktopControls (its lookDX / lookDY take the right stick) */

@@ -653,7 +653,7 @@ export class LocalPatch {
           const over = sample(gi, gj) - (h0 + d * tanE) - 0.012 * d;      // the blocker must clear the ray by a hair (the Sun's own half-degree and the grid's roughness)
           if (over > 0) { const w = Math.min(1, over / (0.25 + 0.03 * d)); if (w > occ) occ = w; if (occ >= 1) break; }
         }
-      } else occ = 1;                                      // the Sun is on the horizon or below it: everything is in shadow
+      } else occ = Math.max(0, Math.min(1, (su + 0.14) / 0.16));      // the Sun on the horizon: everything is in shadow. Well under it (night) nothing is baked: the Sun gives no light then anyway, and a ground painted black could not be lit by a helmet lamp, a ship's lamps or Mars in the sky (first take-off, 11/19)
       const trust = Math.min(1, exitD / Math.min(10, this.sizeM * 0.12));
       // ambient occlusion: how far this vertex sits below its neighbours 2 steps out
       let avg = 0, c = 0;

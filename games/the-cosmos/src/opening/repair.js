@@ -9,7 +9,7 @@ import { makeMoon } from '../space/moonField.js';
 // FIX-R4: the Crew Hall door in port-local metres (the same point the authority's CREW_HALL.door uses, server/authority.mjs)
 const CREW_HALL_DOOR = { x: -28, z: -60 };
 import { GoalHint } from '../ui/goalHint.js';
-import { labelFor } from '../ui/gamepad.js';
+import { labelFor, hintFor } from '../ui/gamepad.js';
 import { sfx } from '../ui/sfx.js';
 
 export class RepairChain {
@@ -25,14 +25,51 @@ export class RepairChain {
         else if(m.ship.pose?.pos)goal={id:m.ship.id||'lifeboat-pad',label:'Your lifeboat',target:m.ship.pose.pos,reach:FIT_REACH,after:4,named:true};
       }
     }
+    if (!goal) goal = this._flightGoal(dt);
     if (!goal) goal = this._crewGoal();
     this.hint.update(dt,goal?{...goal,onPlanet:true}:null);
   }
   /** The moment the first ship comes alive (part 1, 11/19): say so, once, with a sound; it used to pass with no word at all. */
   _alive() {
     const w=this.world,p=w.remote&&w.snapshot?w.snapshot.players[w.playerId]:null,sh=p&&(!p.opening||p.opening.complete)?w.snapshot.ships[p.shipId]:null; if(!sh)return;
-    if(this._drained===true&&!sh.drained){ sfx.arrive(); this.space.say?.('Power on. Your lifeboat flies. Climb aboard and take the pilot seat.', false); }
+    if(this._drained===true&&!sh.drained){ sfx.arrive(); this.space.say?.('Power on. Your lifeboat flies. Walk up the ramp at her back and take the pilot seat.', false); }
     this._drained=!!sh.drained;
+  }
+  // ---- the first take-off (part 1, 11/19): power on used to be the last word a new pilot got; the card went straight to a job on foot and nobody
+  // was ever told how to get in, where the pilot sits or what lifts her. Four plain steps, until one flight has gone up and come back down.
+  /** The fitted lifeboat of a pilot who has not flown yet: { p, ship } or null. A hired crew or a bigger ship means this is no beginner. */
+  _firstFlight() {
+    const w = this.world; if (!w.remote || !w.snapshot) return null;
+    const p = w.snapshot.players[w.playerId]; if (!p || (p.opening && !p.opening.complete)) return null;
+    const ship = w.snapshot.ships[p.shipId]; if (!ship || ship.drained || ship.type !== 'lifeboat' || (ship.crew || []).length) return null;
+    if (this._flown === undefined || this._flownFor !== p.id) { this._flownFor = p.id; try { this._flown = localStorage.getItem('cosmos.firstFlight.' + p.id) === '1'; } catch { this._flown = false; } }
+    return this._flown ? null : { p, ship };
+  }
+  /** Watches the flight itself, and while the pilot is still on the ground outside, points at the foot of the ramp. */
+  _flightGoal(dt) {
+    const m = this._firstFlight(); if (!m) return null;
+    const sh = this.shipSystem, f = sh.flight;
+    if (sh.aboard && sh.seat?.id === 'pilot') {
+      if (f.airborne && f.agl > 25) this._up = true;
+      if (this._up && f.landed) {
+        this._up = false; this._flown = true; try { localStorage.setItem('cosmos.firstFlight.' + m.p.id, '1'); } catch {}
+        sfx.arrive(); this.space.say?.('Down and safe. That was your first flight: she is yours to fly anywhere now.', false);
+      }
+    }
+    if (sh.aboard || this.vehicles?.seated() || !sh.ready || this.space.frameId !== m.ship.frameId || !f.landed) return null;
+    const foot = sh.def?.dock?.rampFoot; if (!foot) return null;
+    return { id: 'first-flight-ramp', label: 'Your lifeboat, the rear ramp', target: f.toWorld({ x: foot.x, y: 1.2, z: foot.z }, {}), reach: 3, after: 2, named: true };
+  }
+  /** The words for the step the new pilot is on. */
+  _flightText(aboard) {
+    const sh = this.shipSystem, f = sh.flight, seat = sh.seat?.id;
+    if (!aboard) return sh.state?.ramps?.cargo?.lowered === false
+      ? `Power on. Your lifeboat flies. Step 1 of 4: get in. Her ramp is up: stand behind her and use "Lower ramp", then walk up it.`
+      : 'Power on. Your lifeboat flies. Step 1 of 4: get in. Follow the arrow to the ramp at her back and walk up it.';
+    if (!seat) return `Step 2 of 4: take the pilot seat. Walk forward through the cabin, through the door marked FLIGHT, to the left seat. ${hintFor({ keys: 'Press E when it says Sit · Pilot.', touch: 'The button says "Sit · Pilot" when you are there.', pad: 'Press X when it says Sit · Pilot.' })}`;
+    if (seat !== 'pilot') return labelFor('Step 2 of 4: this is not the pilot seat. Stand (E) and take the left seat at the front.');
+    if (f.landed && !this._up) return `Step 3 of 4: take off. ${hintFor({ keys: 'Hold Space', touch: 'Hold LIFT ▲', pad: 'Hold A' })} and she rises (the ramp folds away first). Let go and she hovers by herself.`;
+    return `Step 4 of 4: you are flying. ${hintFor({ keys: 'W A S D fly her where you look; Space climbs, C sinks.', touch: 'The left thumb flies her where you look; LIFT climbs, SINK comes down.', pad: 'The left stick flies her where you look; A climbs.' })} When you want the ground back: ${hintFor({ keys: 'press L (LAND)', touch: 'tap LAND', pad: 'tap LAND' })}, hands off, and she lands herself.`;
   }
   /** FIX-R4 (27): the boat is fixed and nobody is hired: point at the Crew Hall door (after the usual minute away from it), on Mars only (the hall is at Marineris Port). */
   _crewGoal() {
@@ -62,6 +99,7 @@ export class RepairChain {
     // MISSIONS: a job in hand is the next step; otherwise, on Mars the crew first (the Crew Hall), elsewhere the job a person here is offering
     const mt = this.missions, onJob = mt && mt.active();
     if (onJob) return mt.nextGoal(ship);
+    if (this._firstFlight()) return { text: this._flightText(aboard) };
     const hereWorld = this.space.frameId;
     if (!(ship.crew || []).length && world === 'mars' && hereWorld === 'mars') return { text: `${p.home?.stay ? 'Your ship is on its pad.' : 'Lifeboat ready.'} Next: hire a crew. Walk to the Crew Hall at Marineris Port (the long building at the north end of the pads, an arrow points the way after a minute). Stand at its door and the six people inside come out to meet you; talk to one and tap Hire.` };
     const offer = mt && mt.nextGoal(ship);
