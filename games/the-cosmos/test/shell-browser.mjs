@@ -3,6 +3,8 @@
 // Android-profile Chromium page. Run: node test/shell-browser.mjs   (OUT=<folder> for pictures; default docs/qa/2026-11-19/shell/)
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
+import { createHash } from 'node:crypto';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,6 +52,17 @@ try{
     await page.waitForFunction(()=>window.cosmos?.engine?.frameCount>10&&!document.getElementById('boot'),null,{timeout:240000});
     check(name+': the button starts a solo game',await page.evaluate(()=>cosmos.world.offline===true&&!cosmos.world.remote));
     await page.waitForTimeout(1500);await page.screenshot({path:join(out,`${name}-solo-started.png`)});
+    // 1b. the server comes back while the solo game runs: one offer to return (a bare socket that answers the handshake stands in for the server)
+    {
+      const socks=new Set(),back=createServer(sock=>{let buf='';socks.add(sock);sock.on('close',()=>socks.delete(sock));sock.on('error',()=>{});sock.on('data',d=>{buf+=d;const m=/Sec-WebSocket-Key: (.+)\r\n/i.exec(buf);if(!m||!buf.includes('\r\n\r\n'))return;
+        sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+createHash('sha1').update(m[1].trim()+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64')+'\r\n\r\n');buf='';});});
+      await new Promise(r=>back.listen(Number(DEAD.split(':').pop()),'localhost',r));
+      const offered=await page.locator('#world-back').waitFor({timeout:45000}).then(()=>true,()=>false);
+      check(name+': when the server answers again the solo game offers the way back',offered&&/answering again/.test(await page.locator('#world-back').textContent().catch(()=>'')));
+      if(offered){const bb=await page.locator('#world-back').boundingBox();check(name+': the offer fits the screen',bb.x>=0&&bb.x+bb.width<=profile.viewport.width+1,JSON.stringify(bb));
+        await page.screenshot({path:join(out,`${name}-world-back.png`)});await page.locator('#world-back button',{hasText:'Stay solo'}).tap();check(name+': "Stay solo" puts the offer away',await page.locator('#world-back').count()===0);}
+      await new Promise(r=>{back.close(r);for(const s of socks)s.destroy();});
+    }
     // 2. the picture-quality setting: shown, changed, remembered across the reload it causes
     // (a brand-new player is in the opening now: Settings must be reachable from inside it, by the real button)
     check(name+': the opening is running',await page.evaluate(()=>!!cosmos.opening?.active));

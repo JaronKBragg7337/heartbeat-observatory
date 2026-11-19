@@ -10,12 +10,13 @@ import { makeMoon } from '../space/moonField.js';
 const CREW_HALL_DOOR = { x: -28, z: -60 };
 import { GoalHint } from '../ui/goalHint.js';
 import { labelFor } from '../ui/gamepad.js';
+import { sfx } from '../ui/sfx.js';
 
 export class RepairChain {
   /** o: { world, walker, portSite, space, engine, shipSystem, vehicles } */
   constructor(o) { Object.assign(this, o); this.hint=new GoalHint(o.engine); }
   tick(dt) {
-    const m=this._mine();let goal=null;
+    const m=this._mine();let goal=null;this._alive();
     if(m&&!this.shipSystem.aboard&&!this.vehicles?.seated()&&(this.walker.grounded||this.walker.altitudeAboveGround()<50)) {
       const world=m.p.home?.world||'mars',parts=missingParts(m.ship);
       if(this.space.frameId===world) {
@@ -26,6 +27,12 @@ export class RepairChain {
     }
     if (!goal) goal = this._crewGoal();
     this.hint.update(dt,goal?{...goal,onPlanet:true}:null);
+  }
+  /** The moment the first ship comes alive (part 1, 11/19): say so, once, with a sound; it used to pass with no word at all. */
+  _alive() {
+    const w=this.world,p=w.remote&&w.snapshot?w.snapshot.players[w.playerId]:null,sh=p&&(!p.opening||p.opening.complete)?w.snapshot.ships[p.shipId]:null; if(!sh)return;
+    if(this._drained===true&&!sh.drained){ sfx.arrive(); this.space.say?.('Power on. Your lifeboat flies. Climb aboard and take the pilot seat.', false); }
+    this._drained=!!sh.drained;
   }
   /** FIX-R4 (27): the boat is fixed and nobody is hired: point at the Crew Hall door (after the usual minute away from it), on Mars only (the hall is at Marineris Port). */
   _crewGoal() {
@@ -83,7 +90,7 @@ export class RepairChain {
     const { p, ship } = m, world = p.home?.world || 'mars', missing = missingParts(ship);
     for (const part of missing) {
       const g = giverFor(world, part);
-      if (this._at(g, world)) return { label: `Ask ${g.who} for the ${REPAIR_PARTS[part].name} (${REPAIR_PARTS[part].priceMarks} marks)`, run: () => this.world.dispatch({ type: 'lifeboat-part', part }) };
+      if (this._at(g, world)) return { label: `Buy the ${REPAIR_PARTS[part].name} · ${REPAIR_PARTS[part].priceMarks} marks`, run: () => this.world.dispatch({ type: 'lifeboat-part', part }) };
     }
     if (!missing.length && ship.frameId === p.frameId && ship.pose?.pos) {
       const a = this.walker.worldPos, b = ship.pose.pos;

@@ -11,6 +11,8 @@ import { startServer } from '../server/index.mjs';
 import { MemoryAdapter } from '../src/world-state/storage.js';
 import * as S from '../src/opening/script.js';
 import { shipDef } from '../src/ships/registry.js';
+import { outpostToFrame } from '../src/worlds/ceres/layout.js';
+import { makeMoon } from '../src/space/moonField.js';
 let pw;try{pw=createRequire(import.meta.url)('playwright');}catch{pw=createRequire(process.env.COSMOS_PLAYWRIGHT_ROOT||'C:/Users/lilli/.codex/runtime/unfinished-island/node_modules/')('playwright');}
 const out=process.env.OUT||fileURLToPath(new URL('../docs/qa/2026-11-19/first-hour/',import.meta.url));await mkdir(out,{recursive:true});
 const WEBKIT=process.env.COSMOS_WEBKIT||join(process.env.LOCALAPPDATA||'','ms-playwright','webkit-2336','Playwright.exe');
@@ -115,6 +117,28 @@ try{
   await step(2);await beat('home-arrival');await step(10);await beat('home-what-now');
   await page.evaluate(async()=>{await new Promise(r=>setTimeout(r,300));});await ready();await step(2);await beat('home-after-refresh');
   check('after a refresh the opening does not start again',!(await st()).active);
+  // ---- the lifeboat: two parts and the fitting, by the real button ------------------------------------------------------------
+  {
+    const pi=makeMoon('ceres').padInfo,P=()=>app.world.state.players[id],ship=()=>app.world.state.ships[P().shipId];
+    const standAt=async wp=>{P().pose.worldPos=wp;P().frameId='ceres';await app.world.commit();await page.evaluate(w=>{Object.assign(cosmos.walker.worldPos,w);cosmos.walker.velocity={x:0,y:0,z:0};cosmos.walker.updateFrame();},wp);await step(2.5);};
+    const act=async()=>{const box=await page.locator('#btn-action').boundingBox();if(!box)throw new Error('the action button is not on screen');await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);await step(1.5);};
+    const next=()=>page.evaluate(()=>document.querySelector('#hud .next-goal')?.textContent||'');
+    // (the server's answer arrives in real time, the status card redraws about once a second: give both a moment)
+    const until=async fn=>{for(let i=0;i<16;i++){if(await fn())return true;await page.waitForTimeout(120);await step(.5);}return false;};
+    check('home: the first step is named',/Step 1 of 3/.test(await next()),(await next()).slice(0,90));
+    await standAt(outpostToFrame(pi,-6,.02,-84));await beat('home-at-the-foreman');await act();
+    check('home: the power cell is bought with one tap',ship().repair.have.includes('cell'),JSON.stringify(ship().repair));
+    check('home: then the second step is named',await until(async()=>/Step 2 of 3/.test(await next())),(await next()).slice(0,90));
+    await standAt(outpostToFrame(pi,30,.02,44));await beat('home-at-the-doctor');await act();
+    check('home: the coupler is bought with one tap',ship().repair.have.includes('coupler'),JSON.stringify(ship().repair));
+    check('home: then the third step is named',await until(async()=>/Step 3 of 3/.test(await next())),(await next()).slice(0,90));
+    await step(6);await beat('home-both-parts');
+    await standAt({...app.world.sims.get(P().shipId).flight.pos});await beat('home-at-the-lifeboat');await act();
+    check('home: the lifeboat is fitted and has power',ship().drained===false);
+    const said=await until(()=>page.evaluate(()=>document.body.innerText.includes('Power on. Your lifeboat flies')));
+    await beat('home-she-flies');
+    check('home: the game says the ship flies now',said,(await next()).slice(0,100));
+  }
   await ctx.close();
   // ---- an Android phone (Chromium, touch): the same game, and this browser can make sound, so the key beats are listened for -------------
   if(chrome){

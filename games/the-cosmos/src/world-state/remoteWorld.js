@@ -107,12 +107,32 @@ export async function chooseWorld(local){const dev=['localhost','127.0.0.1'].inc
   let goSolo=null,tries=0;const wantSolo=new Promise(r=>{goSolo=r;});
   for(;;){
     const got=await Promise.race([remote.load().then(saved=>({saved}),()=>null),wantSolo.then(()=>'solo')]);
-    if(got==='solo'){try{remote.socket.onclose=null;remote.socket.close();}catch{}local.offline=true;local.serverDown=true;return {world:local,saved:await local.load()};}
+    if(got==='solo'){try{remote.socket.onclose=null;remote.socket.close();}catch{}local.offline=true;local.serverDown=true;watchForReturn(url);return {world:local,saved:await local.load()};}
     if(got)return {world:remote,saved:got.saved};
     remote.socket?.close();
     if(dev&&params.get('serverdown')!=='1'){local.offline=true;const saved=await local.load();return {world:local,saved};}
     serverDownNotice(++tries,goSolo);
     await Promise.race([new Promise(r=>setTimeout(r,1500)),wantSolo]);}
+}
+/**
+ * A solo game that began because the shared world was down: look in on the server now and then (one quiet socket every 20 seconds, closed at once),
+ * and when it answers, offer the way back once. The solo save stays on the device either way.
+ */
+export function watchForReturn(url,{everyMs=20000,doc=document,Socket=globalThis.WebSocket}={}){
+  if(!Socket)return;let done=false;
+  const offer=()=>{if(done||doc.getElementById('world-back'))return;done=true;
+    const el=doc.createElement('div');el.id='world-back';el.setAttribute('role','dialog');el.setAttribute('aria-label','The shared world is back');
+    el.style.cssText='position:fixed;z-index:120;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));width:min(92vw,420px);background:rgba(16,13,11,.94);border:1px solid rgba(240,185,120,.45);border-radius:12px;padding:12px 14px;color:#f1e2d0;font:14px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.5)';
+    const p=doc.createElement('p');p.style.margin='0 0 10px';p.textContent='The shared world is answering again. Your solo game is saved on this device.';
+    const row=doc.createElement('div');row.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    const mk=(t,primary)=>{const b=doc.createElement('button');b.textContent=t;b.style.cssText=`flex:1;min-height:48px;border-radius:8px;border:1px solid ${primary?'#f0b978':'#c7b29666'};background:${primary?'#f0b978':'transparent'};color:${primary?'#1a120b':'#f1e2d0'};font:600 14px system-ui,sans-serif;padding:8px 12px;cursor:pointer`;return b;};
+    const yes=mk('Return to the shared world',true),no=mk('Stay solo',false);
+    yes.onclick=()=>{const u=new URL(location.href);u.searchParams.delete('solo');u.searchParams.delete('serverdown');location.replace(u.href);};no.onclick=()=>el.remove();
+    row.append(yes,no);el.append(p,row);doc.body.append(el);};
+  const look=()=>{if(done)return;let ws;try{ws=new Socket(url);}catch{return;}
+    const end=setTimeout(()=>{try{ws.close();}catch{}},8000);
+    ws.onopen=()=>{clearTimeout(end);try{ws.close();}catch{}offer();};ws.onerror=()=>{clearTimeout(end);};};
+  const timer=setInterval(()=>{if(done)clearInterval(timer);else if(!doc.hidden)look();},everyMs);
 }
 /** The boot screen's words (and the button) while the shared world is not answering. */
 export function serverDownNotice(tries,goSolo,doc=document){

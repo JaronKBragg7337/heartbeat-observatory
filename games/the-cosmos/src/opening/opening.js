@@ -335,7 +335,7 @@ export class Opening {
       #opening-note button{margin-top:12px;pointer-events:auto;min-height:44px;border:1px solid #c7b29688;border-radius:6px;background:#2a2118;color:#f1e2d0;padding:10px 16px;font:13px system-ui}
       body[data-opening-film="true"] #opening-caption,body[data-opening-film="true"] #opening-hint,
       body[data-opening-film="true"] #opening-ui button{visibility:hidden}
-      @media(max-width:600px){#opening-caption{font-size:14px;line-height:1.4;left:4%;right:4%;max-width:92%;bottom:calc(100px + env(safe-area-inset-bottom))}#opening-hint{font-size:12px;line-height:1.35}}
+      @media(max-width:600px){#opening-caption{font-size:14px;line-height:1.4;left:4%;right:4%;max-width:92%;bottom:calc(100px + env(safe-area-inset-bottom))}#opening-hint{font-size:12px;line-height:1.35}}@media(max-height:480px){#opening-caption{bottom:calc(80px + env(safe-area-inset-bottom));font-size:13px;line-height:1.35}}
     `; document.head.appendChild(this.style);
     this.ui = document.createElement('div'); this.ui.id = 'opening-ui';
     this.ui.innerHTML = '<div id="opening-plasma"></div><div id="opening-noise"></div><div id="opening-flash"></div><div id="opening-warp" hidden>Cruise to another world &middot; time compressed</div><div id="opening-fade"></div><div id="opening-hint"></div><div id="opening-caption" aria-live="polite">Preparing the opening…</div><button id="opening-action" hidden></button><button id="opening-walk" hidden>Walk (Q)</button><button id="opening-skip">Skip intro</button>';
