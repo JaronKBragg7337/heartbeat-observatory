@@ -748,12 +748,21 @@ function updateSun(f) {
   // not black. (Measured, not styled: with the ambient at 1.6 the pit floor at 6 m was still under 5% of the surface
   // brightness, because a hemisphere light reaches the surface divided by pi.)
   const cw = engine.cameraWorldPos;
-  const below = Math.max(0, -baseDensityAt(body, cw.x, cw.y, cw.z));
+  // LOOK-FIX (11/19): on another world the camera's position is in THAT world's own axes, a few kilometres from its centre. Read against Mars
+  // that is thousands of kilometres underground, so the "you are in a hole" helmet lamp sat at full power on every moon, in full sunlight:
+  // a tan pool 24 m across that washed out the ground you walk on and filled every shadow. Depth is now measured on the world you stand on.
+  const moonNow = SUN.space && SUN.space.activeMoon;
+  let below;
+  if (moonNow && moonNow.body && moonNow.body.surfaceRadius) { const l = Math.hypot(cw.x, cw.y, cw.z) || 1; below = Math.max(0, moonNow.body.surfaceRadius(cw.x / l, cw.y / l, cw.z / l) - l); }
+  else below = Math.max(0, -baseDensityAt(body, cw.x, cw.y, cw.z));
   ambientDepth += (Math.min(1, below / 2.5) - ambientDepth) * 0.15;
   sky.intensity = 0.85 + 1.3 * ambientDepth;
   suitLamp.position.set(0, 0.15, 0);
   // the helmet lamp comes on in a hole, and on the surface once the Sun is well down (night: a warm pool 24 m across)
-  const night = SUN.space && SUN.space.sky ? Math.max(0, Math.min(1, (-SUN.space.sky.state.elev - 2) / 8)) * (SUN.space.sky.state.s > 0.5 ? 1 : 0) : 0;
+  // (on an airless world the sky state reads "in space", so its night is the Sun under the local horizon, or Mars's shadow across it)
+  const night = moonNow
+    ? Math.max(Math.max(0, Math.min(1, (-Math.asin(Math.max(-1, Math.min(1, sunDir.dot(up)))) * 180 / Math.PI - 2) / 8)), 1 - Math.max(0, Math.min(1, SUN.space.sky.state.vis ?? 1)))
+    : SUN.space && SUN.space.sky ? Math.max(0, Math.min(1, (-SUN.space.sky.state.elev - 2) / 8)) * (SUN.space.sky.state.s > 0.5 ? 1 : 0) : 0;
   suitLamp.intensity = 9 * Math.max(Math.min(1, Math.max(0, (below - 0.8) / 1.2)), 0.7 * night);
 }
 let ambientDepth = 0;
