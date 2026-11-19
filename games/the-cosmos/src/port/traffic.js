@@ -28,6 +28,7 @@ import { worldTimeS } from '../space/clock.js';
 import { getBody } from '../world/bodies.js';
 import { surfaceRadiusFast } from '../world/field.js';
 import { APRON, PADS } from './portSpec.js';
+import { TrafficFx } from './trafficFx.js';
 
 const DEG = Math.PI / 180;
 export const SLOT_S = 480;                 // one base visit (and one extra) per slot
@@ -249,6 +250,7 @@ export class PortTraffic {
     this.visits = [visitAt(0), visitAt(1), visitAt(2), visitAt(3)]; for (const v of this.visits) v.n = NaN;
     this.pose = {}; this.vehicle = null; this._route = { x: 0, z: 0, fx: 0, fz: 1 }; this._round = { s: 0, speed: 0, stop: -1 };
     this._blockAt = -1; this.buildMs = { last: 0, total: 0, count: 0 };
+    this.fx = new TrafficFx(this);            // sound and dust (trafficFx.js): a pure function of each pose, no state of its own
     this._tick = (dt) => this.update(dt);
     this.engine.addUpdater(this._tick);
   }
@@ -263,8 +265,8 @@ export class PortTraffic {
     let camD = 0;
     if (on) { camD = Math.hypot(cam.x - c.x, cam.y - c.y, cam.z - c.z); on = camD < ACTIVE_M; }
     this.active = on;
-    if (!on) { if (this.root.visible) { this.root.visible = false; for (const s of this.pool) { s.root.visible = false; s.n = null; } } return; }
-    this.root.visible = true;
+    if (!on) { if (this.root.visible) { this.root.visible = false; for (const s of this.pool) { s.root.visible = false; s.n = null; } } this.fx.quiet(); return; }
+    this.root.visible = true; this.fx.begin();
     const now = this.now = this.time(), k0 = Math.floor(now / SLOT_S);
     const check = now < this._blockAt || now - this._blockAt > 0.5; if (check) this._blockAt = now;
     // an exterior whose visit has left the timetable's window (or been replaced in it) is free again before anything asks for one
@@ -281,10 +283,10 @@ export class PortTraffic {
       }
       if (t >= (v.diverted ? v.t3 + v.P.departS : v.end)) continue;
       const s = this.shipFor(v); if (!s) continue;
-      s.used = true; this.poseShip(s, poseAt(v, t, this.pose), now);
+      s.used = true; this.poseShip(s, poseAt(v, t, this.pose), now); this.fx.ship(s, this.pose, now);
     }
     for (const s of this.pool) if (!s.used && s.n !== null) { s.n = null; s.root.visible = false; }
-    this.driveVehicle(now, camD);
+    this.driveVehicle(now, camD); this.fx.end();
   }
 
   /** Is a real ship standing on (or low over) this spot? The player's own, and in a shared world everybody's. */
@@ -392,6 +394,7 @@ export class PortTraffic {
     routeAt(r.s, o); v.tug.position.set(o.x, this.groundAt(r.s), o.z); v.tug.rotation.y = Math.atan2(-o.fx, -o.fz);
     routeAt(r.s - HITCH_M, o); v.trailer.position.set(o.x, this.groundAt(r.s - HITCH_M), o.z); v.trailer.rotation.y = Math.atan2(-o.fx, -o.fz);
     const roll = -r.s / WHEEL_R; for (const w of v.wheels) w.rotation.x = roll;
+    this.fx.tug(v.tug.position.x, v.tug.position.z, r.speed);
     v.beacon.visible = (now % 1) < 0.5;
   }
 
