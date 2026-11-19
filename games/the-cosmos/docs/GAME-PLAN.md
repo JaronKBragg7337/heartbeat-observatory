@@ -87,7 +87,7 @@ and the odd ones, phone and desktop).
 | # | Part | What "done" means | State |
 |---|---|---|---|
 | 0 | **Looks groundwork** | Suits outside, airless light and shadows, a night you can walk in, Mars bright in a moon's sky. | Shipped 11/19 (first version) |
-| 1 | **The first hour** | First launch to your own flying ship: liner, port, board, crash, dig out, ride, fit the lifeboat, first take-off. Clear at every step on a phone, with sound, and it resumes anywhere. | Built; needs the production pass. NEXT |
+| 1 | **The first hour** | First launch to your own flying ship: liner, port, board, crash, dig out, ride, fit the lifeboat, first take-off. Clear at every step on a phone, with sound, and it resumes anywhere. | Production pass shipped 11/19 (see the bar table below). Left: the walk itself played by a real thumb, the first take-off, a real phone |
 | 2 | **Mars and its moons, a finished region** | Marineris Port, the open desert, Phobos and Deimos: jobs, shops, a reason to visit each, boulders and landmarks, clean views from orbit to ground, day and night. | Built; thin in places |
 | 3 | **Work and money, end to end** | Jobs as a real ladder with rewards, a repeating freight board on every world, trade between worlds, fuel and repairs that cost, buying a bigger ship, hiring crew. A goal to save for. | Pieces built; no loop yet |
 | 4 | **The game shell** | Every platform we can reach: phone first (iOS and Android), PC (mouse/keyboard and gamepad), the home-screen app, consoles later through the gamepad layer. One input layer, UI from 375 px to a TV. Settings (sound, controls, quality), quality tiers, save and resume that never loses anything, a clear message and solo play when the server is down, long-session memory, loading that explains itself. | Partly built. Controller support shipped 11/19 (first version) |
@@ -99,6 +99,16 @@ and the odd ones, phone and desktop).
 
 Small things still open from part 0: suits come off inside buildings and domes; hired crew walking to a ship; real boulders;
 the square patch on Phobos seen from space; ships' hulls read as bricks; at Mars dusk the ground takes the sky's blue.
+
+## The production bar, part by part
+
+One row per part, one column per rule of the bar. "yes" = tested and passing, "part" = partly, "no" = not yet, "-" = not looked at.
+Tests: `test/first-hour-browser.mjs` (part 1), `test/shell-browser.mjs` and `test/gamepad-browser.mjs` (part 4), `test/phone-check.mjs` (all).
+
+| Part | Stranger understands | Refresh loses nothing | Phone frame rate, memory | No errors | Server down | 375 px and big screen | Touch, keys, pad | Home-screen app | Sound and feedback | Looks in a screenshot | Full test pass |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 The first hour | yes (words, arrows with names and distances, steps 1 to 3) | yes (every stage) | - (not measured on a real phone) | yes | part (says so, offers solo; solo ends the opening at Mars only) | part (375 px yes; big screen not looked at) | part (touch yes, keys yes, pad hints only) | part (tags and manifest; not run installed) | yes (press, dig, lift, latch, yes, no, crash, arrival) | part (flight shows a window after the server restart) | part (iPhone and Android profiles, golden path and refresh; no real phone) |
+| 4 The game shell | - | - | part (a quality setting and a slow-device offer; memory not measured) | yes | yes (first launch; a drop in mid-game was already handled) | part | part (pad first version) | part | yes | - | part |
 
 ## "Full game" checklist
 
@@ -169,6 +179,8 @@ assisted flying with an expert switch (decided 10/3, partly built); private base
 
 | Date | What |
 |---|---|
+| 11/19 | The game shell, first pieces: a plain "the shared world is not answering" screen with a "Play on your own for now" button; a Picture quality setting (Auto, Fast, Full detail) and a one-time offer of Fast when the picture runs slow; "Add to Home Screen" from the game's page now opens the game itself, full screen. |
+| 11/19 | The first hour, production pass: buttons on a phone no longer show keyboard letters (a controller sees its own button names); every spoken line sits on a dark plate you can read over any scene; an arrow with a name and a distance points at the arrivals hall, the Kestrel, and each step of fitting your lifeboat ("Step 1 of 3"); the liner says how long until landing; sounds answer every press, dig, lift, choice, the crash and arriving home; boarding the Kestrel puts you at a window (after the game server restarts). |
 | 11/19 | Helmet lamp no longer stuck on in sunlight on moons (it washed the ground tan). |
 | 11/19 | A controller plays the game (sticks, buttons, a focus ring for menus); hints speak in the words of what you are holding (keys, thumbs or a pad). |
 | 11/19 | A night you can walk in on airless worlds: Mars lit and bright in a moon's sky (it went black), Marsshine on the ground, a white helmet beam where you look. |

@@ -159,5 +159,11 @@ export function inputKind() {
   if (document.documentElement.dataset.input === 'gamepad') return 'pad';
   return ('ontouchstart' in window || navigator.maxTouchPoints > 0) ? 'touch' : 'keys';
 }
+/** A button label written for a keyboard ("Dig (E)") in the words of the device in hand: a thumb sees no key letter, a pad sees its own button. */
+const PAD_NAME = { E: 'X', T: 'Y', Q: 'LB', C: 'RB', R: 'R3', F: 'RT', V: 'View', Space: 'A', Shift: 'LT', Esc: 'B' };
+export function labelFor(text) {
+  if (!text || text.indexOf('(') < 0) return text; const k = inputKind(); if (k === 'keys') return text;
+  return text.replace(/ ?\((E|T|Q|C|R|F|V|Space|Shift|Esc)\)/g, (m, key) => k === 'pad' ? ` (${PAD_NAME[key]})` : '');
+}
 /** The same hint in the words of the device in the player's hands. */
 export function hintFor(h) { const k = inputKind(); return h[k] || h.keys; }

@@ -262,7 +262,7 @@ export class SpaceSystem {
     f.refreshOrientation();
     w.updateFrame();
     ship.scanner && (ship.scanner.builtAt = null);
-    this.say(id === 'mars' ? 'Back in Mars space.' : `${this.worlds.get(id).body.name} frame.`, false);
+    this.say(id === 'mars' ? 'Back in Mars space.' : `Now in ${this.worlds.get(id).body.name} space.`, false);
     return to;
   }
 

@@ -9,6 +9,7 @@ import { makeMoon } from '../space/moonField.js';
 // FIX-R4: the Crew Hall door in port-local metres (the same point the authority's CREW_HALL.door uses, server/authority.mjs)
 const CREW_HALL_DOOR = { x: -28, z: -60 };
 import { GoalHint } from '../ui/goalHint.js';
+import { labelFor } from '../ui/gamepad.js';
 
 export class RepairChain {
   /** o: { world, walker, portSite, space, engine, shipSystem, vehicles } */
@@ -19,8 +20,8 @@ export class RepairChain {
       const world=m.p.home?.world||'mars',parts=missingParts(m.ship);
       if(this.space.frameId===world) {
         if(parts.length){const g=giverFor(world,parts[0]);const target=g.frame==='port'?this.portSite.toWorld(g.at.x,1.5,g.at.z):outpostToFrame(makeMoon(world).padInfo,g.at.x,1.5,g.at.z);
-          goal={id:g.id,label:g.who,target,reach:8};}
-        else if(m.ship.pose?.pos)goal={id:m.ship.id||'lifeboat-pad',label:'Lifeboat pad',target:m.ship.pose.pos,reach:FIT_REACH};
+          goal={id:g.id,label:(n=>n[0].toUpperCase()+n.slice(1))(g.who.split(',')[0].replace(/ \(.*\)$/,'')),target,reach:8,after:4,named:true};}
+        else if(m.ship.pose?.pos)goal={id:m.ship.id||'lifeboat-pad',label:'Your lifeboat',target:m.ship.pose.pos,reach:FIT_REACH,after:4,named:true};
       }
     }
     if (!goal) goal = this._crewGoal();
@@ -44,12 +45,12 @@ export class RepairChain {
     const w = this.world; if (!w.remote || !w.snapshot) return null;
     const p = w.snapshot.players[w.playerId]; if (!p || (p.opening && !p.opening.complete)) return null;
     const ship = w.snapshot.ships[p.shipId]; if (!ship) return null;
-    const world = p.home?.world || 'mars', stand = aboard ? 'Stand up (E), leave by the ramp. ' : '';
+    const world = p.home?.world || 'mars', stand = aboard ? labelFor('Stand up (E), leave by the ramp. ') : '';
     if (ship.drained) {
-      const miss = missingParts(ship), at = (g) => `${g.who}, ${g.where}`;
-      if (miss.length === 2) return { text: `${stand}The lifeboat has no power. Buy a power cell from ${at(giverFor(world, 'cell'))} and a fuel coupler from ${at(giverFor(world, 'coupler'))}: 300 marks each (tap Talk, then the shop). Then fit both at the boat.` };
-      if (miss.length === 1) return { text: `${stand}Buy the ${REPAIR_PARTS[miss[0]].name} (300 marks) from ${at(giverFor(world, miss[0]))}. Then fit both at the boat.` };
-      return { text: `${stand}Both parts are yours. Walk to the lifeboat and tap "Fit the power cell and the coupler".` };
+      const miss = missingParts(ship), at = (g) => g.who.replace(/ \(.*\)$/, '');
+      if (miss.length === 2) return { text: `${stand}This lifeboat is yours, but it has no power. Step 1 of 3: buy a ${REPAIR_PARTS[miss[0]].name} (300 marks) from ${at(giverFor(world, miss[0]))}. Follow the arrow, then use the button when you reach them.` };
+      if (miss.length === 1) return { text: `${stand}Step 2 of 3: buy the ${REPAIR_PARTS[miss[0]].name} (300 marks) from ${at(giverFor(world, miss[0]))}. Follow the arrow, then use the button when you reach them.` };
+      return { text: `${stand}Step 3 of 3: both parts are yours. Follow the arrow back to your lifeboat and use "Fit the power cell and the coupler". Then she flies.` };
     }
     // MISSIONS: a job in hand is the next step; otherwise, on Mars the crew first (the Crew Hall), elsewhere the job a person here is offering
     const mt = this.missions, onJob = mt && mt.active();

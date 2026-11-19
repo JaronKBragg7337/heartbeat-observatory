@@ -10,6 +10,10 @@
 <meta name="cosmos-build" content="ac9cf3851c91bc8dbacb">
 <meta name="theme-color" content="#0a0705">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<!-- the game's own home-screen app: "Add to Home Screen" from this page opens The Cosmos itself, full screen (the site-wide manifest opens the site's front page) -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="The Cosmos">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
 <title>The Cosmos</title>
 <style>
   /* ==========================================================================
@@ -53,7 +57,7 @@
   }
   #hud b { color: #f0b978; font-weight: 600; letter-spacing: .5px; }
   #hud .dim { color: #9c8878; font-size: 12px; }
-  #hud .next-goal { margin-top: 6px; padding-top: 5px; border-top: 1px solid rgba(240, 185, 120, .35); font-size: 12px; line-height: 1.45; color: #f3dcc0; white-space: normal; }
+  #hud .next-goal { margin-top: 6px; padding: 6px 0 7px; border-top: 1px solid rgba(240, 185, 120, .35); font: 13px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #f6e3c8; white-space: normal; }
 
   /* --- Buttons ------------------------------------------------------------- */
   .btn {
@@ -326,6 +330,24 @@
       <span class="hint">Hide the HUD and buttons. Escape opens this panel again. Add ?cinema=1 to start this way.</span>
     </label>
     <input type="checkbox" id="set-cinema">
+  </div>
+
+  <div class="set-row">
+    <label for="set-quality">Picture quality
+      <span class="hint">Fast draws less detail and runs smoother on phones and older computers. Changing it reloads the game. <span id="set-quality-now"></span></span>
+    </label>
+    <select id="set-quality">
+      <option value="auto">Auto</option>
+      <option value="low">Fast</option>
+      <option value="high">Full detail</option>
+    </select>
+  </div>
+
+  <div class="set-row">
+    <label for="set-sfx">Action sounds
+      <span class="hint">A small sound when you press, dig, lift, buy or arrive.</span>
+    </label>
+    <input type="checkbox" id="set-sfx" checked>
   </div>
 
   <div class="set-row">

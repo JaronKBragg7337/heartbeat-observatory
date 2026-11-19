@@ -102,8 +102,26 @@ export async function chooseWorld(local){const dev=['localhost','127.0.0.1'].inc
   const asked=params.get('ws'),url=dev?(asked&&/^ws:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(asked)?asked:'ws://localhost:8390'):'wss://cosmos.heartbeatobservatory.com';
   if(params.get('solo')==='1'){local.offline=true;return {world:local,saved:await local.load()};}
   const remote=new RemoteWorld(deviceIdentity(localStorage,params.get('test')==='1'?'cosmos-test-device-v2':identityKey),url);
-  for(;;){try{const saved=await remote.load();return {world:remote,saved};}catch{remote.socket?.close();
-    if(dev){local.offline=true;const saved=await local.load();return {world:local,saved};}
-    const boot=document.querySelector('#boot p');if(boot)boot.textContent='Shared world unavailable. Reconnecting to your saved journey…';
-    await new Promise(r=>setTimeout(r,1500));}}
+  // SERVER DOWN (11/19, part 4): the page used to wait here for ever with one line of small print. Now it says plainly what is wrong, keeps trying,
+  // and offers the way on: a solo game on this device (its own save; the shared-world journey is untouched and is there again when the server is).
+  let goSolo=null,tries=0;const wantSolo=new Promise(r=>{goSolo=r;});
+  for(;;){
+    const got=await Promise.race([remote.load().then(saved=>({saved}),()=>null),wantSolo.then(()=>'solo')]);
+    if(got==='solo'){try{remote.socket.onclose=null;remote.socket.close();}catch{}local.offline=true;local.serverDown=true;return {world:local,saved:await local.load()};}
+    if(got)return {world:remote,saved:got.saved};
+    remote.socket?.close();
+    if(dev&&params.get('serverdown')!=='1'){local.offline=true;const saved=await local.load();return {world:local,saved};}
+    serverDownNotice(++tries,goSolo);
+    await Promise.race([new Promise(r=>setTimeout(r,1500)),wantSolo]);}
+}
+/** The boot screen's words (and the button) while the shared world is not answering. */
+export function serverDownNotice(tries,goSolo,doc=document){
+  const status=doc.querySelector('#boot-status')||doc.querySelector('#boot p');
+  if(status)status.textContent=tries<2?'The shared world is not answering. Trying again…':'The shared world is still not answering. It keeps trying by itself.';
+  const boot=doc.querySelector('#boot');if(!boot||doc.querySelector('#boot-solo'))return;
+  const b=doc.createElement('button');b.id='boot-solo';b.textContent='Play on your own for now';
+  b.style.cssText='min-height:48px;margin-top:6px;padding:12px 20px;border-radius:8px;border:1px solid #f0b978;background:#f0b978;color:#1a120b;font:600 15px system-ui,sans-serif;cursor:pointer';
+  const note=doc.createElement('p');note.id='boot-solo-note';note.textContent='A solo game saves on this device. Your journey in the shared world is safe and waits for you.';
+  b.onclick=()=>{b.disabled=true;b.textContent='Starting your solo game…';goSolo();};
+  boot.append(b,note);
 }

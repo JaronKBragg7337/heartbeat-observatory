@@ -7,7 +7,10 @@
 //   3..6       the wreck, the dig, the driver's pitch, the ride (the old opening's good parts: the wreck art, the survey rover).
 // Every stage is a pure function of the stage clock (script.js), so a refresh resumes where it was. Skip intro gives the same start.
 // ============================================================================
-import { hintFor } from '../ui/gamepad.js';
+import { hintFor, labelFor } from '../ui/gamepad.js';
+import { sfx } from '../ui/sfx.js';
+// the sound each of the opening's actions makes when the authority says yes
+const ACTION_SFX = { 'opening-dig': 'dig', 'opening-carry': 'lift', 'opening-locker': 'latch', 'opening-board': 'latch', 'opening-ride': 'latch', 'opening-walk': 'latch', 'opening-pick': 'confirm' };
 import * as THREE from 'three';
 import { OpeningModel, freshOpening, STAGE } from './state.js';
 import { LINER, KESTREL, LINER_PHASE, KESTREL_PHASE, KESTREL_SECONDS, RIDE_SECONDS, CONTACT_SECONDS, linerPhase, kestrelPhase, linerDescentPose, linerDown,
@@ -303,20 +306,27 @@ export class Opening {
   // ---- UI ------------------------------------------------------------------------------------------------------------------
   buildUI() {
     this.style = document.createElement('style'); this.style.textContent = `
-      body[data-opening="active"] > .btn,body[data-opening="active"] #hud,body[data-opening="active"] #settings-panel,
+      body[data-opening="active"] > .btn:not(#btn-settings),body[data-opening="active"] #hud,
       body[data-opening="active"] #crew-panel,body[data-opening="active"] #space-panel,
       body[data-opening="active"] #economy-purse,body[data-opening="active"] #key-controls{display:none!important}
       body[data-opening="active"] #multiplayer-button,body[data-opening="active"] #multiplayer-panel,
       body[data-opening="active"] #crew-ui{display:none!important}
+      /* Part 1 (11/19): Settings stays reachable through the whole opening (sound, picture quality, controller help); only the rows that need the open game are put away */
+      body[data-opening="active"] #btn-settings{z-index:102;min-height:44px}body[data-opening="active"] #settings-panel{z-index:103;top:calc(60px + env(safe-area-inset-top,0px))!important;max-height:calc(100dvh - 76px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important}
+      body[data-opening="active"] #settings-account,body[data-opening="active"] .set-row:has(#set-view),body[data-opening="active"] .set-row:has(#set-tool),
+      body[data-opening="active"] .set-row:has(#set-cinema),body[data-opening="active"] .set-row:has(#set-letterbox),body[data-opening="active"] .set-row:has(#set-dev){display:none!important}
+      body[data-opening-film="true"] #btn-settings{visibility:hidden}
       #opening-ui{position:fixed;inset:0;pointer-events:none;z-index:100;font:14px/1.6 system-ui,sans-serif;color:#ece4d9}
-      #opening-caption{position:absolute;bottom:calc(110px + env(safe-area-inset-bottom));left:10%;right:10%;text-align:center;text-shadow:0 2px 5px #000}
+      #opening-caption{position:absolute;bottom:calc(110px + env(safe-area-inset-bottom));left:10%;right:10%;text-align:center;text-shadow:0 1px 3px #000}
+      #opening-caption:not(:empty){background:rgba(12,10,9,.62);border-radius:10px;padding:9px 14px 10px;width:fit-content;margin:0 auto;max-width:min(80%,720px)}
+      #opening-hint:not(:empty){background:rgba(12,10,9,.55);border-radius:8px;padding:6px 10px;margin:-6px 0 0 -10px}
       #opening-caption .who{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#ffd9a0;opacity:.9}
-      #opening-hint{position:absolute;top:calc(18px + env(safe-area-inset-top));left:20px;font-size:12px;color:#e5d2bd;max-width:62%}
+      #opening-hint{position:absolute;top:calc(18px + env(safe-area-inset-top));left:20px;font-size:12px;color:#e5d2bd;max-width:calc(100% - 140px)}
       #opening-action,#opening-walk,#opening-skip{pointer-events:auto;position:absolute;min-height:48px;border:1px solid #c7b29666;border-radius:6px;background:#151313bf;color:#f1e2d0;padding:12px 18px;font:13px system-ui;cursor:pointer}
       #opening-action{bottom:calc(24px + env(safe-area-inset-bottom));right:20px}
       #opening-walk{bottom:calc(24px + env(safe-area-inset-bottom));right:180px}
-      #opening-skip{top:calc(14px + env(safe-area-inset-top));right:18px}#opening-fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
-      #opening-warp{position:absolute;top:calc(60px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);padding:6px 14px;border:1px solid #ffd9a088;border-radius:3px;background:#0b0a0cb0;color:#ffd9a0;font:11px system-ui;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;animation:ow 1.4s ease-in-out infinite}@keyframes ow{50%{opacity:.55}}
+      #opening-skip{top:calc(62px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right,0px))}#opening-fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+      #opening-warp{position:absolute;top:calc(118px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);padding:6px 14px;border:1px solid #ffd9a088;border-radius:3px;background:#0b0a0cb0;color:#ffd9a0;font:11px system-ui;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;animation:ow 1.4s ease-in-out infinite}@keyframes ow{50%{opacity:.55}}
       #opening-plasma{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 55%,rgba(255,200,120,.1) 0%,rgba(255,120,40,.55) 55%,rgba(255,70,10,.9) 100%)}
       #opening-flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:rgb(255,255,255)}
       #opening-noise{position:absolute;inset:0;pointer-events:none;opacity:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.18) 0 1px,rgba(0,0,0,.22) 1px 3px);mix-blend-mode:screen}
@@ -325,7 +335,7 @@ export class Opening {
       #opening-note button{margin-top:12px;pointer-events:auto;min-height:44px;border:1px solid #c7b29688;border-radius:6px;background:#2a2118;color:#f1e2d0;padding:10px 16px;font:13px system-ui}
       body[data-opening-film="true"] #opening-caption,body[data-opening-film="true"] #opening-hint,
       body[data-opening-film="true"] #opening-ui button{visibility:hidden}
-      @media(max-width:600px){#opening-caption{font-size:13px;left:5%;right:5%;bottom:100px}#opening-hint{font-size:11px}}
+      @media(max-width:600px){#opening-caption{font-size:14px;line-height:1.4;left:4%;right:4%;max-width:92%;bottom:calc(100px + env(safe-area-inset-bottom))}#opening-hint{font-size:12px;line-height:1.35}}
     `; document.head.appendChild(this.style);
     this.ui = document.createElement('div'); this.ui.id = 'opening-ui';
     this.ui.innerHTML = '<div id="opening-plasma"></div><div id="opening-noise"></div><div id="opening-flash"></div><div id="opening-warp" hidden>Cruise to another world &middot; time compressed</div><div id="opening-fade"></div><div id="opening-hint"></div><div id="opening-caption" aria-live="polite">Preparing the opening…</div><button id="opening-action" hidden></button><button id="opening-walk" hidden>Walk (Q)</button><button id="opening-skip">Skip intro</button>';
@@ -449,11 +459,12 @@ export class Opening {
             if (r.corrected && r.pose && this.state.stage === was) this._applyPose(r.pose); }
         } else { r = this.model.act(a); this.world.state.opening = structuredClone(this.state); this.world.state.shipType = 'lifeboat'; await this.world.persist(); await this.world.flush(); this._syncDest(); }
         if (!r.ok) { if (a.type === 'opening-next' && (this.state.stage === STAGE.LINER || this.state.stage === STAGE.DESCENT)) return r;       // the clocks differ by a second: the next frame asks again
-          this.status = r.msg || 'Wait for the shared world.'; this.statusUntil = this.elapsed + 6; return r; }
+          this.status = r.msg || 'Wait for the shared world.'; this.statusUntil = this.elapsed + 6; if (a.type !== 'opening-pose') sfx.deny(); return r; }
+        if (ACTION_SFX[a.type]) sfx[ACTION_SFX[a.type]]();
         if (this.stageNo !== this.state.stage) { const from = this.stageNo; this.accum = 0; this.clock = this.state.clock || 0; this.enterStage(this.state.stage); this._afterStage(from); }
         if (this.state.complete) this.finish(r.arrivalPose, r.arrivalFrame);
         return r;
-      } catch (e) { this.status = e.message; this.statusUntil = this.elapsed + 6; return { ok: false, msg: e.message }; }
+      } catch (e) { this.status = e.message; this.statusUntil = this.elapsed + 6; if (a.type !== 'opening-pose') sfx.deny(); return { ok: false, msg: e.message }; }
     };
     this.pending = this.pending.then(task).finally(() => { this.busy = false; this.checkpoint(true); }); return this.pending;
   }
@@ -581,10 +592,10 @@ export class Opening {
     if (cam.caption) { text = cam.caption; who = cam.who || ''; }
     if (disconnected) { text = 'Shared world disconnected. Reconnecting…'; who = ''; } else if (this.statusUntil > this.elapsed) { text = this.status; who = ''; }
     this.caption.innerHTML = text ? (who ? `<span class="who">${who}</span>` : '') + text.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) : '';
-    this.action.hidden = !this.actionLabel; if (this.action.textContent !== this.actionLabel) this.action.textContent = this.actionLabel;
+    { const shown = labelFor(this.actionLabel), walk = labelFor('Walk (Q)'); this.action.hidden = !this.actionLabel; if (this.action.textContent !== shown) this.action.textContent = shown; if (this.walkButton.textContent !== walk) this.walkButton.textContent = walk; }
     if (!this.hint.textContent && cam.hint) this.hint.textContent = cam.hint;
     const gate=kestrelGate(this.kestrelDef||shipDef(KESTREL.type));
-    const goal=s.stage===STAGE.PORT ? (!this.dest ? {id:'arrivals',label:'Arrivals hall',target:{x:-100,y:1.5,z:40.2},reach:14} : {id:'kestrel',label:'Pad 01 / Kestrel',target:{x:gate.x,y:1.5,z:gate.z},reach:8}) : null;
+    const goal=s.stage===STAGE.PORT ? (!this.dest ? {id:'arrivals',label:'Arrivals hall',target:{x:-100,y:1.5,z:40.2},reach:14,after:8,named:true} : {id:'kestrel',label:'The Kestrel, Pad 01',target:{x:gate.x,y:1.5,z:gate.z},reach:8,after:8,named:true}) : null;
     this.goalHint.update(dt,goal?{...goal,onPlanet:true,eye:cam.eye}:null);
     this._speak(disconnected || this.statusUntil > this.elapsed ? '' : text);
     this.checkpoint();
@@ -621,7 +632,8 @@ export class Opening {
     this.fade.style.opacity = String(waiting ? 1 : clamp(1 - (this.elapsed - (this.t0 ?? this.elapsed)) / 3, 0, 1));
     const prep = waiting;
     if (this.voice && !this.voice.unlocked && t > 2 && t < 14) this.hint.textContent = 'Tap the screen once to turn on sound.';
-    else if (t < 12) this.hint.textContent = hintFor({ keys: 'Move: W A S D · Look: click, then the mouse.', touch: 'Move: left thumb · Look: right thumb.', pad: 'Move: left stick · Look: right stick.' }) + ' Walk the ship. Talk to people by walking up to them.';
+    else if (t < 40) this.hint.textContent = hintFor({ keys: 'Move: W A S D · Look: click, then the mouse.', touch: 'Move: left thumb · Look: right thumb.', pad: 'Move: left stick · Look: right stick.' }) + ' Walk the ship. Talk to people by walking up to them.';
+    else if (t < LINER_PHASE.touch) { const left = LINER_PHASE.touch - t; this.hint.textContent = left > 75 ? `Landing on Mars in about ${Math.round(left / 60)} minutes. The ship is yours to walk until then.` : left > 20 ? 'Landing on Mars in about a minute. The windows are worth it.' : 'Landing now.'; }
     // sound
     if (this.audio) { this.audio.rumble.frequency.value = 36 + entryK * 30 + (ph === 'descent' ? 6 : 0); this.audio.gain.gain.setTargetAtTime(.02 + entryK * .03, this.audio.ctx.currentTime, .3); }
     // the captain, then the people
@@ -723,6 +735,7 @@ export class Opening {
     for (const eg of K.exterior.engines) eg.outer.visible = eg.core.visible = t > 2;
     this.space.setConvoyVisible(false);
     const gone = t >= KESTREL_PHASE.crash;
+    if (gone && !this._impactHeard && t < KESTREL_PHASE.crash + 1.5) sfx.impact(); this._impactHeard = gone;
     if (t >= KESTREL_PHASE.crash + .8 && !this.wreckBuilt) this._ensureWreck();       // the screen is black: build the wreck now, not when the clock runs out
     // the walking and the camera
     const { eye, fwd } = this._linerEyeCam(K, look, input, dt, true);
@@ -751,7 +764,7 @@ export class Opening {
       const alarm = t > 44 && t < KESTREL_PHASE.crash; this.audio.alarmGain.gain.setTargetAtTime(alarm ? (Math.sin(t * 5) > 0 ? .022 : .002) : 0, this.audio.ctx.currentTime, .05); }
     const script = D.kestrelScript(this.cause, this.worldId), line = script.find((l) => t >= l.t0 && t < l.t1);
     let caption = line ? line.text : '', who = line ? (line.voice === 'w-fenrir' ? 'Corsair' : 'Pilot') : '';
-    if (t < 4 && !caption) this.hint.textContent = 'You are aboard the Kestrel. Walk to a window if you like.';
+    if (!gone && K.currentRoom && K.currentRoom !== 'cabin_a' && K.currentRoom !== 'bridge') this.hint.textContent = K.currentRoom === 'gate' ? 'You are aboard the Kestrel. The windows are in the forward cabin: through the door ahead, then right.' : 'The windows are in the forward cabin, toward the nose.';
     else if (gone) this.hint.textContent = 'Impact. Hold on, the cabin is going dark.';   // FIX-R2: ten seconds of black with no word on it read as a crash of the page
     // when the clock runs out the authority takes us to the wreck
     if (t >= KESTREL_SECONDS && !this.busy && !this._leaving) { this._leaving = true; this.savePose().then(() => this.command({ type: 'opening-next' })).finally(() => { this._leaving = false; }); }
@@ -841,7 +854,7 @@ export class Opening {
 
   /** The opening is over: take the private scene down and hand the player to the world (the server has placed them). */
   finish(pose, frameId) {
-    if (!this.active) return; this.active = false; const e = this.engine;
+    if (!this.active) return; this.active = false; const e = this.engine; sfx.arrive();
     const transition = document.createElement('div'); transition.className = 'opening-transition';
     transition.style.cssText = 'position:fixed;inset:0;background:#000;pointer-events:none;z-index:101'; document.body.appendChild(transition);
     transition.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1600, easing: 'ease-out', fill: 'forwards' }).finished.then(() => transition.remove());

@@ -13,7 +13,9 @@
 // query, so the ground is always there whether or not it has been drawn yet.
 // ============================================================================
 
-import { GamepadControls, PAD_HELP } from './ui/gamepad.js';
+import { GamepadControls, PAD_HELP, labelFor, hintFor } from './ui/gamepad.js';
+import { sfx, sfxOn, setSfx } from './ui/sfx.js';
+import { pickTier, savedQuality, applyQuality, watchFrameRate } from './ui/quality.js';
 import { dressForWorld } from './crew/suitPolicy.js';
 import * as THREE from 'three';
 import { watchBuild, BUILD_VERSION } from './core/buildHandshake.js';
@@ -112,7 +114,7 @@ let vehicles = null;
 // ---------------------------------------------------------------------------
 // World
 // ---------------------------------------------------------------------------
-const shell = buildGlobalShell(body, { segments: safeGraphics ? 64 : (new URLSearchParams(location.search).get('tier') === 'low' || (('ontouchstart' in window) && new URLSearchParams(location.search).get('tier') !== 'high')) ? 192 : 288 });   // finer than the old 128: from orbit the limb is the shell's silhouette
+const shell = buildGlobalShell(body, { segments: safeGraphics ? 64 : pickTier({ search: location.search, touch: 'ontouchstart' in window, saved: savedQuality() }) === 'low' ? 192 : 288 });   // finer than the old 128: from orbit the limb is the shell's silhouette
 const shellEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: shell });
 engine.scene.add(shell);
 // NIGHT (11/19): Mars seen from somewhere the Sun is not shining on the camera (a moon's night side, a moon inside Mars's shadow, the port
@@ -151,7 +153,8 @@ registry.register({
 // lid back on a hole as soon as you walked off and returned.
 const params = new URLSearchParams(location.search);
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-const tier = safeGraphics ? 'low' : params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
+// PLATFORMS (11/19): the tier is the player's own choice when they have made one (Settings, Picture quality), else a guess from the device (ui/quality.js)
+const tier = pickTier({ search: location.search, touch: isTouch, safe: safeGraphics, saved: savedQuality() });
 
 // F2: the sky is REAL (real UTC, Mars's real spin: space/clock.js). ?sky=live (or no parameter in a normal session) is that. A `?dev=1` session without ?sky=
 // keeps the old fixed mid-morning Sun (so the automated browser checks see one lighting at any hour); ?sky=fixed asks for it. ?sky=noon|dusk|dawn|sunset|
@@ -290,7 +293,7 @@ function calmRefusal(r) {
 }
 function doDig() {
   if (ship.ready && ship.aboard) return { ok: false, msg: 'Not aboard' };
-  return calmRefusal(world.dispatch({type:'dig-edit'}));
+  const r = calmRefusal(world.dispatch({type:'dig-edit'})); if (r && r.ok) sfx.dig(); return r;
 }
 function doDump() { return calmRefusal(world.dispatch({type:'spoil-pour',all:false})); }
 function doDumpAll() { return calmRefusal(world.dispatch({type:'spoil-pour',all:true})); }
@@ -933,22 +936,22 @@ function refreshAction() {
   const riding = !!vehicles?.seated();
   const climbing=!!walker._climb;
   climbBtn.style.display=!ship.aboard&&!riding&&(climbing||walker.climbTarget())?'block':'none';
-  climbBtn.textContent=climbing?'Climbing…':'Climb (C)';climbBtn.disabled=climbing;
+  climbBtn.textContent=climbing?'Climbing…':labelFor('Climb (C)');{const da=hintFor({keys:'Drop all · R',touch:'Drop all',pad:'Drop all · R3'});if(dropAllBtn.textContent!==da)dropAllBtn.textContent=da;}climbBtn.disabled=climbing;
   dropAllBtn.style.display = carried.length && !(ship.ready && ship.aboard) && !riding ? 'block' : 'none';
   if (actionFlash > 0) return;
   const va = vehicles?.contextAction();
-  if (va) { tapAction = 'vehicle'; actionBtn.style.display = 'block'; actionBtn.textContent = va.label; toolBtn.style.display = 'none'; return; }
+  if (va) { tapAction = 'vehicle'; actionBtn.style.display = 'block'; actionBtn.textContent = labelFor(va.label); toolBtn.style.display = 'none'; return; }
   const ra = repair?.contextAction();
-  if (ra) { tapAction = 'repair'; actionBtn.style.display = 'block'; actionBtn.textContent = ra.label; toolBtn.style.display = 'none'; return; }
+  if (ra) { tapAction = 'repair'; actionBtn.style.display = 'block'; actionBtn.textContent = labelFor(ra.label); toolBtn.style.display = 'none'; return; }
   const sa = spaceAction();
-  if (sa) { tapAction = 'space'; actionBtn.style.display = 'block'; actionBtn.textContent = sa.label; toolBtn.style.display = 'none'; return; }
+  if (sa) { tapAction = 'space'; actionBtn.style.display = 'block'; actionBtn.textContent = labelFor(sa.label); toolBtn.style.display = 'none'; return; }
   if (ship.ready) {
     const a = ship.contextAction();
-    if (a) { tapAction = 'ship'; actionBtn.style.display = 'block'; actionBtn.textContent = a.label; return; }
+    if (a) { tapAction = 'ship'; actionBtn.style.display = 'block'; actionBtn.textContent = labelFor(a.label); return; }
     if (ship.aboard) { tapAction = 'none'; actionBtn.style.display = 'none'; return; }
   }
   const lift=port.elevatorAction(walker);
-  if(lift) {tapAction='lift';actionBtn.style.display='block';actionBtn.textContent=lift.label;toolBtn.style.display='none';return;}
+  if(lift) {tapAction='lift';actionBtn.style.display='block';actionBtn.textContent = labelFor(lift.label);toolBtn.style.display='none';return;}
   const inReach = !!digTarget();
   const load = carriedMass();
   const cap = tool().capacityKg;
@@ -1010,7 +1013,7 @@ const endPress = (e) => {
     hudAccum = 1;
     return;
   }
-  if (repairPress) { repairPress = false; const a = repair?.contextAction(); if (a) { const r = a.run(); flash(r && r.msg ? r.msg : a.label); } hudAccum = 1; return; }
+  if (repairPress) { repairPress = false; const a = repair?.contextAction(); if (a) { const r = a.run(); flash(r && r.msg ? r.msg : a.label); if (r && r.ok === false) sfx.deny(); else sfx.confirm(); } hudAccum = 1; return; }
   if (spacePress) { spacePress = false; const sa = spaceAction(); if (sa) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); } hudAccum = 1; return; }
   if (shipPress) {
     shipPress = false;
@@ -1375,6 +1378,10 @@ cinema.hooks.after = (dt) => {
   dropMark.group.visible = false;
 };
 document.getElementById('set-cinema').addEventListener('change', (e) => cinema.setEnabled(e.target.checked));
+{ const sel = document.getElementById('set-quality'); if (sel) { sel.value = savedQuality(); const h = document.getElementById('set-quality-now'); if (h) h.textContent = safeGraphics ? 'Now: Safe graphics (this device asked for it).' : `Now: ${tier === 'low' ? 'Fast' : 'Full detail'}.`;
+    sel.addEventListener('change', (e) => { world.checkpoint?.(); applyQuality(e.target.value); }); } }
+const frameWatch = watchFrameRate({ tier, busy: () => !!document.getElementById('boot') || document.body.dataset.openingFilm === 'true' });
+{ const box = document.getElementById('set-sfx'); if (box) { box.checked = sfxOn(); box.addEventListener('change', (e) => setSfx(e.target.checked)); } }
 document.getElementById('set-letterbox').addEventListener('change', (e) => cinema.setLetterbox(e.target.checked));
 
 // ROUND7: what is on the ground round your boots. Built after the port, the people and the space system exist.

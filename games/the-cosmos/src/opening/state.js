@@ -21,7 +21,9 @@ const LINER_DEF = () => shipDef(LINER.type), KESTREL_DEF = () => shipDef(KESTREL
 
 /** Where the player wakes: in the observation lounge, beside the sofas, facing the panoramic window (Ares ship-local metres, yaw radians). */
 export const LINER_WAKE = { x: 4.6, y: 0, z: 4.0, yaw: Math.PI / 2, pitch: 0 };
-export const KESTREL_BOARD = { x: 9.0, y: 0, z: 8.4, yaw: -Math.PI / 2, pitch: 0 };
+// Part 1 (11/19): boarding puts you in the forward cabin's aisle facing a starboard window (the ship banks that way), not in the windowless vestibule:
+// a phone player who never moved watched a wall for the whole flight. (The authority sets this pose: it needs the server restarted to take effect.)
+export const KESTREL_BOARD = { x: 2.65, y: 0, z: -13.5, yaw: Math.PI / 2, pitch: 0.05 };
 
 export function freshOpening(o = {}) {
   const seed = typeof o === 'number' ? o : (o.seed ?? Math.random());
