@@ -1,7 +1,7 @@
 # The Cosmos: the game plan
 
 One page. What the full game is, what is real today, what comes next, and how we know it is done.
-Kept by the lead builder (Fable). Updated after every milestone. Last update: 2026-11-19.
+Kept by the lead builder (Fable). Updated after every milestone. Last update: 2026-11-19, 3:25 PM (after the first-hour production pass).
 
 **This is the current plan.** Nothing about the plan had been written since 10/10. It is built from, newest first:
 
@@ -180,7 +180,7 @@ assisted flying with an expert switch (decided 10/3, partly built); private base
 | Date | What |
 |---|---|
 | 11/19 | The game shell, first pieces: a plain "the shared world is not answering" screen with a "Play on your own for now" button, and an offer to return when the server answers again; a Picture quality setting (Auto, Fast, Full detail) and a one-time offer of Fast when the picture runs slow; "Add to Home Screen" from the game's page now opens the game itself, full screen. |
-| 11/19 | The first hour, production pass: buttons on a phone no longer show keyboard letters (a controller sees its own button names); every spoken line sits on a dark plate you can read over any scene; an arrow with a name and a distance points at the arrivals hall, the Kestrel, and each step of fitting your lifeboat ("Step 1 of 3"); the liner says how long until landing; sounds answer every press, dig, lift, choice, the crash and arriving home; fitting the second part says "Power on. Your lifeboat flies."; boarding the Kestrel puts you at a window (after the game server restarts). |
+| 11/19 | The first hour, production pass: buttons on a phone no longer show keyboard letters (a controller sees its own button names); every spoken line sits on a dark plate you can read over any scene; an arrow with a name and a distance points at the arrivals hall, the Kestrel, and each step of fitting your lifeboat ("Step 1 of 3"); the liner says how long until landing; sounds answer every press, dig, lift, choice, the crash and arriving home; fitting the second part says "Power on. Your lifeboat flies."; the status card opens with the next step; boarding the Kestrel puts you at a window (after the game server restarts). |
 | 11/19 | Helmet lamp no longer stuck on in sunlight on moons (it washed the ground tan). |
 | 11/19 | A controller plays the game (sticks, buttons, a focus ring for menus); hints speak in the words of what you are holding (keys, thumbs or a pad). |
 | 11/19 | A night you can walk in on airless worlds: Mars lit and bright in a moon's sky (it went black), Marsshine on the ground, a white helmet beam where you look. |
