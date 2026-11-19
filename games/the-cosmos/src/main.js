@@ -13,6 +13,7 @@
 // query, so the ground is always there whether or not it has been drawn yet.
 // ============================================================================
 
+import { GamepadControls, PAD_HELP } from './ui/gamepad.js';
 import { dressForWorld } from './crew/suitPolicy.js';
 import * as THREE from 'three';
 import { watchBuild, BUILD_VERSION } from './core/buildHandshake.js';
@@ -643,6 +644,12 @@ engine.scene.fog = new THREE.FogExp2(body.atmosphere.horizonColor, TERRAIN_FOG_D
 // ---------------------------------------------------------------------------
 const touch = new TouchControls(canvas);
 const desktop = new DesktopControls(canvas);
+// PLATFORMS (11/19): a controller plays the whole game through the same keys and look the keyboard and mouse use (ui/gamepad.js).
+const gamepad = new GamepadControls(desktop, { onFirstUse: () => {
+  const t = document.createElement('div'); t.id = 'pad-toast'; t.textContent = PAD_HELP; t.setAttribute('role', 'status');
+  t.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:90;max-width:min(92vw,720px);padding:10px 14px;border:1px solid #ba936a;border-radius:10px;background:#21190ff0;color:#ffe1bb;font:13px/1.45 ui-monospace,monospace;text-align:center;pointer-events:none;transition:opacity .6s';
+  document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; }, 9000); setTimeout(() => t.remove(), 9800);
+} });
 
 const view = { mode: 'first', distance: 4.2 };   // 'first' | 'third'
 const eye = { x: 0, y: 0, z: 0 };
@@ -1063,6 +1070,7 @@ let cinema = null;
 
 engine.addUpdater((dt) => {
   voice.update();
+  gamepad.poll(dt);                                 // PLATFORMS: a controller's sticks and buttons become keys and look before anything reads input
   space.early(dt);                                  // F2: the frames and the Sun are where the clock puts them
   if(opening?.active){
     const a=touch.consumeLook(),b=desktop.consumeLook();
@@ -1401,7 +1409,7 @@ if (devMode) window.cosmos = {
   multiplayer, vehicles, voice, get chat() { return chat; },
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,
-  marsFill, setSkyShift, skyShiftFor, worldTimeS,                    // F2: review shots move the clock (cosmos.setSkyShift(seconds)) and ask for a named hour
+  gamepad, marsFill, setSkyShift, skyShiftFor, worldTimeS,                    // F2: review shots move the clock (cosmos.setSkyShift(seconds)) and ask for a named hour
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,

@@ -7,6 +7,7 @@
 //   3..6       the wreck, the dig, the driver's pitch, the ride (the old opening's good parts: the wreck art, the survey rover).
 // Every stage is a pure function of the stage clock (script.js), so a refresh resumes where it was. Skip intro gives the same start.
 // ============================================================================
+import { hintFor } from '../ui/gamepad.js';
 import * as THREE from 'three';
 import { OpeningModel, freshOpening, STAGE } from './state.js';
 import { LINER, KESTREL, LINER_PHASE, KESTREL_PHASE, KESTREL_SECONDS, RIDE_SECONDS, CONTACT_SECONDS, linerPhase, kestrelPhase, linerDescentPose, linerDown,
@@ -620,7 +621,7 @@ export class Opening {
     this.fade.style.opacity = String(waiting ? 1 : clamp(1 - (this.elapsed - (this.t0 ?? this.elapsed)) / 3, 0, 1));
     const prep = waiting;
     if (this.voice && !this.voice.unlocked && t > 2 && t < 14) this.hint.textContent = 'Tap the screen once to turn on sound.';
-    else if (t < 12) this.hint.textContent = 'Move: left thumb · Look: right thumb. Walk the ship. Talk to people by walking up to them.';
+    else if (t < 12) this.hint.textContent = hintFor({ keys: 'Move: W A S D · Look: click, then the mouse.', touch: 'Move: left thumb · Look: right thumb.', pad: 'Move: left stick · Look: right stick.' }) + ' Walk the ship. Talk to people by walking up to them.';
     // sound
     if (this.audio) { this.audio.rumble.frequency.value = 36 + entryK * 30 + (ph === 'descent' ? 6 : 0); this.audio.gain.gain.setTargetAtTime(.02 + entryK * .03, this.audio.ctx.currentTime, .3); }
     // the captain, then the people
@@ -784,7 +785,7 @@ export class Opening {
       sw.tick(dt, { moveX: input.moveEast, moveZ: input.moveNorth, run: input.run, jump: input.jump });
       eye = new THREE.Vector3().copy(sw.eyeLocal()); forward = new THREE.Vector3(Math.sin(sw.yaw) * Math.cos(sw.pitch), Math.sin(sw.pitch), -Math.cos(sw.yaw) * Math.cos(sw.pitch));
       this.cabin.root.updateMatrix(); eye.applyMatrix4(this.cabin.root.matrix); forward.transformDirection(this.cabin.root.matrix); up.transformDirection(this.cabin.root.matrix);
-      this.hint.textContent = 'Move: WASD / left thumb · Look: mouse / right thumb';
+      this.hint.textContent = hintFor({ keys: 'Move: W A S D · Look: mouse', touch: 'Move: left thumb · Look: right thumb', pad: 'Move: left stick · Look: right stick' });
       const dl = Math.hypot(sw.x - LOCKER.x, sw.z - LOCKER.z);
       if (dl < LOCKER.reach + 1.2) { this.actionLabel = D.LOCKER_PROMPT; this.actionKind = 'locker'; }
       else if (sw.z > 12) { this.actionLabel = 'Climb out (E)'; this.actionKind = 'climb'; }
@@ -818,7 +819,7 @@ export class Opening {
         }
         eye = new THREE.Vector3().copy(m.walker.eyeWorldPos()); forward = new THREE.Vector3().copy(m.digger.lookDir()); up.copy(m.walker.updateFrame().up); local = false;
         this._updateDigMark(false);
-        if (s.stage === STAGE.DIG) { const d = Math.hypot(p.x - CRATE.x, p.z - CRATE.z); this.hint.textContent = 'Walk · Look · Use (E / touch)';
+        if (s.stage === STAGE.DIG) { const d = Math.hypot(p.x - CRATE.x, p.z - CRATE.z); this.hint.textContent = hintFor({ keys: 'Walk · Look · Use: E', touch: 'Walk · Look · tap the button to use', pad: 'Walk · Look · Use: X' });
           caption = d > 4 ? 'Something lies beneath the collapsed dust.' : m.exposed() ? 'Lift the cleared supply crate.' : 'Aim the shovel at the dust around the crate.';
           if (d < 4) { const ex = m.exposed(); if (ex || d < 2.8) { this.actionLabel = ex ? 'Carry (E)' : 'Dig (E)'; this.actionKind = ex ? 'carry' : 'dig'; } else { this.actionLabel = ''; this.actionKind = null; this.hint.textContent = 'Closer to the crate, then Dig.'; } } this._updateDigMark(this.actionKind === 'dig'); }
         else if (s.stage === STAGE.CONTACT) {

@@ -90,7 +90,7 @@ and the odd ones, phone and desktop).
 | 1 | **The first hour** | First launch to your own flying ship: liner, port, board, crash, dig out, ride, fit the lifeboat, first take-off. Clear at every step on a phone, with sound, and it resumes anywhere. | Built; needs the production pass. NEXT |
 | 2 | **Mars and its moons, a finished region** | Marineris Port, the open desert, Phobos and Deimos: jobs, shops, a reason to visit each, boulders and landmarks, clean views from orbit to ground, day and night. | Built; thin in places |
 | 3 | **Work and money, end to end** | Jobs as a real ladder with rewards, a repeating freight board on every world, trade between worlds, fuel and repairs that cost, buying a bigger ship, hiring crew. A goal to save for. | Pieces built; no loop yet |
-| 4 | **The game shell** | Every platform we can reach: phone first (iOS and Android), PC (mouse/keyboard and gamepad), the home-screen app, consoles later through the gamepad layer. One input layer, UI from 375 px to a TV. Settings (sound, controls, quality), quality tiers, save and resume that never loses anything, a clear message and solo play when the server is down, long-session memory, loading that explains itself. | Partly built |
+| 4 | **The game shell** | Every platform we can reach: phone first (iOS and Android), PC (mouse/keyboard and gamepad), the home-screen app, consoles later through the gamepad layer. One input layer, UI from 375 px to a TV. Settings (sound, controls, quality), quality tiers, save and resume that never loses anything, a clear message and solo play when the server is down, long-session memory, loading that explains itself. | Partly built. Controller support shipped 11/19 (first version) |
 | 5 | **The crossing and the other worlds** | The long-range drive, then the Moon, Ceres, Earth and Callisto each finished like part 2: opening start, shop, a way to leave, both sides' homes. | First passes built |
 | 6 | **Sides, seats and seasons** | Joining and switching, licenses and labels, seats and votes, the balance you can see in the place, the 90-day season. | First pass of seats and balance |
 | 7 | **Stations, the Belt, the station factions** | Docking, a station over Mars, Vesta and Psyche, the Long Walk, Corsair's Refuge. | Not built |
@@ -170,6 +170,7 @@ assisted flying with an expert switch (decided 10/3, partly built); private base
 | Date | What |
 |---|---|
 | 11/19 | Helmet lamp no longer stuck on in sunlight on moons (it washed the ground tan). |
+| 11/19 | A controller plays the game (sticks, buttons, a focus ring for menus); hints speak in the words of what you are holding (keys, thumbs or a pad). |
 | 11/19 | A night you can walk in on airless worlds: Mars lit and bright in a moon's sky (it went black), Marsshine on the ground, a white helmet beam where you look. |
 | 11/19 | Airless worlds look airless: near-black hard shadows, darker ground, small craters everywhere, no more wind ripples on Phobos, no checkerboard on sunlit slopes. A moon inside Mars's shadow now goes dark (it stayed sunlit). |
 | 11/19 | Pressure suits and helmets on everyone outside (you, port workers, the Moon, Ceres, Callisto, other players). A slow floating bound in low gravity. |
