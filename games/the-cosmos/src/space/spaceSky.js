@@ -305,11 +305,16 @@ export class SpaceSky {
       const d = Math.max(r, 1), cosPhase = (camA.x * this.sunWorld.x + camA.y * this.sunWorld.y + camA.z * this.sunWorld.z) / d;
       const big = Math.min(1, (MARS_RADIUS_M / d) * (MARS_RADIUS_M / d) * 6), lit = 0.35 + 0.65 * sstep(-0.2, 0.7, cosPhase);
       this.moonFill = big * lit;
-      this.hemi.color.setRGB(0.72, 0.45, 0.34);
-      this.hemi.groundColor.setRGB(0.30, 0.27, 0.25);
-      this.hemi.intensity = 0.85 * (0.4 + 0.6 * big * lit);
+      // AIRLESS (11/19): the fill was one rusty ambient a fifth as strong as the Sun, so every shadow came out mid-grey, which is what air does.
+      // Now it is the two real things. From above: Marsshine, a few percent of sunlight when Mars is full, next to nothing when it is dark,
+      // so a shadow on the ground is near black. From below: sunlight thrown back by the lit ground, which is what lets you see the shaded
+      // side of a person or a hull (it is why the Apollo crews' shadow sides are not black). It goes out with the Sun.
+      const sh = 0.03 + 0.2 * big * lit, gb = 0.26 * vis;
+      this.hemi.color.setRGB(0.72 * sh, 0.45 * sh, 0.34 * sh);
+      this.hemi.groundColor.setRGB(0.95 * gb, 0.92 * gb, 0.88 * gb);
+      this.hemi.intensity = 1;
       if (extra.up) this.hemi.position.set(extra.up.x, extra.up.y, extra.up.z);          // the moon's own up (the ground game's is the planet's: right for Mars, wrong here)
-      this.sun.intensity = 2.4 * 1.55;
+      this.sun.intensity = 2.4 * 1.3 * vis;      // AIRLESS: `vis` was missing here, so a moon inside Mars's shadow (Phobos is, for up to 54 minutes of each orbit) stayed in full sunlight
     }
 
     // Marsshine: from Mars's centre toward the camera; strength by how big Mars is in the sky and how much of it the Sun lights
@@ -325,8 +330,10 @@ export class SpaceSky {
       const c = this.system, fill = c.fill;
       this.hemi.color.setRGB(...fill.sky); this.hemi.groundColor.setRGB(...fill.ground);
       this.hemi.intensity = fill.intensity;
+      // AIRLESS: with no air there is no skylight, only the lit ground's bounce from below (and that goes out with the Sun)
+      if (extra.body && !extra.body.atmosphere) { this.hemi.color.multiplyScalar(0.07); this.hemi.groundColor.multiplyScalar(0.4 * vis); }
       if (extra.up) this.hemi.position.set(extra.up.x, extra.up.y, extra.up.z);
-      this.sun.intensity = (c.sunIntensity || 2.4) * 1.1;
+      this.sun.intensity = (c.sunIntensity || 2.4) * 1.1 * vis;      // AIRLESS: and at night the Sun under the ground no longer lights walls from below
       this.sun.color.setRGB(...c.color);
       this.moonFill = 1;
       if (c.giant) {

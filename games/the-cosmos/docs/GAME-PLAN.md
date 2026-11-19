@@ -60,7 +60,7 @@ Game 2, later, is the exact-real one.
 
 ## What is weak today (honest)
 
-- **Looks on airless worlds.** Moon ground reads as soft sand. No hard shadows. (Being fixed now.) The suit is a first version: simple shapes, very clean.
+- **Looks on airless worlds** are a first version: shadows and ground are right, but there are no big boulders yet and the suit is simple and very clean.
 - **Night sides** are nearly black with nothing to see by.
 - **From space,** the landing area shows as a square patch; Mars looks dim from Phobos.
 - **Upkeep is free.** Fuel and repairs cost nothing, so money has less meaning.
@@ -77,7 +77,7 @@ Looks first, because looks are what people notice. Then full worlds. Then the st
 and story come after there is a full world to put them in.
 
 1. ~~Suits and low-gravity walking.~~ Done 11/19 (first version). Still to do: suits come off inside buildings and domes; crew walking to a ship.
-2. **Airless worlds look airless.** Dark ground, knife-edge black shadows, craters and boulders instead of ripples. Phobos first, then the rest.
+2. ~~Airless worlds look airless.~~ Done 11/19 for the light, shadows and small craters on every airless world. Still to do: real boulders.
 3. **A plan for night.** Mars-shine, a real helmet beam, lit pads. Night becomes a mood, not a black screen.
 4. **The view from space.** No square patch. Mars big and bright in Phobos's sky. No stars in Mars's daytime sky.
 5. **Ships look like metal.** Hull plates instead of "bricks", dark glossy engine bells.
@@ -160,6 +160,7 @@ assisted flying with an expert switch (decided 10/3, partly built); private base
 | Date | What |
 |---|---|
 | 11/19 | Helmet lamp no longer stuck on in sunlight on moons (it washed the ground tan). |
+| 11/19 | Airless worlds look airless: near-black hard shadows, darker ground, small craters everywhere, no more wind ripples on Phobos, no checkerboard on sunlit slopes. A moon inside Mars's shadow now goes dark (it stayed sunlit). |
 | 11/19 | Pressure suits and helmets on everyone outside (you, port workers, the Moon, Ceres, Callisto, other players). A slow floating bound in low gravity. |
 
 Build log with pictures: `AI-Shared/projects/games/cosmos-fable-build/BUILD-LOG.md`.

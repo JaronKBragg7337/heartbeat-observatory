@@ -561,7 +561,7 @@ for (const lm of body.landmarks) {
 // ---------------------------------------------------------------------------
 const sun = new THREE.DirectionalLight(0xffe9d2, 2.4);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.mapSize.set(tier === 'high' ? 2048 : 1024, tier === 'high' ? 2048 : 1024);      // AIRLESS (11/19): a finer map on a desktop, so a rock's shadow has an edge
 sun.shadow.camera.near = 0.5;
 sun.shadow.camera.far = 220;
 sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
@@ -739,6 +739,10 @@ function updateSun(f) {
   // nothing.
   sun.position.copy(sunDir).multiplyScalar(140);
   sun.target.position.set(0, 0, 0);
+  // AIRLESS (11/19): on a world with no air the shadow is the picture. The map is drawn tighter round the camera there (90 m across, not 120),
+  // with a smaller bias, so stones and boots throw a hard-edged shadow instead of none. Mars keeps the settings its dug ground was tuned for.
+  { const half = SUN.space && SUN.space.activeMoon && !SUN.space.activeMoon.body.atmosphere ? 45 : 60, c = sun.shadow.camera;
+    if (c.right !== half) { c.left = -half; c.right = half; c.top = half; c.bottom = -half; c.updateProjectionMatrix(); sun.shadow.normalBias = half === 45 ? (tier === 'high' ? 0.03 : 0.06) : 0.08; } }
 
   // The sky's ambient light comes from straight overhead, which is LOCAL up. (It was the scene's +Y,
   // the planet's polar axis: at the spawn latitude that is nearly horizontal, so the floor of a hole

@@ -590,6 +590,7 @@ export function makeMoon(id) {
   const body = {
     id: S.id, name: S.name, designation: S.designation, kind: 'moon', parentId: S.region ? 'sun' : 'mars',
     radiusMean: Rm, radiusEquatorial: Rm, radiusPolar: Rm,      // the sphere the lat/lon grid and the walker use; the real shape is baseField
+    shadowDepth: S.atmosphere ? 0.74 : 0.93,      // AIRLESS: with no sky to fill them, baked terrain shadows are nearly black
     axes: S.axes, mass: S.massKg, surfaceGravity: g0, escapeVelocity: Math.sqrt(2 * G_CONST * S.massKg / Rm),
     siderealRotationPeriod: (S.rotation && S.rotation.periodS) || S.orbitPeriodS, obliquityDeg: (S.rotation && S.rotation.axialTiltDeg) || 0,
     rotation: S.rotation || null, orbit: S.orbit || null,                // the ephemeris data (src/worlds/_kit/ephemeris.js); nothing turns or moves until DYNAMICS is switched on

@@ -97,6 +97,27 @@ float regField(vec3 p, float near, out float pebble) {
   if (mk1 > 0.0) { micro = (regN(p * 25.0, 9000.0) - 0.5) * 0.34 * mk1; if (mk2 > 0.0) micro += (regN(p * 70.0, 25200.0) - 0.5) * 0.26 * mk2; }
   return broad * 0.55 + mix(0.5, grit, near) * 0.35 + pebble * 0.6 + micro;
 }
+// AIRLESS (2026-11-19): small impact craters in the surface normal, on worlds with no air to wear them away. Each cell of a 3D lattice may hold
+// one sphere; where the ground cuts it there is a bowl with a raised rim (a sphere cut by the ground is always a circle, so this works on
+// any slope with no flat projection). Three sizes: bowls of about 0.4-0.8 m, 1-2 m and 3-6 m. Returns a height in the bump's own units.
+float regBowl(vec3 p, float cell, float P) {
+  vec3 q = p / cell, i = floor(q), f = fract(q);
+  float h1 = regH(i, P), h2 = regH(i + vec3(17.0, 5.0, 11.0), P), h3 = regH(i + vec3(3.0, 29.0, 7.0), P), h4 = regH(i + vec3(41.0, 13.0, 2.0), P);
+  float r = 0.13 + 0.15 * h4;                                         // radius in cells: the bowl always fits inside its own cell
+  vec3 c = vec3(0.3) + 0.4 * vec3(h1, h2, h3);
+  float t = length(f - c) / r;
+  float fresh = smoothstep(0.3, 0.95, regH(i + vec3(7.0, 19.0, 23.0), P));      // most are old and worn nearly flat; a few are fresh and sharp
+  float bowl = -(1.0 - smoothstep(0.0, 1.0, t * t)) * (0.25 + 0.75 * fresh);
+  float rim = exp(-(t - 1.05) * (t - 1.05) * 22.0) * 0.32 * fresh;
+  return (bowl + rim) * r * cell;
+}
+float regCraters(vec3 p, float dEye) {
+  float k1 = 1.0 - smoothstep(18.0, 45.0, dEye), k2 = 1.0 - smoothstep(60.0, 150.0, dEye), k3 = 1.0 - smoothstep(180.0, 420.0, dEye), h = 0.0;
+  if (k1 > 0.0) h += regBowl(p + vec3(3.7, 1.1, 8.3), 2.6, 138.0) * k1;
+  if (k2 > 0.0) h += regBowl(p + vec3(11.0, 4.0, 2.0), 7.2, 50.0) * k2;
+  if (k3 > 0.0) h += regBowl(p, 20.0, 18.0) * k3;
+  return h * 1.6;
+}
 float regHeight = 0.0;
 vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) {   // three.js perturbNormalArb
   vec3 vSigmaX = normalize(dFdx(surf_pos.xyz)); vec3 vSigmaY = normalize(dFdy(surf_pos.xyz)); vec3 vN = surf_norm;
@@ -126,9 +147,9 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma), 0.38);
   float across = dot(vRegPos, uGrooveAcross);
   float lane = sin(across * 0.08);
-  float streak = sin(across * 9.0 + regN(vRegPos * 0.7, 252.0) * 6.2831853);
   float dustg = regN(vRegPos * 1.6, 576.0);
-  diffuseColor.rgb *= clamp(1.0 + 0.09 * lane * (1.0 - 0.6 * (1.0 - near)) + (0.06 * streak + 0.04 * (dustg - 0.5)) * near, 0.82, 1.18);     // the 70 cm streaks fade out with distance (they alias into a grid past a few tens of metres)` : ''}
+  diffuseColor.rgb *= clamp(1.0 + 0.05 * lane * (1.0 - 0.6 * (1.0 - near)) + 0.05 * (dustg - 0.5) * near, 0.86, 1.14);     // AIRLESS: the 70 cm streaks are gone (parallel lines read as wind ripples, and there is no wind); the broad lanes stay, fainter` : ''}
+  ${opts.moon ? 'regHeight += regCraters(vRegPos, length(vViewPosition));' : ''}
 }`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 ${flat ? `{
@@ -139,9 +160,9 @@ ${flat ? `{
   if (dot(fN, normal) < 0.0) fN = -fN;
   normal = normalize(mix(normal, fN, faceAmt * 0.9));
 }` : ''}
-normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump, faceDirection);`);
+normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump${opts.moon && !far ? ' * mix(0.3, 1.0, 1.0 - smoothstep(25.0, 160.0, length(vViewPosition)))' : ''}, faceDirection);`);
   };
-  material.customProgramCacheKey = () => (earth ? `regolith-v1-earth-${far ? 'far' : 'near'}` : far ? (phobos ? 'regolith-v3-phobos-far' : 'regolith-v3-far') : opts.moon ? `regolith-v7-moon-${phobos ? 'p' : 'd'}${flat ? '-flat' : ''}` : phobos ? (flat ? 'regolith-v7-phobos-flat' : 'regolith-v5-phobos') : (opts.world ? 'regolith-v4-world' : 'regolith-v4'));
+  material.customProgramCacheKey = () => (earth ? `regolith-v1-earth-${far ? 'far' : 'near'}` : far ? (phobos ? 'regolith-v3-phobos-far' : 'regolith-v3-far') : opts.moon ? `regolith-v9-moon-${phobos ? 'p' : 'd'}${flat ? '-flat' : ''}` : phobos ? (flat ? 'regolith-v7-phobos-flat' : 'regolith-v5-phobos') : (opts.world ? 'regolith-v4-world' : 'regolith-v4'));
   material.needsUpdate = true;
   return uniforms;
 }

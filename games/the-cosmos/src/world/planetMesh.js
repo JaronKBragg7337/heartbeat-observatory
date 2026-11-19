@@ -640,6 +640,9 @@ export class LocalPatch {
     };
     const dists = new Float32Array(K);
     for (let k = 0; k < K; k++) dists[k] = step * (1 + 0.8 * k + 0.12 * k * k);     // step lengths grow: 22 taps reach ~150 cells
+    // AIRLESS (11/19): the shadow term is gathered for every vertex first and smoothed once across neighbours before it is applied. Under a raking Sun
+    // each vertex of a rough slope decided on its own whether it was lit, and the slope came out as a checkerboard of lit and dark quads.
+    const occA = new Float32Array(n * n), aoA = new Float32Array(n * n);
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const v = j * n + i, h0 = hts[v];
       let occ = 0, exitD = 1e9;
@@ -647,8 +650,8 @@ export class LocalPatch {
         for (let k = 0; k < K; k++) {
           const d = dists[k], gi = i + gx * d / step, gj = j + gy * d / step;
           if (gi < 0 || gj < 0 || gi > n - 1 || gj > n - 1) { exitD = d; break; }
-          const over = sample(gi, gj) - (h0 + d * tanE) + 0.04;
-          if (over > 0) { const w = Math.min(1, over / (0.3 + 0.02 * d)); if (w > occ) occ = w; if (occ >= 1) break; }
+          const over = sample(gi, gj) - (h0 + d * tanE) - 0.012 * d;      // the blocker must clear the ray by a hair (the Sun's own half-degree and the grid's roughness)
+          if (over > 0) { const w = Math.min(1, over / (0.25 + 0.03 * d)); if (w > occ) occ = w; if (occ >= 1) break; }
         }
       } else occ = 1;                                      // the Sun is on the horizon or below it: everything is in shadow
       const trust = Math.min(1, exitD / Math.min(10, this.sizeM * 0.12));
@@ -659,7 +662,15 @@ export class LocalPatch {
         avg += hts[jj * n + ii]; c++;
       }
       const ao = c ? Math.max(-0.16, Math.min(0.32, (avg / c - h0) / (step * 3.2))) : 0;      // below the neighbours darkens, a convex edge catches a little light
-      const m = (1 - 0.74 * occ * trust) * (1 - ao);
+      occA[v] = occ * trust; aoA[v] = ao;
+    }
+    const deep = body.shadowDepth ?? 0.74;      // how dark a baked shadow is (an airless world: nearly black; see moonField)
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const v = j * n + i;
+      let sum = occA[v] * 2, w = 2;
+      if (i > 0) { sum += occA[v - 1]; w++; } if (i < n - 1) { sum += occA[v + 1]; w++; }
+      if (j > 0) { sum += occA[v - n]; w++; } if (j < n - 1) { sum += occA[v + n]; w++; }
+      const m = (1 - deep * (sum / w)) * (1 - aoA[v]);
       const k3 = v * 3;
       col[k3] *= m; col[k3 + 1] *= m; col[k3 + 2] *= m;
     }
