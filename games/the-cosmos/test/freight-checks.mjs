@@ -29,7 +29,7 @@ for (let i = 0; i < 3; i++) {
   H.stand(p, 'depot-clerk'); H.advance(1); ok = ok && !r().active;
 }
 check('the well run can be taken again and again: three runs, 240 credits, three on the ticket', ok && cr() === c0 + 240 && r().freight.runs === 3 && r().done['mars-fr-well'].n === 3, `${cr() - c0} ${JSON.stringify(r().freight)} ${d.join('|')}`);
-check('three runs make a Hauler, and the story says so once', r().log.filter((l) => l.kind === 'rank' && /Hauler/.test(l.text)).length === 1);
+check('three runs make a Hauler, the story says so once, and the rank is on the public player record (other players see it on the name tag)', r().log.filter((l) => l.kind === 'rank' && /Hauler/.test(l.text)).length === 1 && p.title === 'Hauler', String(p.title));
 check('the place out in the desert resolves on the ground (the arrow has somewhere to point)', (() => { const t = W.toWorldPos(W.resolve(WELL), H.world.site); return t && Number.isFinite(t.x) && Math.abs(Math.hypot(t.x, t.y, t.z) - 3389500) < 30000; })());
 H.stand(p, 'depot-clerk'); a = await act({ type: 'mission-accept', id: 'mars-fr-well' }); H.stand(p, WELL); H.advance(1); H.stand(p, 'depot-clerk'); const c1 = cr(); H.advance(1);
 check('a Hauler is paid 10% over the board: the fourth well run pays 88', cr() === c1 + 88, `${cr() - c1}`);

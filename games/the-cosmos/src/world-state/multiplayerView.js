@@ -235,7 +235,9 @@ export class MultiplayerView {
     this.engine.track({worldPos:site.center,object3d:g,quaternion:q});
   }
   body(id,personId,name,look){let v=this.bodies.get(id);
-    if(v){if(look){v.wantLook=look;v.person.dress(look);}return v;}
+    if(v){if(look){v.wantLook=look;v.person.dress(look);}
+      if(v.tag&&name&&v.name!==name){const t=label(name);t.position.copy(v.tag.position);t.scale.copy(v.tag.scale);t.visible=v.tag.visible;v.group.remove(v.tag);v.tag.material.map.dispose();v.tag.material.dispose();v.group.add(t);v.tag=t;v.name=name;}       // the name changed (a new name, or a rank earned): redraw the tag
+      return v;}
     const person=this.people.spawn(personId),group=new THREE.Group();group.name='remote-person:'+id;group.add(person.group);
     const tag=label(name);tag.position.y=2.15;group.add(tag);this.engine.scene.add(group);
     const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.22,1.2,4,8),new THREE.MeshStandardMaterial({color:0xcbbba7}));fallback.position.y=.9;group.add(fallback);
@@ -245,7 +247,7 @@ export class MultiplayerView {
     v={person,group,entry,last:null,name,tag,wantLook:look||null};this.bodies.set(id,v);return v;
   }
   updateBodies(dt){const s=this.world.snapshot,current=this.activeId(),seen=new Set();
-    for(const p of Object.values(s.players)){if(p.id===this.world.playerId||!p.online||p.opening&&!p.opening.complete)continue;seen.add(p.id);const b=this.body(p.id,p.personId,p.name);
+    for(const p of Object.values(s.players)){if(p.id===this.world.playerId||!p.online||p.opening&&!p.opening.complete)continue;seen.add(p.id);const b=this.body(p.id,p.personId,p.title?p.name+' · '+p.title:p.name);       // a freight rank earned (server/missions.mjs) rides on the name tag
       const rendered=this.motion.render('player:'+p.id,performance.now());
       let pos=rendered?.pos||p.pose.worldPos,q;
       if(p.aboardShipId){const ship=s.ships[p.aboardShipId],f=this.shipPose(ship),offset=new THREE.Vector3().copy(rendered?.pos||p.pose.sw).applyQuaternion(new THREE.Quaternion().fromArray(f.quaternion));

@@ -83,6 +83,18 @@ try {
     const t2 = await panelText(); await shot('05-board-again');
     ok(`${tag}: the run is on the board again, and the ticket counts one run`, /Well samples · 80 credits/.test(t2) && /1 run\b/.test(t2), t2.slice(0, 400));
     if (phone) {
+      // ---- a second player at the port sees the freight rank on this pilot's name tag (the server sets `title` at three runs: freight-checks.mjs)
+      const ctx2 = await browser.newContext(profile), page2 = await ctx2.newPage(); page2.setDefaultTimeout(180000);
+      page2.on('pageerror', (e) => { errors.push('p2 ' + String(e)); console.log('PAGEERROR p2', String(e).slice(0, 300)); });
+      await page2.goto(url('')); await page2.waitForFunction(() => window.cosmos?.world?.snapshot && cosmos.engine.frameCount >= 5, null, { timeout: 240000 });
+      const tagOf = () => page2.evaluate((id) => { const b = cosmos.multiplayer.bodies.get(id); return b ? b.name : null; }, pid);
+      await page2.waitForFunction((id) => !!cosmos.multiplayer.bodies.get(id), pid, { timeout: 60000 }).catch(() => {});
+      const before = await tagOf();
+      W.enqueue(async () => { P().title = 'Hauler'; await W.commit(); }); await W.queue;
+      await page2.waitForFunction((id) => / · Hauler$/.test(cosmos.multiplayer.bodies.get(id)?.name || ''), pid, { timeout: 30000 }).catch(() => {});
+      const after = await tagOf();
+      ok(`${tag}: another player sees the plain name first, then the rank on the name tag once it is earned`, !!before && !/Hauler/.test(before) && / · Hauler$/.test(after || ''), `${before} -> ${after}`);
+      await ctx2.close();
       // ---- Phobos: the yard hand at Stickney East is a person now. Talk to her by taps, and she has freight for the port.
       const sim = W.sims.get(P().shipId);
       const yard = place('ph-yard'), pi = makeMoon('phobos').padInfo, first = outpostToFrame(pi, yard.x + 1.5, 0.5, yard.z - 0.4);

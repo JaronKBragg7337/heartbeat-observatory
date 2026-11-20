@@ -220,7 +220,8 @@ export class MissionDirector {
     if (o.beat) this.say(p.id, 'Story', o.beat, 'beat');
     this.say(p.id, personById(m.giver)?.name || 'Them', m.done, 'done');
     this.say(p.id, 'Pay', `${m.title}: ${credits} credits paid.`, 'pay');
-    if (fr) { const k = freightRank(fr.runs), was = freightRank(fr.runs - 1); if (k.name !== was.name) this.say(p.id, 'Freight ticket', `${fr.runs} freight runs flown. Your ticket now reads "${k.name}": every freight run pays ${Math.round(k.bonus * 100)}% over the board.`, 'rank'); }
+    if (fr) { const k = freightRank(fr.runs), was = freightRank(fr.runs - 1); if (k.bonus > 0) p.title = k.name;       // the rank is public: other players see it on your name tag (multiplayerView.js)
+      if (k.name !== was.name) this.say(p.id, 'Freight ticket', `${fr.runs} freight runs flown. Your ticket now reads "${k.name}": every freight run pays ${Math.round(k.bonus * 100)}% over the board.`, 'rank'); }
   }
 
   // ---- time ------------------------------------------------------------------------------------------------------------------------------------------
