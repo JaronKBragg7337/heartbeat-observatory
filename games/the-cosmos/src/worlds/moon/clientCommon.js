@@ -11,6 +11,7 @@ import { frameToOutpost, outpostToFrame, pushOut, bleedSideways } from './place.
 import { buildSampleBeacon } from '../../space/hardware.js';
 import { buildBoard } from '../../missions/boardProp.js';       // MISSIONS: the hub terminal's notice board
 import { DESKS } from '../../missions/desk.js';
+import { buildMoonYard } from './yards.js';                   // the side that lives here, seen at work (Shackleton: Fortis; Daedalus: Technos Prime)
 
 export function dressMoon(world, { engine }, build) {
   const space = world.space, pi = world.body.padInfo, layout = layoutOf(world.id);
@@ -28,15 +29,18 @@ export function dressMoon(world, { engine }, build) {
     bcn.lamp.material.color.setHex(0x7fe3ff); bcn.halo.material.color.setHex(0x7fe3ff);
     beacons.push({ bcn, e });
   }
+  let yard = null;
+  try { yard = buildMoonYard({ engine, world, space, out }); } catch (e) { console.error('Moon yard failed', e); }
   let t = 0;
   return {
-    outpost: out, people, earth,
-    update(dt) {
+    outpost: out, people, earth, yard,
+    update(dt, focus) {
       t += dt;
       if (space.peopleLib && !people.built) people.build().catch((e) => console.error('Moon people failed', e));
       out.tick(dt, t);
       const wp = space.walker.worldPos;
       people.tick(dt, wp);
+      if (yard) yard.update(dt, focus || wp);
       if (!space.ship.aboard) {
         const p = frameToOutpost(pi, wp);
         if (Math.abs(p.x) < 260 && Math.abs(p.z) < 260 && pushOut(layout, p)) {
@@ -46,6 +50,6 @@ export function dressMoon(world, { engine }, build) {
         }
       }
     },
-    dispose() { out.dispose(); earth.release(); for (const b of beacons) { engine.untrack(b.e); engine.scene.remove(b.bcn.group); } },
+    dispose() { if (yard) yard.dispose(); out.dispose(); earth.release(); for (const b of beacons) { engine.untrack(b.e); engine.scene.remove(b.bcn.group); } },
   };
 }
