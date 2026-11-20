@@ -14,8 +14,11 @@ import { castOf } from '../worlds/moon/cast.js';
 import { EARTH_CAST } from '../worlds/earth/cast.js';
 import { CALISTO_CAST } from '../worlds/callisto/cast.js';
 import { frameToOutpost } from '../worlds/moon/place.js';
+import { MOON_PEOPLE } from '../worlds/phobos/cast.js';
 import { makeMoon } from '../space/moonField.js';
 import { worldOfFrame } from '../roles/seats.js';
+import { getBody } from '../world/bodies.js';
+import { surfaceRadiusFast } from '../world/field.js';
 
 const MOON_FRAMES = ['moon', 'moon-shackleton', 'moon-daedalus'];
 let _people = null;
@@ -28,6 +31,7 @@ export function peopleIndex() {
   for (const w of EARTH_CAST) m.set(w.id, { id: w.id, name: w.name, title: w.title, frame: 'earth', kind: 'outpost', x: w.x, y: 0, z: w.z });
   for (const w of CALISTO_CAST) m.set(w.id, { id: w.id, name: w.name, title: w.title, frame: 'callisto', kind: 'outpost', x: w.x, y: 0, z: w.z });
   for (const f of MOON_FRAMES) for (const w of castOf(f)) m.set(w.id, { id: w.id, name: w.name || w.title, title: w.title, frame: f, kind: 'outpost', x: w.x, y: 0, z: w.z });
+  for (const w of MOON_PEOPLE) m.set(w.id, { id: w.id, name: w.name, title: w.title, frame: w.frame, kind: 'outpost', x: w.x, y: 0, z: w.z });       // Stickney East and the Deimos camp
   return (_people = m);
 }
 export const personById = (id) => peopleIndex().get(id) || null;
@@ -36,6 +40,7 @@ export const personById = (id) => peopleIndex().get(id) || null;
 export function resolve(ref) {
   if (!ref) return null;
   if (typeof ref === 'string') { const p = personById(ref); return p ? { ...p, person: p.id } : null; }
+  if (ref.port) return { frame: 'mars', kind: 'portflat', x: ref.port[0], y: 0, z: ref.port[1], name: ref.name || 'there' };       // a spot out in the desert around Marineris Port: port metres, on whatever the ground is there
   if (ref.at) return { frame: ref.frame, kind: 'outpost', x: ref.at[0], y: 0, z: ref.at[1], name: ref.name || 'there' };
   if (ref.derelict) { const b = makeMoon(ref.derelict), d = b.derelict; return d ? { frame: ref.derelict, kind: 'body', x: d.point.x, y: d.point.y, z: d.point.z, name: ref.name || 'the wreck' } : null; }
   return null;
@@ -48,6 +53,7 @@ export function resolve(ref) {
 export function distanceTo(place, frameId, pos, site) {
   if (!place || frameId !== place.frame || !pos) return Infinity;
   if (place.kind === 'port') { const l = site.toLocal(pos); return Math.hypot(l.x - place.x, l.y - place.y, l.z - place.z); }
+  if (place.kind === 'portflat') { const l = site.toLocal(pos); return Math.hypot(l.x - place.x, l.z - place.z); }
   if (place.kind === 'body') return Math.hypot(pos.x - place.x, pos.y - place.y, pos.z - place.z);
   const o = frameToOutpost(makeMoon(place.frame).padInfo, pos);
   return Math.hypot(o.x - place.x, o.z - place.z);
@@ -57,6 +63,7 @@ export function distanceTo(place, frameId, pos, site) {
 export function toWorldPos(place, site) {
   if (!place) return null;
   if (place.kind === 'port') return site.toWorld(place.x, place.y + 1.5, place.z);
+  if (place.kind === 'portflat') { const p = site.toWorld(place.x, 0, place.z), r = Math.hypot(p.x, p.y, p.z), k = (surfaceRadiusFast(getBody('mars'), p.x / r, p.y / r, p.z / r) + 1.5) / r; return { x: p.x * k, y: p.y * k, z: p.z * k }; }
   if (place.kind === 'body') return { x: place.x, y: place.y, z: place.z };
   const pi = makeMoon(place.frame).padInfo;
   return { x: pi.point.x + pi.east.x * place.x + pi.up.x * 1.5 - pi.north.x * place.z, y: pi.point.y + pi.east.y * place.x + pi.up.y * 1.5 - pi.north.y * place.z, z: pi.point.z + pi.east.z * place.x + pi.up.z * 1.5 - pi.north.z * place.z };

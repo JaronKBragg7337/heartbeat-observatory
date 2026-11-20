@@ -3,7 +3,7 @@
 // they arrive (the ship's message line), writes the plain NEXT line, and points the goal arrow at the place the current step asks for. It owns no state that
 // matters: the server holds the job, a refresh puts you back on it. A shared world only (a solo world has no jobs).
 // ============================================================================
-import { missionById, MISSIONS, unlocked } from './catalog.js';
+import { missionById, MISSIONS, unlocked, open as isOpen, freightRank } from './catalog.js';
 import { resolve, toWorldPos, worldIdOfFrame, personById } from './where.js';
 import { DESKS, deskOfFrame } from './desk.js';
 import { GoalHint } from '../ui/goalHint.js';
@@ -50,8 +50,13 @@ export class MissionTracker {
       return { text: `${a.m.title}: ${a.step.text}${carry}` };
     }
     const here = worldIdOfFrame(this.space.frameId);
-    const open = MISSIONS.filter((m) => m.world === here && !r.done[m.id] && unlocked(m, r.done));
-    if (!open.length) return null;
+    const frame = this.space.frameId, onGround = (m) => personById(m.giver)?.frame === frame;
+    let all = MISSIONS.filter((m) => m.world === here && isOpen(m, r.done)); if (all.some(onGround)) all = all.filter(onGround);       // the people standing on this ground come first (Phobos is not the port)
+    const open = all.filter((m) => !m.repeat);
+    if (!open.length) {       // every story here is told: the freight board is still there
+      const f = all[0], who = f && personById(f.giver); if (!f) return null;
+      return { text: `Work: ${who ? who.name : 'someone here'} keeps a freight board (${all.filter((m) => m.giver === f.giver).map((m) => m.title).join(', ')}). Walk up, tap Talk, then "Is there paid work for me?".` };
+    }
     const mine = (this.world.snapshot.roles && this.world.snapshot.roles.members || {})[this.world.playerId];
     const pref = mine || (p.home && p.home.faction) || null;       // the side you belong to, or the one you picked on the board
     const m = open.find((x) => pref && x.faction === pref) || open.find((x) => !x.faction) || open.find((x) => x.oath) || open[0], who = personById(m.giver);
@@ -69,6 +74,7 @@ export class MissionTracker {
       if (a.carry) text(`You are carrying ${a.carry.label}.`);
       btn('Drop this job', { type: 'mission-drop' });
     } else text('Jobs: no job right now. People with work say so in the Talk panel ("Is there paid work for me?").');
+    if (r.freight && r.freight.runs) { const k = freightRank(r.freight.runs); text(`Freight ticket: ${k.name} · ${r.freight.runs} run${r.freight.runs === 1 ? '' : 's'} · ${r.freight.credits} credits earned${k.bonus ? ` · pays ${Math.round(k.bonus * 100)}% over the board` : ''}${k.next ? ` · ${k.next.name} at ${k.next.runs} runs` : ''}.`); }
     const n = Object.keys(r.done).length; if (n) text(`Jobs done: ${n}. ${Object.entries(r.flags).map(([k, v]) => `${k}: ${v}`).join(' · ')}`.trim());
     const d = this.deskHere();
     if (d) text(`Hiring: ${personById(d.person)?.name || 'the dispatcher'} at ${d.name} has hands for hire (Talk, then "Hands for hire"). Your ship has to be landed here.`);

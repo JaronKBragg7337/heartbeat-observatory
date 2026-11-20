@@ -14,6 +14,17 @@ import { makeKit, canvasTexture, rng } from '../moon/kit.js';
 import { frameToOutpost, outpostToFrame, bleedSideways } from '../moon/place.js';
 import { Person } from '../../crew/personRig.js';
 import { dressForWorld } from '../../crew/suitPolicy.js';
+import { personVisible } from '../../crew/personVisibility.js';
+import { MOON_CAST } from './cast.js';                         // who of these figures has a name and can be talked to
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/** The Talk panel's body for a named figure: what they say, one question, its answer. The jobs they give are added under it by the Talk panel itself (missions/talk.js). */
+function talkHTML(c, view) {
+  let h = `<p>${esc(c.line)}</p><div class="col">`;
+  if (view === 'answer') h += `<div class="say">${esc(c.answer)}</div><button class="cbtn" data-a="worker-reply">${esc(c.reply)}</button>`;
+  else h += `<button class="cbtn" data-a="worker-question">${esc(c.question)}</button>`;
+  return h + `<button class="cbtn" data-a="close">Goodbye</button></div>`;
+}
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
@@ -35,7 +46,13 @@ class Folk {
       person.play('Idle', 0);
       person.group.visible = false;
       this.root.add(person.group);
-      this.members.push({ ...w, person, leg: 0, dir: 1, wait: w.path ? 2 + this.members.length * 3 : 0, walking: false });
+      const m = { ...w, person, leg: 0, dir: 1, wait: w.path ? 2 + this.members.length * 3 : 0, walking: false };
+      const c = w.id && (MOON_CAST[this.body.id] || []).find((q) => q.id === w.id);
+      // a named figure is a Talk target with the same shape as a port worker (crewUI.js): { id, name, def: { title }, person, status: 'worker' }
+      if (c) m.target = { id: c.id, name: c.name, personId: c.body, x: w.x, y: 0, z: w.z, status: 'worker', def: { title: c.title }, person, line: c.line, world: true,
+        talk: (view) => talkHTML(c, view), act: async () => null,
+        worldDist: (worldPos) => { const p = frameToOutpost(this.pi, worldPos); return Math.hypot(p.x - person.group.position.x, p.z - person.group.position.z); } };
+      this.members.push(m);
     }
     await Promise.all(this.members.map((m) => m.person.ready));
     return this;
@@ -292,11 +309,16 @@ export function makeSite(ctx, o = {}) {
     } });
     const root = handle.root;
     root.name = 'outpost:' + body.id; root.visible = false;
-    const folk = new Folk({ root, library: space.peopleLib || null, body, G: K.groundY, specs: S.folkSpecs });
+    const folk = new Folk({ root, library: space.peopleLib || null, body, pi, G: K.groundY, specs: S.folkSpecs });
+    // the Talk button asks a world's `people` who is nearest (space/spaceSystem.js nearestWorker): only the named figures answer
+    const people = { get members() { return folk.members.filter((m) => m.target).map((m) => m.target); },
+      nearest(worldPos) { if (!folk.built || !worldPos) return null; const p = frameToOutpost(pi, worldPos); let best = null, dist = 3.2;
+        for (const m of folk.members) { if (!m.target) continue; const g = m.person.group, d = Math.hypot(p.x - g.position.x, p.z - g.position.z); if (d < dist && personVisible(m.person)) { best = m.target; dist = d; } }
+        return best; } };
     let t = 0, night = 0;
     const up = pi.up, r = 0.38;
     return {
-      root, folk, boxes: S.boxes,                                 // (not `people`: that name is what the Talk button looks for)
+      root, folk, people, boxes: S.boxes,                         // `people` is what the Talk button looks for: the figures with a name (cast.js)
       update(dt, focus) {
         const c = frameToOutpost(pi, focus);
         const near = Math.hypot(c.x, c.y, c.z) < 9000;             // from further off it is under a pixel: do not draw it, do not tick it

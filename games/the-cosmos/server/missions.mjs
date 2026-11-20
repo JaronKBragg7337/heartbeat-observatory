@@ -14,7 +14,7 @@
 //   * pay: credits to the flagship's account at the last step. Faction jobs move the world's balance and home strength (F4) and the player's standing (F5).
 // COST: nothing here runs per tick for players with no job. step() checks each online player on a job twice a second.
 // ============================================================================
-import { MISSIONS, missionById, unlocked } from '../src/missions/catalog.js';
+import { MISSIONS, missionById, unlocked, freightPay, freightRank } from '../src/missions/catalog.js';
 import { resolve, distanceTo, worldIdOfFrame, personById } from '../src/missions/where.js';
 import { handsOf, deskOfFrame, handByKey } from '../src/missions/desk.js';
 import { worldById } from '../src/roles/seats.js';
@@ -81,7 +81,7 @@ export class MissionDirector {
     const m = missionById(a.id); if (!m) throw Error('There is no such job.');
     const r = this.of(p.id);
     if (r.active) throw Error(`You are already on a job: ${missionById(r.active.id)?.title || 'one'}. Finish it or drop it first.`);
-    if (r.done[m.id]) throw Error('You have done that one.');
+    if (r.done[m.id] && !m.repeat) throw Error('You have done that one.');
     if (!unlocked(m, r.done)) throw Error('Not yet: other jobs come first.');
     if (worldIdOfFrame(p.frameId) !== m.world) throw Error(`That job is on ${worldById(m.world)?.name || 'another world'}.`);
     if (p.aboardShipId) throw Error('Step off the ship and walk over to them first.');
@@ -198,7 +198,8 @@ export class MissionDirector {
   /** The last step is done: pay, move the world's meters, remember the story. */
   finish(p, m, opt) {
     const r = this.of(p.id), ship = this.flagship(p), o = opt || {}, w = worldById(m.world), roles = this.roles;
-    const credits = o.pay ?? m.pay, side = o.side ?? m.side, size = o.size ?? m.size ?? 1;
+    const fr = m.repeat ? (r.freight ||= { runs: 0, credits: 0 }) : null;                 // the freight ticket: runs counted, pay rises with them (src/missions/freight.js)
+    const credits = fr ? freightPay(m, fr.runs) : o.pay ?? m.pay, side = o.side ?? m.side, size = o.size ?? m.size ?? 1;
     this.auth.award(ship, credits);
     if (m.oath && m.faction && factionOfPlayer(roles.roles, p.id) !== m.faction) { try { roles.joinFaction(p, { faction: m.faction }); } catch { /* already with them */ } }
     const mine = factionOfPlayer(roles.roles, p.id), h = roles.homes[m.world];
@@ -211,12 +212,15 @@ export class MissionDirector {
     }
     if (m.build && h) { h.built = h.built || {}; h.built[m.build.key] = (h.built[m.build.key] || 0) + m.build.kg; }       // a thing left standing for everyone to see (src/missions/props.js)
     roles._progress(p.id, size);
+    const times = ((r.done[m.id] && r.done[m.id].n) || 0) + 1;
     r.done[m.id] = { at: Math.round(this.clock), option: o.id || null };
+    if (fr) { r.done[m.id].n = times; fr.runs++; fr.credits += credits; }
     if (o.flag) r.flags[m.id] = o.flag;
     r.active = null;
     if (o.beat) this.say(p.id, 'Story', o.beat, 'beat');
     this.say(p.id, personById(m.giver)?.name || 'Them', m.done, 'done');
     this.say(p.id, 'Pay', `${m.title}: ${credits} credits paid.`, 'pay');
+    if (fr) { const k = freightRank(fr.runs), was = freightRank(fr.runs - 1); if (k.name !== was.name) this.say(p.id, 'Freight ticket', `${fr.runs} freight runs flown. Your ticket now reads "${k.name}": every freight run pays ${Math.round(k.bonus * 100)}% over the board.`, 'rank'); }
   }
 
   // ---- time ------------------------------------------------------------------------------------------------------------------------------------------

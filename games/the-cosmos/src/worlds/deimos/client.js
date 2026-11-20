@@ -121,8 +121,8 @@ function build(ctx) {
   S.tether([[28.4, -3.4], [29.6, 4.6], [32.6, 9.6]]);
 
   // ---- the people: the driller at her stand, one logging cores at the rack, one walking between the airlock and the rig ----
-  S.person({ body: 'zuri', x: 32.2, z: 11.9, face: Math.PI / 2, cloth: 0xd9772b });
-  S.person({ body: 'aoi', x: 39.1, z: 15.6, face: Math.PI, cloth: 0x3f6f9a });
+  S.person({ id: 'de-driller', body: 'zuri', x: 32.2, z: 11.9, face: Math.PI / 2, cloth: 0xd9772b });      // named and talkable: ../phobos/cast.js
+  S.person({ id: 'de-geo', body: 'aoi', x: 39.1, z: 15.6, face: Math.PI, cloth: 0x3f6f9a });
   S.person({ body: 'sunita', x: 27.2, z: -3.4, face: 0, cloth: 0xc9b04a, path: [[27.2, -3.4], [28.6, 4.4], [31.6, 9.4]], pause: 14 });
   });
 

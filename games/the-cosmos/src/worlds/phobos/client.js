@@ -1,6 +1,6 @@
 // ============================================================================
 // worlds/phobos/client.js - the client dressing of Phobos (docs/ADD-A-WORLD.md, "Dressing"): STICKNEY EAST STATION, a small propellant
-// and survey station standing round the survey pad. Decoration only: the server never loads this file, nobody here talks or trades,
+// and survey station standing round the survey pad. Decoration only: the server never loads this file, two of its people talk and give freight (cast.js),
 // and the pad disc, its four lamps, the sample beacons and the cargo module stay where src/space/jobs.js puts them.
 //
 // What stands here, and why it looks the way it does (gravity 0.0057 m/s2, no air, hard sunlight, Mars filling the sky):
@@ -172,8 +172,8 @@ function build(ctx) {
   });
 
   // ---- the people: one at the pump panel, one checking lashings in the yard, one walking the tether line between airlock and yard ----
-  S.person({ body: 'jorge', x: 38.5, z: 21.4, face: 0, cloth: 0xd9772b });
-  S.person({ body: 'ada', x: 14.8, z: -42.4, face: Math.PI, cloth: 0xc9b04a });
+  S.person({ id: 'ph-pump', body: 'jorge', x: 38.5, z: 21.4, face: 0, cloth: 0xd9772b });                // named and talkable: cast.js
+  S.person({ id: 'ph-yard', body: 'ada', x: 14.8, z: -42.4, face: Math.PI, cloth: 0xc9b04a });
   S.person({ body: 'isaiah', x: 34.6, z: -6.6, face: Math.PI, cloth: 0x3f6f9a, path: [[34.6, -6.6], [30.3, -21.8], [22.4, -32.4], [15.2, -36.2]], pause: 12 });
 
   return S.finish();

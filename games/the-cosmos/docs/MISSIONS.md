@@ -37,8 +37,14 @@ Gap list that started it: `AI-Shared/state/cosmos-gaps-2026-10-08.md`. Handoff: 
 ## Add a hiring desk
 `DESKS` and `HANDS` in `desk.js` (a dispatcher person, a board spot, six hands), the board is added in that world's `client.js` with `buildBoard`. A hand signs on at once and comes aboard the landed ship (the prize-crew path); a dismissed hand steps off and goes back on the list.
 
+## The freight board (repeating jobs, 11/19)
+`src/missions/freight.js` holds the jobs that repeat (`repeat: true`); `catalog.js` adds them to `MISSIONS`, so every rule above holds for them. The giver offers a
+freight job every time you ask (the Talk panel lists the story job first, then the board). The authority counts finished runs in `missions[player].freight`
+(`runs`, `credits`) and pays by `freightPay(job, runs)`: the freight ticket's rank (`FREIGHT_RANKS`) adds 10, 20 or 30 percent. A freight job with a `faction`
+and `side: 'home'` is that side's own run (every side of every two-sided world has one): it needs the side's oath job and feeds the side's home every time. A place out in the desert
+around Marineris Port is `{ port: [x, z], name }` (port metres, on the ground there). Tests: `test/freight-checks.mjs`, `test/freight-browser.mjs`.
+
 ## Not built (named so it is not lost)
-* Repeatable board jobs (the stories are one-time; the markets are the repeating work).
 * Fuel and repair pricing (the bible says "priced later"), freight between players, convoys.
 * A walkable Homeguard building beyond the footing; an Earth shop.
 * Callisto jobs (WD-CALLISTO 2026-10-09: the Quiet Road thread is built). Wanderhome and Corsair jobs (those worlds are not built).

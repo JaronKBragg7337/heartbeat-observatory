@@ -31,6 +31,7 @@ export async function mkWorld() {
       const pl = W.resolve(ref); if (!pl) throw Error('no such place ' + JSON.stringify(ref));
       p.aboardShipId = null; p.pose.aboard = false; p.pose.seat = null; p.frameId = pl.frame;
       if (pl.kind === 'port') p.pose.worldPos = world.site.toWorld(pl.x, pl.y + 0.02, pl.z);
+      else if (pl.kind === 'portflat') { const t = W.toWorldPos(pl, world.site); p.pose.worldPos = { x: t.x, y: t.y, z: t.z }; }
       else if (pl.kind === 'body') p.pose.worldPos = { x: pl.x, y: pl.y, z: pl.z };
       else p.pose.worldPos = PL.outpostToFrame(MF.makeMoon(pl.frame).padInfo, pl.x, 0.02, pl.z);
       return pl;

@@ -6,7 +6,7 @@
 //   voice(person)   the lines spoken when a view opens (the same text, from the person's own mouth when they have a voice).
 // There is no approve screen: the job is the person's offer and your answer, the steps finish by arriving (src/missions/catalog.js).
 // ============================================================================
-import { offeredBy, missionById, payWords, stepsOf } from './catalog.js';
+import { offeredBy, missionById, payWords, stepsOf, freightRank, freightPay } from './catalog.js';
 import { worldIdOfFrame } from './where.js';
 import { deskOfPerson, handsOf } from './desk.js';
 import { WAGES } from '../economy/catalog.js';
@@ -43,7 +43,7 @@ export function entry(personId, snap, pid, frameId) {
   if (s.kind === 'ask') {
     const { st } = askedOf(personId, r);
     h += `<p class="say">${esc(st.ask)}</p>` + st.options.map((o) => `<button class="cbtn" data-a="mission-choose" data-o="${esc(o.id)}">${esc(o.label)}</button>`).join('');
-  } else if (s.kind === 'offer') h += `<button class="cbtn" data-a="mission-ask">Is there paid work for me?<small>${esc(s.offers[0].title)}</small></button>`;
+  } else if (s.kind === 'offer') h += `<button class="cbtn" data-a="mission-ask">Is there paid work for me?<small>${esc(s.offers[0].repeat ? 'The freight board: ' + s.offers.map((m) => m.title).join(', ') : s.offers[0].title)}</small></button>`;
   else if (s.kind === 'busy' && s.mission) h += `<p class="stat">You are on a job: ${esc(s.mission.title)}. The World / crew sheet has the rest.</p>`;
   if (deskOfPerson(personId)) h += `<button class="cbtn" data-a="mission-hires">Hands for hire<small>Sign a hand on at this desk; they come aboard your landed ship</small></button>`;
   return h ? `<div class="col" style="margin-top:8px">${h}</div>` : '';
@@ -56,11 +56,21 @@ export function view(personId, name, v, snap, pid, frameId) {
     const s = standing(personId, snap, pid, frameId);
     let h = `<p class="stat">${esc(name)}</p><div class="col">`;
     if (s.kind === 'offer') {
-      const m = s.offers[0];
-      h += `<div class="say">${esc(m.pitch)}</div><p class="stat">${esc(m.title)} · ${esc(payWords(m))}</p>`;
-      if (m.faction) h += `<p class="stat">${m.oath ? `This is ${esc(m.faction)}'s oath job: done in the open, it joins you to them.` : `A ${esc(m.faction)} job.`}</p>`;
-      h += `<p class="stat">${esc(stepsOf(m)[0].text)}</p>`;
-      h += `<button class="cbtn" data-a="mission-accept" data-m="${esc(m.id)}">I'll take it</button>`;
+      // the story job (if they have one) is told in full; the freight board under it lists every run that is always there
+      const story = s.offers.filter((m) => !m.repeat), freight = s.offers.filter((m) => m.repeat), runs = (r.freight && r.freight.runs) || 0;
+      const m = story[0];
+      if (m) {
+        h += `<div class="say">${esc(m.pitch)}</div><p class="stat">${esc(m.title)} · ${esc(payWords(m))}</p>`;
+        if (m.faction) h += `<p class="stat">${m.oath ? `This is ${esc(m.faction)}'s oath job: done in the open, it joins you to them.` : `A ${esc(m.faction)} job.`}</p>`;
+        h += `<p class="stat">${esc(stepsOf(m)[0].text)}</p>`;
+        h += `<button class="cbtn" data-a="mission-accept" data-m="${esc(m.id)}">I'll take it</button>`;
+      }
+      if (freight.length) {
+        const k = freightRank(runs);
+        if (!m) h += `<div class="say">${esc(freight[0].pitch)}</div>`;
+        h += `<p class="stat"><b>The freight board</b> · work that is always here, paid every run<br>Your freight ticket: ${esc(k.name)} · ${runs} run${runs === 1 ? '' : 's'}${k.bonus ? ` · pays ${Math.round(k.bonus * 100)}% over the board` : ''}${k.next ? ` · ${esc(k.next.name)} at ${k.next.runs}` : ''}</p>`;
+        for (const f of freight) h += `<button class="cbtn" data-a="mission-accept" data-m="${esc(f.id)}">${esc(f.title)} · ${freightPay(f, runs)} credits<small>${esc(f.brief)}</small></button>`;
+      }
     } else if (s.kind === 'busy') h += `<div class="say">You already have work: ${esc(s.mission ? s.mission.title : 'a job')}. Finish it, or drop it in the World / crew sheet.</div>`;
     else h += `<div class="say">Nothing for you right now. Come back after you have done what you have been given.</div>`;
     return h + `<button class="cbtn" data-a="worker-back">Back to conversation</button><button class="cbtn" data-a="close">Goodbye</button></div>`;

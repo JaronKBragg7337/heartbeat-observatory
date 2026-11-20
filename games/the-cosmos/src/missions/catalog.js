@@ -22,6 +22,9 @@
 //   size (balance weight), done (the closing line), flags (what the story remembers), build ({ key, kg }: what the job leaves standing in the world, kept in homes.<world>.built).
 // ============================================================================
 
+import { FREIGHT, FREIGHT_THREADS, freightRank, freightPay, FREIGHT_RANKS } from './freight.js';       // the repeating jobs (part 3): same shape, `repeat: true`
+export { freightRank, freightPay, FREIGHT_RANKS };
+
 /** Hopper materials that count as "ground" on Earth (grass and soil, shell rock, sand): dig any of them. */
 export const EARTH_GROUND = ['MAT-EARTH-REGOLITH', 'MAT-EARTH-RUBBLE', 'MAT-EARTH-SAND'];
 /** Hopper materials that count as "ground" on Callisto (the dark ice gravel and the bright basin ice). */
@@ -34,6 +37,7 @@ export const THREADS = [
   { id: 'ceres-salt-water', world: 'ceres', title: 'Salt and Water', blurb: 'Ironclad needs the water, Greenhaven needs the metal. Neither will say so first.' },
   { id: 'moon-two-way', world: 'moon', title: 'The Two-Way Run', blurb: 'Fortis has the power and Technos has the parts. Everybody cashes it and nobody says cooperation.' },
   { id: 'callisto-quiet-road', world: 'callisto', title: 'The Quiet Road', blurb: 'Mystara listens to Europa. The prospectors drill. Something under the ice has started answering.' },
+  ...FREIGHT_THREADS,
 ];
 
 export const MISSIONS = [
@@ -340,6 +344,7 @@ export const MISSIONS = [
         beat: 'Ostrander turns a part over in the lamplight. "Technos. I never thought I would say this without swearing." He does not say it. He nods.' },
     ],
     done: 'Odalys Moreno: Two worlds of people who cannot stand each other, and a parts shelf. That is how the Moon has always worked.' },
+  ...FREIGHT,
 ];
 
 export const missionById = (id) => MISSIONS.find((m) => m.id === id) || null;
@@ -354,13 +359,16 @@ export function unlocked(m, done) {
   if (m.needsAny && m.needsAny.length && !m.needsAny.some((id) => d[id])) return false;
   return true;
 }
-/** The missions a person could give right now: this world's, not done, unlocked. */
+/** Is this job open to a player with this record: unlocked, and either never done or one that repeats (freight.js). */
+export const open = (m, done) => (m.repeat || !(done || {})[m.id]) && unlocked(m, done);
+/** The missions a person could give right now: this world's, open. Story jobs first, then the freight board (cheapest first). */
 export function offeredBy(personId, worldId, done) {
-  return missionsOfGiver(personId).filter((m) => m.world === worldId && !(done || {})[m.id] && unlocked(m, done));
+  return missionsOfGiver(personId).filter((m) => m.world === worldId && open(m, done)).sort((a, b) => (a.repeat ? 1 : 0) - (b.repeat ? 1 : 0) || (a.repeat ? a.pay - b.pay : 0));
 }
 export const stepsOf = (m) => m.steps;
 /** The words for how a mission pays: credits and (for a faction job) the side it helps. */
-export function payWords(m) {
+export function payWords(m, runs = 0) {
+  if (m.repeat) return `${freightPay(m, runs)} credits · freight, paid every run`;
   const w = m.side === 'joint' ? 'helps both factions' : m.side === 'home' ? `helps ${m.faction || 'your faction'}` : 'a port job';
   return `${m.pay} credits · ${w}`;
 }
