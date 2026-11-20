@@ -61,6 +61,26 @@ export const FREIGHT = [
     ],
     done: 'Supply clerk: Still clean. Good. Same again next shift, if your legs are up to it.' }),
 
+  F({ id: 'mars-fr-mast', thread: 'mars-freight', world: 'mars', giver: 'cab-weather', title: 'Read the mast', pay: 100, needs: ['mars-sensor'],       // once her sensors are back (the story job), she has a mast worth reading
+    brief: 'Walk out to the weather mast in the desert north of the port, read its card, and bring the numbers back up the tower.',
+    pitch: 'My far mast stands out past the ice well and its radio link drops every time the dust lifts. Somebody has to walk out, pull the card and bring it to me. Follow the haul road to the well, then the stakes east of it. The mast is the thin one with the guy wires.',
+    take: 'Past the well, then east. Pull the card from the box at the foot. Do not lean on the wires.',
+    steps: [
+      { k: 'go', to: { port: [508, -710], name: 'the weather mast' }, r: 14, carry: 'the weather mast\'s data card', text: 'Walk the haul road north past the ice well, then east to the weather mast (the thin mast with guy wires), and pull its data card.', beat: 'The box at the foot of the mast opens with a kick. One card, dusty, warm from the electronics.' },
+      { k: 'go', to: 'cab-weather', r: 5, drop: true, text: 'Bring the card back to the weather desk (ride the lift up the control tower).' },
+    ],
+    done: 'Weather desk: Three days of wind I did not have. The mast will drop its link again by the weekend. It always does.' }),
+
+  F({ id: 'mars-fr-landing', thread: 'mars-freight', world: 'mars', giver: 'reception-clerk', title: 'Keep the first landing', pay: 120,
+    brief: 'Walk to the first landing site at the end of the haul road, brush the dust off the plaque, sign the keeper\'s book, and come back.',
+    pitch: 'The first crew to land in this valley came down a little over a kilometre north of here, in 2041. What is left of their lander still stands, and the Crew Hall keeps it, because somebody has to. Somebody walks out, brushes the plaque, signs the book. It is a long walk and nobody will check. I will know.',
+    take: 'The haul road, all the way to its end. The book is in the box under the plaque.',
+    steps: [
+      { k: 'go', to: { port: [458, -1291], name: 'the first landing' }, r: 16, text: 'Walk the haul road north to its end (about 1.3 km): the first landing site. Brush the plaque and sign the book.', beat: 'The plaque comes clean in four strokes. The book has a page of names, most of them in the same few hands. You add yours.' },
+      { k: 'go', to: 'reception-clerk', r: 5, text: 'Walk back to the reception clerk at the Crew Hall (north end of the pads).' },
+    ],
+    done: 'Reception clerk: You went. People say they will. Thank you. The valley was empty before that lander, and it is worth remembering how empty.' }),
+
   F({ id: 'mars-fr-phobos', thread: 'mars-freight', world: 'mars', giver: 'depot-clerk', title: 'Freight for Stickney', pay: 180, needs: ['mars-stores'],
     brief: 'The regular case for Stickney East on Phobos: fly it up and hand it in at the airlock.',
     pitch: 'Stickney breathes a case of cartridges every few days whether the line boat flies or not. You know the pad. One case, their airlock.',

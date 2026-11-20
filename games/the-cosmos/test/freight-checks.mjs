@@ -33,6 +33,16 @@ check('three runs make a Hauler, the story says so once, and the rank is on the 
 check('the place out in the desert resolves on the ground (the arrow has somewhere to point)', (() => { const t = W.toWorldPos(W.resolve(WELL), H.world.site); return t && Number.isFinite(t.x) && Math.abs(Math.hypot(t.x, t.y, t.z) - 3389500) < 30000; })());
 H.stand(p, 'depot-clerk'); a = await act({ type: 'mission-accept', id: 'mars-fr-well' }); H.stand(p, WELL); H.advance(1); H.stand(p, 'depot-clerk'); const c1 = cr(); H.advance(1);
 check('a Hauler is paid 10% over the board: the fourth well run pays 88', cr() === c1 + 88, `${cr() - c1}`);
+// the desert's other two places have a reason to walk to them
+{ const { p: q, ship: s4 } = H.start('mars', null, 'Desert QA'); const rq = () => H.mine(q) || { done: {}, active: null }, c4 = () => s4.economy.marks / 4;
+  H.stand(q, 'cab-weather'); const early = await H.act(q, { type: 'mission-accept', id: 'mars-fr-mast' });
+  H.world.state.missions[q.id] = { active: null, done: { 'mars-notes': { at: 1 }, 'mars-sensor': { at: 1 } }, flags: {}, log: [], n: 0 };       // the weather officer's own story, done
+  let x = await H.act(q, { type: 'mission-accept', id: 'mars-fr-mast' }); H.stand(q, { port: [508, -710] }); H.advance(1); const got = /card/.test(rq().active?.carry?.label || '');
+  H.stand(q, 'cab-weather'); let m0 = c4(); H.advance(1);
+  check('once her sensors are back, the weather desk sends you out to read the far mast: 100 credits for the card', early.ok === false && x.ok !== false && got && !rq().active && c4() === m0 + 100, `${JSON.stringify(x).slice(0, 120)} ${c4() - m0}`);
+  H.stand(q, 'reception-clerk'); x = await H.act(q, { type: 'mission-accept', id: 'mars-fr-landing' }); H.stand(q, { port: [458, -1291] }); H.advance(1); const at = rq().active?.step === 1;
+  H.stand(q, 'reception-clerk'); m0 = c4(); H.advance(1);
+  check('the Crew Hall reception clerk pays 120 for the walk to the first landing and back', x.ok !== false && at && !rq().active && c4() === m0 + 120, `${JSON.stringify(x).slice(0, 120)} ${c4() - m0}`); }
 // the story run unlocks the Phobos freight; then it repeats
 a = await act({ type: 'mission-accept', id: 'mars-stores' }); let f = H.fly(p, 'phobos'); H.advance(1); H.stand(p, { at: [35, -3], frame: 'phobos' }); H.advance(1);
 f = H.fly(p, 'port'); H.advance(1); H.stand(p, 'depot-clerk');
