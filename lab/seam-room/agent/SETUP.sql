@@ -33,3 +33,15 @@ create policy seam_room_chat_select_own on public.seam_room_chat
 -- AI replies are written by room-agent.mjs with the service role (bypasses RLS). No anon/authenticated path can write 'ai' rows.
 
 alter publication supabase_realtime add table public.seam_room_chat;
+
+-- Phase 2 (APPLIED 2026-11-20, migration "seam_room_frames"): optional camera frames during a voice call.
+-- Private bucket; only the signed-in owner can write/read under their own uid folder. The agent (service key) downloads
+-- frames and deletes those older than 24 h. Nothing is captured unless Jaron turns the camera on or taps "Show Claude".
+alter table public.seam_room_chat add column if not exists frame_path text check (frame_path is null or frame_path ~ '^[0-9a-f-]{36}/[A-Za-z0-9._-]{1,80}$');
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values ('seam-frames','seam-frames', false, 2000000, array['image/jpeg'])
+  on conflict (id) do update set public = false, file_size_limit = 2000000, allowed_mime_types = array['image/jpeg'];
+create policy seam_frames_owner_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'seam-frames' and public.seam_room_is_owner() and (storage.foldername(name))[1] = auth.uid()::text);
+create policy seam_frames_owner_select on storage.objects for select to authenticated
+  using (bucket_id = 'seam-frames' and public.seam_room_is_owner() and (storage.foldername(name))[1] = auth.uid()::text);

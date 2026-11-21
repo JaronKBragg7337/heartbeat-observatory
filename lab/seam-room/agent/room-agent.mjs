@@ -6,6 +6,7 @@
 
      node room-agent.mjs join --name "Claude" --page b   (long-running; start it in the background)
      node room-agent.mjs wait-chat --timeout 600          (blocks until JARON says something; prints it)
+     node room-agent.mjs frame <path> <file.jpg>          (when wait-chat shows a camera frame: download it, then look)
      node room-agent.mjs say "On my way to the log."
      node room-agent.mjs walk-to Jaron   |  walk-to 2.5 -1   |  face Jaron
      node room-agent.mjs pick-up nearest |  carry-to 3 0     |  drop  |  shape  |  reset-room
@@ -321,6 +322,35 @@ function serviceKey() {
   return null;
 }
 
+/* ---- camera frames (Jaron opts in on the call screen). Private bucket "seam-frames"; service key stays in env/file,
+   never printed. Frames older than 24 h are deleted. */
+const FRAME_BUCKET = "seam-frames", FRAME_RE = /^[0-9a-f-]{36}\/[A-Za-z0-9._-]{1,80}$/;
+async function serviceDb() {
+  const { createClient } = await import("@supabase/supabase-js");
+  const k = serviceKey();
+  if (!k) throw new Error("No SUPABASE_SERVICE_ROLE_KEY (env or ~/.secrets/keys.env).");
+  return createClient(SUPA_URL, k, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+export async function downloadFrame(framePath, outFile) {
+  if (!FRAME_RE.test(String(framePath)) || !String(framePath).startsWith(OWNER + "/")) throw new Error("not one of Jaron's frame paths");
+  const { data, error } = await (await serviceDb()).storage.from(FRAME_BUCKET).download(framePath);
+  if (error || !data) throw new Error("download failed: " + (error && error.message || "no data") + " (frames are deleted after 24 h)");
+  const buf = Buffer.from(await data.arrayBuffer());
+  fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
+  fs.writeFileSync(outFile, buf);
+  return buf.length;
+}
+export async function cleanupFrames(db, maxAgeMs = 24 * 3600 * 1000) {
+  try {
+    const bucket = db.storage.from(FRAME_BUCKET);
+    const { data, error } = await bucket.list(OWNER, { limit: 1000, sortBy: { column: "created_at", order: "asc" } });
+    if (error || !data) return 0;
+    const old = data.filter((o) => o.name && Date.now() - Date.parse(o.created_at || o.updated_at || 0) > maxAgeMs).map((o) => `${OWNER}/${o.name}`);
+    if (old.length) await bucket.remove(old);
+    return old.length;
+  } catch (_) { return 0; }
+}
+
 /** Which character do the short commands talk to? --name, else the last one joined. */
 export function resolveName(name) {
   if (name && name !== true) return String(name);
@@ -399,7 +429,9 @@ export async function waitChat(name, timeoutSec, onRetry) {
 }
 
 export function formatLine(l) {
-  return `[${l.time}] ${l.name}${l.ai ? " (AI)" : ""} on ${pageOf(l.place)}: ${l.text}`;
+  return `[${l.time}] ${l.name}${l.ai ? " (AI)" : ""} on ${pageOf(l.place)}: ${l.text}` +
+    (l.frame ? `
+    [camera frame: ${l.frame}  -> node room-agent.mjs frame ${l.frame} ./frame.jpg, then look at the file]` : "");
 }
 
 /* ============================================================== join ===== */
@@ -441,7 +473,7 @@ async function join(args) {
   function rowToLine(r) {
     const human = r.speaker === "human";
     return { seq: r.id, at: Date.parse(r.created_at), time: stamp(new Date(r.created_at)).slice(11),
-      name: human ? "Jaron" : (r.ai_name || "AI"), ai: !human, place: r.place || "", text: r.body, self: !human && r.ai_key === selfKey };
+      name: human ? "Jaron" : (r.ai_name || "AI"), ai: !human, place: r.place || "", text: r.body, frame: r.frame_path || null, self: !human && r.ai_key === selfKey };
   }
   function takeRows(rows) {
     for (const r of rows || []) {
@@ -470,7 +502,8 @@ async function join(args) {
   db.channel("seam-chat-agent-" + selfKey)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: TABLE, filter: `user_id=eq.${OWNER}` }, ({ new: r }) => takeRows([r]))
     .subscribe();
-  setInterval(() => void poll(), 4000);   // safety net if a realtime insert is missed
+  setInterval(() => void poll(), 4000);
+  void cleanupFrames(db); setInterval(() => void cleanupFrames(db), 3600 * 1000);   // frames live 24 h   // safety net if a realtime insert is missed
 
   /* ------------------------------------------------- the room channel - */
   const supa = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false, autoRefreshToken: false }, realtime: { params: { eventsPerSecond: 24 } } });
@@ -891,6 +924,7 @@ const HELP = `Seam Room character (only Jaron can talk to it)
   shape                             make the log a chair at the workbench on B (fetches + carries it if needed)
   reset-room                        retire the current thing; a new log appears on the chopping block (A)
   look                              who is here, where, the log/chair, the last chat lines
+  frame <path> <outfile>            download a camera frame Jaron attached to a line (wait-chat prints the path); then view the file
   leave                             leave the room and stop the join process
   Short commands take --name "Claude" if more than one character runs.`;
 
@@ -941,6 +975,10 @@ async function main() {
       if (!r.lines.length) { console.log("(Jaron did not say anything before the timeout)"); process.exitCode = 2; return; }
       for (const l of r.lines) console.log(formatLine(l));
       return;
+    }
+    if (cmd === "frame") {
+      if (!rest[0] || !rest[1]) throw new Error("usage: frame <path> <outfile>");
+      const n = await downloadFrame(rest[0], rest[1]); console.log(`saved ${n} bytes to ${rest[1]} (a JPEG: open it to see what Jaron showed)`); return;
     }
     if (cmd === "leave") { const r = await call(args.name, "/leave", {}); console.log(`${r.bye} left the room`); return; }
     console.error(`unknown command "${cmd}"\n\n${HELP}`); process.exitCode = 1;

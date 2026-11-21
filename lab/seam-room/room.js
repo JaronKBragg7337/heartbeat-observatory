@@ -1276,15 +1276,222 @@ function chatLog(name, text, ai) {
   if (box.classList.contains("on")) box.scrollTop = box.scrollHeight;
 }
 function speak(text) {
-  if (muted || !("speechSynthesis" in window)) return;
+  if (muted || !("speechSynthesis" in window)) { Call.replyDone(); return; }
   try {
+    Call.replyStart();
     const u = new SpeechSynthesisUtterance(text);
     const vs = speechSynthesis.getVoices();
     const v = vs.find((x) => /^en[-_]US/i.test(x.lang) && /Samantha|Aaron|Google US|Natural|Aria|Jenny|Guy/i.test(x.name)) || vs.find((x) => /^en/i.test(x.lang));
     if (v) u.voice = v;
-    u.rate = 1.02; speechSynthesis.speak(u);
-  } catch (_) {}
+    u.rate = 1.02;
+    u.onend = u.onerror = () => Call.speechEnded();
+    speechSynthesis.speak(u);
+  } catch (_) { Call.replyDone(); }
 }
+/* ------------------------------------------------- Call Claude (voice) ---
+   Hands-free talking. Browser speech-to-text -> the SAME path as a typed line (sendChat). While Claude's reply is
+   spoken, listening is paused (so it never hears itself), then it resumes. Client only: no new backend. */
+const Call = (() => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const st = { on: false, rec: null, pending: "", timer: 0, paused: false, thinking: false, speaking: false, heard: false,
+    restartT: 0, failStreak: 0, wake: null, watch: 0, thinkT: 0, noteT: 0, aiKey: null };
+  const SILENCE_MS = 1200;
+  const el = (id) => document.getElementById(id);
+  function paint(msg, cls) {
+    const bar = el("callBar"); if (!bar) return;
+    bar.hidden = !st.on && !msg;
+    bar.className = cls || (st.on ? (st.paused ? "wait" : st.heard ? "hear" : "listen") : "");
+    const t = el("callState"); if (t) t.textContent = msg || "";
+    const b = el("callBtn"); if (b) { b.classList.toggle("on", st.on); b.setAttribute("aria-pressed", st.on ? "true" : "false"); }
+    const e = el("callEnd"); if (e) e.hidden = !st.on;
+    const cr = el("camRow"); if (cr) cr.hidden = !st.on;
+  }
+  function status() {
+    if (!st.on) return;
+    if (st.speaking) paint("Claude is speaking…", "wait");
+    else if (st.thinking) paint("Claude is thinking…", "wait");
+    else if (st.pending) paint("Hearing you…", "hear");
+    else paint("Listening… talk any time", st.heard ? "hear" : "listen");
+  }
+  function note(msg) { paint(msg, "note"); clearTimeout(st.noteT); st.noteT = setTimeout(() => { if (!st.on) paint(""); else status(); }, 7000); }
+  function thinkingOn() {
+    st.thinking = true; clearInterval(st.thinkT);
+    // dots over Claude's head, once we know which avatar is Claude (learned from his first reply)
+    const dots = () => { if (st.aiKey && st.thinking) { const b = bubbles.get(st.aiKey); if (!b || b.dots) showBubble(st.aiKey, "", 4000, true); } };
+    dots(); st.thinkT = setInterval(dots, 3500);
+    status();
+  }
+  function thinkingOff() { st.thinking = false; clearInterval(st.thinkT); status(); }
+  function flush() {
+    clearTimeout(st.timer);
+    const text = st.pending.trim(); st.pending = "";
+    try { st.rec && st.rec.abort(); } catch (_) {}     // onend restarts a clean session
+    if (!text) { status(); return; }
+    thinkingOn();
+    sendChat(text.slice(0, 280));
+  }
+  function onResult(ev) {
+    if (st.paused) return;
+    let txt = "";
+    for (let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
+    txt = txt.trim(); if (!txt) return;
+    st.pending = txt; st.failStreak = 0;
+    showBubble("self", txt, 4000);              // his live words, in his bubble
+    status();
+    clearTimeout(st.timer); st.timer = setTimeout(flush, SILENCE_MS);
+  }
+  function start() {
+    if (!st.on || st.paused || st.rec) return;
+    const rec = new SR();
+    rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onstart = () => { st.heard = false; status(); };
+    rec.onspeechstart = () => { st.heard = true; status(); };
+    rec.onresult = onResult;
+    rec.onerror = (e) => {
+      const err = e && e.error;
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        end(); note("The microphone is blocked. Allow it in Settings > Safari > Microphone, then tap Call Claude again. Typing still works.");
+      } else if (err === "audio-capture") { end(); note("No microphone found. Typing still works."); }
+      else if (err === "network") { st.failStreak++; }
+      // "no-speech" and "aborted" are normal: onend restarts
+    };
+    rec.onend = () => {
+      st.rec = null;
+      if (st.pending) flush();
+      if (!st.on || st.paused) return;
+      if (st.failStreak >= 5) { end(); note("Voice recognition keeps failing. Typing still works."); return; }
+      clearTimeout(st.restartT); st.restartT = setTimeout(start, 250);
+    };
+    st.rec = rec;
+    try { rec.start(); } catch (_) { st.rec = null; clearTimeout(st.restartT); st.restartT = setTimeout(start, 600); }
+  }
+  function pause() {
+    st.paused = true; clearTimeout(st.timer); clearTimeout(st.restartT);
+    st.pending = "";
+    try { st.rec && st.rec.abort(); } catch (_) {}
+    status();
+  }
+  function resume() {
+    if (!st.on || !st.paused) return;
+    st.paused = false; st.speaking = false;
+    clearInterval(st.watch);
+    clearTimeout(st.restartT); st.restartT = setTimeout(start, 500);   // let the speaker tail die first
+    status();
+  }
+  function begin() {
+    if (st.on) return;
+    if (!SR) { note("Voice calls need a browser with speech recognition (Safari on iPhone). Typing still works."); return; }
+    st.on = true; st.paused = false; st.failStreak = 0;
+    // a tap unlocks spoken replies on iPhone
+    if (!muted && "speechSynthesis" in window) { try { speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); } catch (_) {} }
+    try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then((l) => { st.wake = l; if (!st.on) l.release().catch(() => {}); }).catch(() => {}); } catch (_) {}
+    document.body.classList.add("in-call");
+    status(); start();
+  }
+  function end() {
+    const was = st.on;
+    st.on = false; st.paused = false; st.speaking = false; st.pending = "";
+    clearTimeout(st.timer); clearTimeout(st.restartT); clearInterval(st.watch); thinkingOff();
+    try { st.rec && st.rec.abort(); } catch (_) {}
+    st.rec = null;
+    try { st.wake && st.wake.release(); } catch (_) {} st.wake = null;
+    if ("speechSynthesis" in window) { try { speechSynthesis.cancel(); } catch (_) {} }
+    document.body.classList.remove("in-call");
+    Cam.off();
+    if (was) paint("");
+  }
+  return {
+    supported: !!SR, begin, end, say: (m) => note(m), get on() { return st.on; },
+    // he typed a line during the call: same "thinking" wait
+    typed() { thinkingOn(); },
+    // Claude's reply arrived (or the send failed): stop "thinking"; remember which avatar is Claude
+    gotReply(key) { if (key) st.aiKey = key; thinkingOff(); },
+    // about to be spoken: stop listening so he never hears himself
+    replyStart() {
+      if (!st.on) return;
+      st.speaking = true; pause();
+      clearInterval(st.watch);       // iOS sometimes never fires onend: poll as a safety net
+      let quiet = 0, ticks = 0;
+      st.watch = setInterval(() => {
+        ticks++;
+        const talking = "speechSynthesis" in window && speechSynthesis.speaking;
+        quiet = talking ? 0 : quiet + 1;
+        if (quiet >= 3 || ticks > 240) resume();
+      }, 500);
+    },
+    speechEnded() { if (st.on) resume(); },
+    replyDone() { if (st.on && st.paused) resume(); },       // reply arrived but muted / nothing to speak
+    _result(text) { onResult({ results: [[{ transcript: text }]] }); },     // test hook
+    _state: () => ({ on: st.on, paused: st.paused, thinking: st.thinking, pending: st.pending, speaking: st.speaking }),
+  };
+})();
+
+/* ------------------------------------------------- camera for calls ------
+   OPT-IN. Off by default; nothing is captured unless the toggle is on (or he taps "Show Claude" for one frame).
+   One still per sent line -> PRIVATE bucket "seam-frames" (only the signed-in owner can write/read) -> the path rides
+   on the chat row (frame_path). Frames older than 24 h are deleted by the agent (room-agent.mjs). */
+const Cam = (() => {
+  const st = { on: false, facing: "user", stream: null, video: null };
+  const el = (id) => document.getElementById(id);
+  const paint = () => {
+    const t = el("camBtn"); if (t) { t.setAttribute("aria-pressed", st.on ? "true" : "false"); t.textContent = st.on ? "📷 Camera on" : "📷 Camera off"; t.classList.toggle("on", st.on); }
+    const f = el("camFlip"); if (f) f.hidden = !st.on;
+    const i = el("camLive"); if (i) i.hidden = !st.on;
+    document.body.classList.toggle("cam-live", st.on);
+  };
+  function stop() {
+    if (st.stream) for (const tr of st.stream.getTracks()) tr.stop();
+    st.stream = null; if (st.video) { st.video.srcObject = null; st.video.remove(); st.video = null; }
+  }
+  async function open() {
+    stop();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("This browser has no camera access.");
+    st.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: st.facing }, width: { ideal: 1280 } }, audio: false });
+    const v = document.createElement("video");
+    v.muted = true; v.setAttribute("playsinline", ""); v.setAttribute("muted", ""); v.srcObject = st.stream;
+    v.style.cssText = "position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0";
+    document.body.appendChild(v); st.video = v;
+    try { await v.play(); } catch (_) {}
+    for (let i = 0; i < 40 && !v.videoWidth; i++) await new Promise((r) => setTimeout(r, 50));
+  }
+  async function grab() {            // -> JPEG blob, ~1024 px wide, quality 0.8
+    const v = st.video; if (!v || !v.videoWidth) throw new Error("camera not ready");
+    const w = Math.min(1024, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    c.getContext("2d").drawImage(v, 0, 0, w, h);
+    return await new Promise((res, rej) => c.toBlob((b) => b ? res(b) : rej(new Error("capture failed")), "image/jpeg", 0.8));
+  }
+  async function upload(blob) {
+    const path = `${shell.uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const { error } = await shell.supa.storage.from("seam-frames").upload(path, blob, { contentType: "image/jpeg", upsert: false });
+    if (error) throw new Error(error.message);
+    return path;
+  }
+  const blocked = (e) => /denied|not.?allowed|permission/i.test(String(e && (e.name + " " + e.message)));
+  return {
+    get on() { return st.on; },
+    blocked,
+    async toggle() {
+      if (st.on) { st.on = false; stop(); paint(); return; }
+      try { await open(); st.on = true; paint(); }
+      catch (e) { stop(); st.on = false; paint(); Call.say(blocked(e) ? "The camera is blocked. Allow it in Settings > Safari > Camera. Typing and voice still work." : "Camera unavailable: " + (e.message || "unknown") + ". Voice still works."); }
+    },
+    async flip() {
+      const prev = st.facing; st.facing = prev === "user" ? "environment" : "user";
+      try { await open(); } catch (e) { st.facing = prev; try { await open(); } catch (_) { st.on = false; stop(); paint(); } Call.say("That camera is not available."); }
+    },
+    // one still frame for the line being sent; null (never an error) when the camera is off or anything fails
+    async frame() { if (!st.on) return null; try { return await upload(await grab()); } catch (e) { console.warn("frame skipped:", e.message); return null; } },
+    // "Show Claude": one frame even if the toggle is off (an explicit tap); camera closed again right after
+    async once() {
+      const was = st.on;
+      try { if (!was) await open(); return await upload(await grab()); }
+      finally { if (!was) stop(); }
+    },
+    off() { st.on = false; stop(); paint(); },
+    _fake(on) { st.on = on; paint(); },
+  };
+})();
 function buildChat() {
   const wrap = document.createElement("div"); wrap.id = "chat";
   wrap.innerHTML = `<form id="chatForm" autocomplete="off">
@@ -1293,6 +1500,13 @@ function buildChat() {
       <button id="chatMute" type="button" aria-label="Mute spoken replies"></button>
       <button id="chatHist" type="button" aria-label="Show chat history" title="Chat history">🕘</button>
     </form>
+    <div id="callRow"><button id="callBtn" type="button" aria-pressed="false">📞 Call Claude</button>
+      <div id="callBar" hidden aria-live="polite"><span id="callDot"></span><span id="callState"></span></div>
+      <button id="callEnd" type="button" hidden>End call</button>
+      <div id="camRow" hidden><button id="camBtn" type="button" aria-pressed="false">📷 Camera off</button>
+        <button id="camFlip" type="button" hidden aria-label="Switch front and back camera">🔄</button>
+        <button id="showBtn" type="button">Show Claude</button>
+        <span id="camLive" hidden><i></i>CAMERA ON</span></div></div>
     <div id="chatLog" aria-live="polite"></div>`;
   document.body.appendChild(wrap);
   // sit just under the shell's status chips, which wrap to two rows on a phone
@@ -1305,6 +1519,16 @@ function buildChat() {
   const hist = $("chatHist"), logBox = $("chatLog");
   hist.addEventListener("click", () => { logBox.classList.toggle("on"); hist.classList.toggle("on", logBox.classList.contains("on")); logBox.scrollTop = logBox.scrollHeight; });
   logBox.addEventListener("click", () => { logBox.classList.remove("on"); hist.classList.remove("on"); });
+  $("callBtn").addEventListener("click", () => Call.begin());
+  $("callEnd").addEventListener("click", () => Call.end());
+  $("camBtn").addEventListener("click", () => Cam.toggle());
+  $("camFlip").addEventListener("click", () => Cam.flip());
+  $("showBtn").addEventListener("click", async () => {
+    const b = $("showBtn"); b.disabled = true;
+    try { const p = await Cam.once(); await sendChat("[photo]", p); }
+    catch (e) { Call.say(Cam.blocked(e) ? "The camera is blocked. Allow it in Settings > Safari > Camera." : "Could not take the photo: " + (e.message || "unknown")); }
+    b.disabled = false;
+  });
   const mute = $("chatMute");
   const paintMute = () => { mute.textContent = muted ? "🔇" : "🔊"; mute.setAttribute("aria-pressed", muted ? "true" : "false"); mute.title = muted ? "Replies are muted" : "Replies are read aloud"; };
   paintMute();
@@ -1314,21 +1538,28 @@ function buildChat() {
     if (muted && "speechSynthesis" in window) speechSynthesis.cancel();
     else speak("Sound on.");   // a tap also unlocks speech on iPhone
   });
-  $("chatForm").addEventListener("submit", async (e) => {
+  $("chatForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const inp = $("chatIn"), text = inp.value.trim().slice(0, 280);
     if (!text) return;
     // iPhone only lets a page speak after a tap; this tap counts
     if (!muted && "speechSynthesis" in window && !speechSynthesis.speaking) { try { speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); } catch (_) {} }
     inp.value = ""; inp.blur();
-    showBubble("self", text, 5000 + text.length * 50);
-    shell.send("talking", { ms: Math.min(9000, 1500 + text.length * 55) });
-    const { data, error } = await shell.supa.from("seam_room_chat")
-      .insert({ user_id: shell.uid, speaker: "human", body: text, place: zoneId }).select("id").single();
-    if (error) { chatLog("Not sent", /row-level security/i.test(error.message) ? "only the room's owner can talk to the AI" : error.message, false); return; }
-    seenRows.add(data.id);
-    chatLog("You", text, false);
+    if (Call.on) Call.typed();
+    sendChat(text);
   });
+}
+/* ONE send path for typed lines AND spoken lines: Claude's listener receives both exactly the same way */
+async function sendChat(text, framePath) {
+  showBubble("self", text, 5000 + text.length * 50);
+  shell.send("talking", { ms: Math.min(9000, 1500 + text.length * 55) });
+  if (framePath === undefined) framePath = await Cam.frame();      // camera toggle on: one still with each line
+  const row = { user_id: shell.uid, speaker: "human", body: text, place: zoneId };
+  if (framePath) row.frame_path = framePath;
+  const { data, error } = await shell.supa.from("seam_room_chat").insert(row).select("id").single();
+  if (error) { Call.gotReply(); chatLog("Not sent", /row-level security/i.test(error.message) ? "only the room's owner can talk to the AI" : error.message, false); return; }
+  seenRows.add(data.id);
+  chatLog("You", framePath ? text + " 📷" : text, false);
 }
 const seenRows = new Set();
 function onChatRow(r) {
@@ -1336,6 +1567,7 @@ function onChatRow(r) {
   seenRows.add(r.id);
   if (r.speaker === "ai") {
     chatLog(r.ai_name || "AI", r.body, true);
+    Call.gotReply(r.ai_key);
     showBubble(r.ai_key, r.body, 5000 + r.body.length * 60);
     speak(r.body);
   } else chatLog("You", r.body, false);   // a line he sent from another device
@@ -1356,7 +1588,7 @@ async function setupTalk() {
     .subscribe();
 }
 /* test handle. previewBox() only draws the box: for anyone but Jaron the database refuses what it sends. */
-window.__seamTalk = { showBubble, onChatRow, speak, previewBox: () => { if (!document.getElementById("chat")) buildChat(); }, get muted() { return muted; } };
+window.__seamTalk = { Call, Cam, sendChat, showBubble, onChatRow, speak, previewBox: () => { if (!document.getElementById("chat")) buildChat(); }, get muted() { return muted; } };
 
 /* ------------------------------------------------------- keyboard/mouse - */
 const keys = {};

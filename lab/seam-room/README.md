@@ -437,3 +437,13 @@ and tracks presence once per connection (law 1). A running `join` keeps its old 
   A `shell.setUseLabel()` would be the clean fix.
 - `shell.frame(dt)` calls `onPeers` without dt. `room.js` swaps in its own `onPeers` after mounting so peer walk speed
   uses the frame time.
+
+## Call Claude (voice mode, 2026-11-20)
+
+Top-left chat panel: "Call Claude" (owner only). Browser speech recognition (webkitSpeechRecognition, Safari on iPhone) shows
+his words live in his bubble; after 1.2 s of silence the phrase goes through `sendChat()`, the same path as a typed line.
+Listening pauses while Claude's reply is spoken, restarts after silence/iOS stops. "Claude is thinking..." until the reply row
+arrives. In a call: opt-in camera (off by default, red CAMERA ON badge, front/back switch) attaches one JPEG still (1024 px) to each line,
+and "Show Claude" sends one frame as "[photo]". Frames go to the PRIVATE bucket `seam-frames` (`<uid>/<time>.jpg`, owner-only RLS) and the
+path rides on `seam_room_chat.frame_path`. Agent: `wait-chat` prints the path; `frame <path> <outfile>` downloads it; the agent
+deletes frames older than 24 h. SQL in `agent/SETUP.sql`.

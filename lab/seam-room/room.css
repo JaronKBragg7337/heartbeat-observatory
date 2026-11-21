@@ -67,3 +67,30 @@ html,body{margin:0;height:100%;overflow:hidden;background:#2a2420;color:#f3ead8;
 #chatLog .ai b{color:#cdb8ff}
 /* page D: only when the news video cannot play here - a small link in this panel, never over the screen */
 #newsLink{display:inline-block;margin:4px 0 0;color:#e8c98a;font:600 12px system-ui,sans-serif;pointer-events:auto}
+
+/* Call Claude (voice mode): a 44px+ button, a status chip with a pulsing dot, an End call button */
+#callRow{display:flex;gap:6px;align-items:center;margin:6px 0 0;pointer-events:none;flex-wrap:wrap}
+#callBtn,#callEnd{min-height:44px;border-radius:22px;padding:0 16px;font:700 15px system-ui,sans-serif;cursor:pointer;pointer-events:auto}
+#callBtn{border:1px solid #e8c98a;background:#e8c98a;color:#2a2014}
+#callBtn.on{display:none}
+#callEnd{border:1px solid #ff8b7a;background:#b3392a;color:#fff;margin-left:auto}
+#callEnd[hidden],#callBar[hidden]{display:none}
+#callBar{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px;border-radius:22px;
+  background:rgba(26,20,15,.82);border:1px solid rgba(232,180,90,.35);color:#f3ead8;font:600 13px/1.25 system-ui,sans-serif;pointer-events:auto}
+#callDot{flex:none;width:12px;height:12px;border-radius:6px;background:#8a7a60}
+#callBar.listen #callDot{background:#6fd08c;animation:callPulse 1.6s ease-in-out infinite}
+#callBar.hear #callDot{background:#ff7a5c;animation:callPulse .6s ease-in-out infinite}
+#callBar.wait #callDot{background:#cdb8ff;animation:callPulse 1.1s ease-in-out infinite}
+#callBar.note{border-color:#e8c98a}
+@keyframes callPulse{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.25);opacity:1}}
+@media (prefers-reduced-motion:reduce){#callDot{animation:none!important}}
+
+/* camera row (call mode only): off by default, red CAMERA ON badge whenever a camera is open */
+#camRow{flex-basis:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;pointer-events:none}
+#camRow[hidden],#camFlip[hidden],#camLive[hidden]{display:none}
+#camBtn,#camFlip,#showBtn{min-height:44px;min-width:44px;border-radius:22px;padding:0 14px;font:700 14px system-ui,sans-serif;cursor:pointer;pointer-events:auto;
+  border:1px solid rgba(232,180,90,.5);background:rgba(26,20,15,.82);color:#e8c98a}
+#camBtn.on{background:#b3392a;border-color:#ff8b7a;color:#fff}
+#showBtn:disabled{opacity:.5}
+#camLive{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border-radius:16px;background:#b3392a;color:#fff;font:800 11px system-ui,sans-serif;letter-spacing:.06em;pointer-events:none}
+#camLive i{width:9px;height:9px;border-radius:5px;background:#fff;animation:callPulse 1s ease-in-out infinite}
