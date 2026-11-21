@@ -36,6 +36,7 @@ import { makePortMaterials } from '../../port/portArt.js';
 import { shipDef } from '../../ships/registry.js';
 import { visualsFor } from '../../ships/visuals.js';
 import { worldTimeS } from '../../space/clock.js';
+import { yardVoice, yardHush, yardSoundStatus } from '../_kit/sideYard.js';       // the yard ships' sound (Ceres has no air: felt through the ground only)
 import { PortTraffic } from '../../port/traffic.js';            // its poseShip (gear, ramp, engine glow, strobe) is used as written
 import { beatPose } from '../../port/portPeople.js';            // the walkers' beat: a pure function of time
 import { factionStyle, shipMark, applyLiveryTint, css } from '../../factions/registry.js';
@@ -252,7 +253,7 @@ export class CeresActivity {
     c.x = dx * pi.east.x + dy * pi.east.y + dz * pi.east.z; c.y = dx * pi.up.x + dy * pi.up.y + dz * pi.up.z; c.z = -(dx * pi.north.x + dy * pi.north.y + dz * pi.north.z);
     const camD = Math.hypot(c.x, c.y, c.z), on = this.enabled && camD < ACTIVE_M;
     this.active = on;
-    if (!on) { if (this.root.visible) { this.root.visible = false; for (const id in this.ships) { this.ships[id].root.visible = false; this.ships[id].k = null; } } return; }
+    if (!on) { if (this.root.visible) { this.root.visible = false; for (const id in this.ships) { this.ships[id].root.visible = false; this.ships[id].k = null; } } yardHush(this); return; }
     if (!this.built) this.build();
     this.root.visible = true; this.t += dt;
     const sp = this.space, now = this.now = this.time();
@@ -281,13 +282,15 @@ export class CeresActivity {
       }
       alive = !v.skip && t < (v.diverted ? v.t3 + v.P.departS : v.end);
     }
-    if (!alive) { if (s0 && s0.k !== null) { s0.k = null; s0.root.visible = false; } return; }
+    if (!alive) { if (s0 && s0.k !== null) { s0.k = null; s0.root.visible = false; } yardHush(this); return; }
     const s = s0 || this.buildShip(v.side); if (!s) return;
     if (s.k !== k) { s.k = k; s.rampP = -1; s.len = -1; }
     const p = poseAt(v, t, this.pose);
     PortTraffic.prototype.poseShip.call(this, s, p, now);
     if (s.hose) s.hose.visible = p.phase === 4 && p.ground > RAMP_WAIT_S && t < v.t5 - BUTTON_UP_S;
+    yardVoice(this, s, p, this._c);
   }
+  soundStatus() { return yardSoundStatus(this); }
   /** Is a real ship standing on (or low over) this stand? The player's own, and in a shared world everybody's. */
   spotBlocked(S) {
     const pi = this.pi, sp = this.space, id = this.body.id;
@@ -733,6 +736,7 @@ export class CeresActivity {
   shift(seconds) { this.shiftS += seconds; return this.shiftS; }
 
   dispose() {
+    yardHush(this);
     this.root.removeFromParent();
     for (const m of [this.poolMat, this.signMat, this.signTex, this.gaugeMat, this.boardMat, this.boardTex]) if (m) m.dispose();
   }

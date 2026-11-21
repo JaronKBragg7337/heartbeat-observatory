@@ -31,12 +31,21 @@ function h01(n, salt) {
   return (x >>> 0) / 4294967296;
 }
 
-/** How loud and how dull a ship is for a listener `d` metres off. Pure. `p` is the pose (lift, main, fade, phase, ground). */
-export function shipSound(p, d, cabin, out = {}) {
-  const att = d >= HEAR_M ? 0 : sm((HEAR_M - d) / 500) / (1 + (d / 70) * (d / 70)), k = cabin ? 0.3 : 1;
-  const power = Math.min(1.2, 0.85 * p.lift + 0.6 * p.main) * (p.fade === undefined ? 1 : p.fade);
-  out.gain = 0.5 * power * att * k;
-  out.cutoff = 70 + 620 * Math.sqrt(att);                                // Hz: near, a full rumble; far, only the bottom of it
+/** What the sound travels through. `mars` is the port's thin CO2 (the numbers this file always had). `earth` is a full atmosphere: louder, brighter,
+ *  heard for kilometres. `ground` is an airless world: nothing crosses the vacuum, so all that reaches you is what the exhaust drums into the ground
+ *  and the ground carries to your boots: a dull shake, only while she is low, gone within a few hundred metres. The touchdown thump is the same thing. */
+export const MEDIA = {
+  mars: { hearM: HEAR_M, fadeM: 500, refM: 70, cut0: 70, cut1: 620, gain: 0.5, ground: false },
+  earth: { hearM: 4500, fadeM: 1500, refM: 110, cut0: 90, cut1: 2500, gain: 0.6, ground: false },
+  ground: { hearM: 320, fadeM: 200, refM: 60, cut0: 34, cut1: 50, gain: 0.36, ground: true },
+};
+/** How loud and how dull a ship is for a listener `d` metres off. Pure. `p` is the pose (lift, main, fade, phase, ground, alt). `m`: one of MEDIA. */
+export function shipSound(p, d, cabin, out = {}, m = MEDIA.mars) {
+  const att = d >= m.hearM ? 0 : sm((m.hearM - d) / m.fadeM) / (1 + (d / m.refM) * (d / m.refM)), k = cabin ? 0.3 : 1;
+  let power = Math.min(1.2, 0.85 * p.lift + 0.6 * p.main) * (p.fade === undefined ? 1 : p.fade);
+  if (m.ground) power *= Math.min(1, Math.max(0, (45 - (p.alt || 0)) / 45));
+  out.gain = m.gain * power * att * k;
+  out.cutoff = m.cut0 + m.cut1 * Math.sqrt(att);                         // Hz: near, a full rumble; far, only the bottom of it
   out.pitch = 0.85 + 0.3 * p.lift + 0.25 * p.main;                       // the engines wind up and down a little
   out.thump = p.phase === 4 && p.ground >= 0 && p.ground < 0.7 ? 0.9 * Math.exp(-p.ground * 8) * Math.min(1, att * 2.2) * k : 0;
   return out;
@@ -96,17 +105,25 @@ export class TrafficFx {
   begin() {
     const T = this.traffic, st = T.site, c = st.center, cam = T.engine.cameraWorldPos, x = cam.x - c.x, y = cam.y - c.y, z = cam.z - c.z, R = st.right, U = st.up, B = st.back, L = this._l;
     L.x = x * R.x + y * R.y + z * R.z; L.y = x * U.x + y * U.y + z * U.z; L.z = x * B.x + y * B.y + z * B.z;
-    const ship = T.ctx.ship; this.cabin = !!(ship && ship.aboard); if (ship && ship.audio) this.on = ship.audio.on !== false;
+    this._begin();
+  }
+  /** The same, for a caller that already knows where the listener is in the frame its poses are in (the side yards: worlds/_kit/sideYard.js). */
+  beginAt(x, y, z) { const L = this._l; L.x = x; L.y = y; L.z = z; this._begin(); }
+  _begin() {
+    const ship = this.traffic.ctx.ship; this.cabin = !!(ship && ship.aboard); if (ship && ship.audio) this.on = ship.audio.on !== false;
     this.n = 0; this.frame++; this.want.tug = 0;
     if (!this.ctx) this._start();
   }
   /** One ship this frame: its voice and its dust. `s` is traffic's pool entry (its root is already posed), `p` the pose. */
   ship(s, p, now) {
+    this.voice(s, p); this.dust(s, p, now);
+  }
+  /** One ship's voice alone (no dust). `m`: what the sound travels through (MEDIA; Mars's air when left out). */
+  voice(s, p, m) {
     const L = this._l, d = Math.hypot(p.x - L.x, s.root.position.y - L.y, p.z - L.z), i = this.n++;
-    if (i < VOICES) { const o = shipSound(p, d, this.cabin, this._s), W = this.want; W.v[i] = o.gain; W.thump[i] = o.thump; W.cut[i] = o.cutoff; W.d[i] = d;
+    if (i < VOICES) { const o = shipSound(p, d, this.cabin, this._s, m), W = this.want; W.v[i] = o.gain; W.thump[i] = o.thump; W.cut[i] = o.cutoff; W.d[i] = d;
       const v = this.voices[i]; if (v) { const t = this.ctx.currentTime; v.gain.gain.setTargetAtTime(o.gain, t, 0.12); v.low.frequency.setTargetAtTime(o.cutoff, t, 0.15); v.thump.gain.setTargetAtTime(o.thump, t, o.thump > 0.02 ? 0.012 : 0.09);
         for (const q of v.oscs) q.frequency.setTargetAtTime(q._f * o.pitch, t, 0.3); } }
-    this.dust(s, p, now);
   }
   /** The tug this frame (port-local position, m/s). */
   tug(x, z, speed) {

@@ -37,6 +37,7 @@ import { SignAtlas } from '../moon/kit.js';
 import { dressForWorld } from '../../crew/suitPolicy.js';
 import { describe as describeHome, strengthOf } from '../../roles/balance.js';
 import { leadersOf } from '../../roles/holders.js';
+import { TrafficFx, MEDIA } from '../../port/trafficFx.js';       // the yard ships' sound: the port's own voices, told what the sound travels through
 
 const DEG = Math.PI / 180, HALF_PI = Math.PI / 2;
 export const PHASES = ['cruise', 'braking', 'hover', 'final', 'landed', 'lifting', 'departing'];
@@ -59,7 +60,10 @@ export const rgb = (hex, k = 1) => [((hex >> 16) & 255) / 255 * k, ((hex >> 8) &
  *        sides: [{ side, spot: { id, name, type, x, z, clearM, bear, out }, fly: { V, a, af, av, Hh, HC, hoverS, descentS, strobeY, n, name } }] }
  */
 export function makeTimetable(cfg) {
-  const SLOT = cfg.slotS || 600, MAX = cfg.visitMaxS || SLOT - JITTER_S - 5, D0 = cfg.d0 || 2400, H0 = cfg.h0 || 420, DEND = cfg.dEnd || 2400, n = cfg.sides.length;
+  const SLOT = cfg.slotS || 600, MAX = cfg.visitMaxS || SLOT - JITTER_S - 5, D0 = cfg.d0 || 2400, H0 = cfg.h0 || 420, DEND = cfg.dEnd || 2400;
+  // Two yards of one world that stand apart (Callisto: the camp and the prospectors' camp) share one rota: `turns` slots in a round, this yard's sides
+  // starting at `turn0`. A slot that belongs to the other yard is empty here, so one ship is alive at a time across both.
+  const n = cfg.turns || cfg.sides.length, T0 = cfg.turn0 || 0;
   const FLY = cfg.sides.map((s) => {
     const P = { ...s.fly };
     P.brakeS = P.V / P.a; P.cruiseS = Math.max(0, (D0 - P.V * P.V / (2 * P.a)) / P.V); P.flare = Math.atan(P.a / cfg.g);
@@ -70,8 +74,8 @@ export function makeTimetable(cfg) {
   const sideOf = (k) => ((k % n) + n) % n;
   /** Visit k, written into `v`. */
   function visitAt(k, v = {}) {
-    const i = sideOf(k), S = cfg.sides[i].spot, P = FLY[i];
-    v.k = k; v.i = i; v.side = cfg.sides[i].side; v.spot = S; v.type = S.type; v.P = P; v.diverted = false; v.seen = false; v.skip = false;
+    const i0 = sideOf(k) - T0, empty = !cfg.sides[i0], i = empty ? 0 : i0, S = cfg.sides[i].spot, P = FLY[i];
+    v.k = k; v.i = i; v.side = cfg.sides[i].side; v.spot = S; v.type = S.type; v.P = P; v.diverted = false; v.seen = false; v.skip = empty; v.empty = empty;
     v.start = k * SLOT + h01(k, 2) * JITTER_S;
     v.da = (S.bear + (h01(k, 6) * 2 - 1) * 14) * DEG; v.dd = (S.out + (h01(k, 7) * 2 - 1) * 14) * DEG;
     const fixed = P.cruiseS + P.brakeS + P.hoverS + P.descentS + RAMP_WAIT_S + 2 * RAMP_S + BUTTON_UP_S + P.liftS + P.departS;
@@ -126,7 +130,7 @@ export function makeTimetable(cfg) {
   /** Side i's stock at world time `now`, 0..1. mode 'take': full, emptied by the ship's stay, rebuilt after. 'bring': the reverse.
    *  `skipK`: a visit that was waved off (it moved nothing). `low`: what a 'bring' stock falls back to between ships. */
   function stockAt(i, now, mode = 'take', skipK = NaN, low = 0.15) {
-    let k = Math.floor(now / SLOT); k -= sideOf(k - i);
+    let k = Math.floor(now / SLOT); k -= sideOf(k - i - T0);
     let v = visitAt(k, _v);
     const rest = mode === 'take' ? 1 : low;
     if (now < v.workA || k === skipK) { k -= n; v = visitAt(k, _v); if (k === skipK) return rest; }
@@ -134,7 +138,7 @@ export function makeTimetable(cfg) {
     const u = clamp01((now - v.workB) / RECOVER_S);
     return mode === 'take' ? u : 1 - (1 - low) * u;
   }
-  return { SLOT, n, FLY, sideOf, visitAt, poseAt, stockAt };
+  return { SLOT, n, T0, FLY, sideOf, visitAt, poseAt, stockAt };
 }
 
 /** A hand pushing a cart to and fro on the line a -> b: push out, stop, walk round to the other end, push back, stop, walk round. Pure.
@@ -163,6 +167,19 @@ export function pushPose(r, t, o = {}) {
   return o;
 }
 
+/** One set of voices for every yard on the page (a phone has few to spare). The yard whose ship is flying owns it; the rota keeps that to one. */
+let _fx = null;
+function yardFx(yard) {
+  if (!_fx) { const space = yard.space; _fx = new TrafficFx({ low: yard.low, ctx: { get ship() { return space.ship; } }, pool: [], root: yard.root, port: { night: 0 }, engine: yard.engine }); _fx.owner = null; }
+  return _fx;
+}
+/** One yard ship's sound this frame. `yard`: whoever flies her (needs low, space, root, engine); `c`: the listener in the frame the pose is in;
+ *  `medium`: one of trafficFx's MEDIA. Also used by Occator Works (worlds/ceres/activity.js), which flies its ships by hand. */
+export function yardVoice(yard, s, p, c, oy = 0, medium = MEDIA.ground) { const fx = yardFx(yard); fx.owner = yard; fx.beginAt(c.x, c.y - oy, c.z); fx.voice(s, p, medium); fx.end(); }
+/** No ship of this yard is flying: if the voices were this yard's, they fall silent. */
+export function yardHush(yard) { if (_fx && _fx.owner === yard) { _fx.owner = null; _fx.beginAt(0, 0, 0); _fx.end(); _fx.quiet(); } }
+export function yardSoundStatus(yard) { return _fx ? { owner: _fx.owner === yard, ..._fx.status() } : null; }
+
 let _strobeMat = null;
 function strobeMaterial() {
   if (_strobeMat) return _strobeMat;
@@ -187,12 +204,13 @@ function strobeMaterial() {
 export class SideYard {
   constructor(o) {
     this.engine = o.engine; this.world = o.world; this.space = o.space; this.tier = o.tier; this.low = o.tier === 'low'; this.cfg = o.cfg;
-    this.body = o.world.body; this.pi = this.body.padInfo; this.tt = makeTimetable(o.cfg);
+    this.body = o.world.body; this.pi = o.pi || this.body.padInfo; this.tt = makeTimetable(o.cfg);        // o.pi: a yard that stands at one of the world's other ports
+    this.medium = MEDIA[o.cfg.medium] || MEDIA.ground;
     this.root = new THREE.Group(); this.root.name = 'side-yard:' + o.cfg.name; this.root.visible = false;
     this.ox = (o.cfg.origin && o.cfg.origin.x) || 0; this.oz = (o.cfg.origin && o.cfg.origin.z) || 0; this.oy = (o.cfg.origin && o.cfg.origin.y) || 0;       // cfg.origin moves the whole yard: every number in the config is measured from it
     this.root.position.set(this.ox, this.oy, this.oz);
     o.parent.add(this.root); this.parent = o.parent;
-    this.shiftS = 0;                       // dev: moves the timetable's clock (seconds) without touching the sky's
+    this.clock = o.clock || { shiftS: 0 };   // dev: moves the timetable's clock (seconds) without touching the sky's. Two yards on one rota are given the same one.
     this.enabled = true; this.active = false; this.built = false; this.now = 0; this.night = 0; this.t = 0;
     this.ctx = { world: undefined };
     this.ships = {};                       // side -> the exterior, built once and re-posed for every later visit
@@ -203,6 +221,8 @@ export class SideYard {
     this.buildMs = { place: 0, ships: 0, count: 0 };
     this.activeM = o.cfg.activeM || 6000; this.peopleM = o.cfg.peopleM || 320;
   }
+  get shiftS() { return this.clock.shiftS; }
+  set shiftS(v) { this.clock.shiftS = v; }
   setContext(ctx) { Object.assign(this.ctx, ctx); return this; }
   time() { return worldTimeS() + this.shiftS; }
   sharedWorld() { if (this.ctx.world !== undefined) return this.ctx.world; const c = this.space.ship && this.space.ship.crew; return (c && c.world) || null; }
@@ -222,7 +242,7 @@ export class SideYard {
     c.x -= this.ox; c.z -= this.oz;
     const camD = Math.hypot(c.x, c.y, c.z), on = this.enabled && camD < this.activeM;
     this.active = on;
-    if (!on) { if (this.root.visible) { this.root.visible = false; for (const id in this.ships) { this.ships[id].root.visible = false; this.ships[id].k = null; } } return; }
+    if (!on) { if (this.root.visible) { this.root.visible = false; for (const id in this.ships) { this.ships[id].root.visible = false; this.ships[id].k = null; } } this.hush(); return; }
     if (!this.built) this.build();
     this.root.visible = true; this.t += dt;
     const sp = this.space, now = this.now = this.time();
@@ -251,13 +271,19 @@ export class SideYard {
       }
       alive = !v.skip && t < (v.diverted ? v.t3 + v.P.departS : v.end);
     }
-    if (!alive) { if (s0 && s0.k !== null) { s0.k = null; s0.root.visible = false; } return; }
+    if (!alive) { if (s0 && s0.k !== null) { s0.k = null; s0.root.visible = false; } this.hush(); return; }
     const s = s0 || this.buildShip(v.i); if (!s) return;
     if (s.k !== k) { s.k = k; s.rampP = -1; s.len = -1; }
     const p = tt.poseAt(v, t, this.pose);
     PortTraffic.prototype.poseShip.call(this, s, p, now);
     if (s.strobe) { s.strobe.visible = p.phase !== 4 || p.ramp < 0.01 ? (now * 1.1) % 1 < 0.08 : false; }
+    // her sound (port/trafficFx.js): a pure function of the pose and of where the listener is, through this world's air or, with no air, its ground
+    yardVoice(this, s, p, this._c, this.oy, this.medium);
   }
+  /** No ship of this yard is flying: if the voices were this yard's, they fall silent. */
+  hush() { yardHush(this); }
+  /** What the sound is doing (for tests): the gains asked for, and whether this yard owns the voices. */
+  soundStatus() { return yardSoundStatus(this); }
   /** Is a real ship standing on (or low over) this stand? The player's own, and in a shared world everybody's. */
   spotBlocked(S) {
     const pi = this.pi, sp = this.space, id = this.body.id, sx = S.x + this.ox, sz = S.z + this.oz;
@@ -398,7 +424,7 @@ export class SideYard {
       let lo = top - 0.3; for (const [x, z] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1], [(x0 + x1) / 2, (z0 + z1) / 2]]) lo = Math.min(lo, self.groundY(x, z) - 0.2);
       B('concrete', (x0 + x1) / 2, (lo + top) / 2, (z0 + z1) / 2, x1 - x0, top - lo, z1 - z0, col, 0.06);
     };
-    return { k, B, X, cyl, pipe, dome, pool, lampPost, sign, slab, low, rgb, style: factionStyle, groundY: (x, z) => self.groundY(x, z) };
+    return { k, B, X, cyl, pipe, dome, pool, lampPost, sign, slab, low, rgb, style: factionStyle, groundY: (x, z) => self.groundY(x, z), has: (key) => !!(self.mats && self.mats[key]) };
   }
 
   /** The stocks follow the timetable's clock (and, in a shared world, how strong the home is). Meshes are touched only when a count changes. */
@@ -506,7 +532,7 @@ export class SideYard {
   /** Move the timetable's clock so `side`'s ship is in `phase`, `into` (0..1) of the way through it. */
   jumpTo(side, phase, into) {
     const tt = this.tt, now = this.time(), v = {}, i = PHASES.indexOf(phase), si = this.cfg.sides.findIndex((s) => s.side === side); if (i < 0 || si < 0) throw new Error('side or phase unknown');
-    let k = Math.floor(now / tt.SLOT) + 1; while (tt.sideOf(k) !== si) k++;
+    let k = Math.floor(now / tt.SLOT) + 1; while (tt.sideOf(k) !== si + tt.T0) k++;
     tt.visitAt(k, v); const edge = [0, v.t1, v.t2, v.t3, v.t4, v.t5, v.t6, v.t7];
     this.shiftS += v.start + edge[i] + (edge[i + 1] - edge[i]) * (into ?? (phase === 'landed' ? 0.3 : 0.6)) - now;
     return { k, side: v.side, shiftS: this.shiftS };
@@ -514,7 +540,7 @@ export class SideYard {
   shift(seconds) { this.shiftS += seconds; return this.shiftS; }
 
   dispose() {
-    this.root.removeFromParent();
+    this.hush(); this.root.removeFromParent();
     for (const m of [this.poolMat, this.boardMat, this.boardTex]) if (m) m.dispose();
     if (this.signMesh) { this.signMesh.material.map.dispose(); this.signMesh.material.dispose(); }
   }

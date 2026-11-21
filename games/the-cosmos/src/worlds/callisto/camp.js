@@ -57,7 +57,7 @@ function padTexture() {
 export function buildCamp({ engine, world, space, tier }) {
   const low = tier === 'low', body = world.body, pi = body.padInfo, frame = world.frame;
   const portOff = body.ports && body.ports[0] ? frameToOutpost(pi, body.ports[0].point) : null;
-  const portPi = portOff ? body.playerPad(portOff.x, portOff.z) : null;      // a full { point, up, east, north } at the port
+  const portPi = portOff ? body.playerPad(portOff.x, -portOff.z) : null;      // playerPad takes (east, NORTH); outpost z runs south. (Until 11/21 the sign was missing and the whole camp stood 1.2 km SOUTH of the pad, 2.4 km from its own graded port and from the prospector.)      // a full { point, up, east, north } at the port
   const art = makePortMaterials(tier, space.ship && space.ship.matsExt ? space.ship.matsExt : null);
   const mats = art.mats;
   const root = new THREE.Group(); root.name = 'camp:' + body.id;
@@ -249,7 +249,7 @@ export function buildCamp({ engine, world, space, tier }) {
 
   // ---- the prospectors' camp (the world port, 1.2 km north): huts, a drill rig, a claim board, string lights, a buggy ----
   if (portPi) {
-    Xp('concrete', 0, -0.18, 0, 40, 0.36, 30, [0.74, 0.72, 0.68]);
+    Xp('concrete', 0, -0.14, 0, 40, 0.36, 30, [0.74, 0.72, 0.68]);       // 4 cm proud of the graded ground (level with it, the two fought for the same pixels)
     for (const [hx, hz, rot] of [[-14, -6, 0.06], [0, -12, -0.04], [20, -8, 0.1]]) {
       kp.push(hx, 0, hz, rot);
       Bp('wall', 0, 1.9, 0, 14, 3.8, 5.6, [0.42, 0.34, 0.26], 0.06);
@@ -331,7 +331,7 @@ export function buildCamp({ engine, world, space, tier }) {
   const people = new CampPeople({ roots: { pad: root, port: portRoot }, padPi: pi, portPi, people: space.peopleLib || null });
   let t = 0;
   const out = {
-    root, portRoot, entry, portEntry, people,
+    root, portRoot, portPi, entry, portEntry, people,
     update(dt, walkerWorldPos, walker) {
       t += dt;
       pulseMat.opacity = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 2.1));

@@ -105,7 +105,7 @@ export async function run({ check, section }) {
   section('WD-CALLISTO 5: the jobs (The Quiet Road)');
   const C = await src('missions/catalog.js'), W = await src('missions/where.js'), D = await src('missions/desk.js');
   {
-    const ms = C.MISSIONS.filter((m) => m.world === 'callisto');
+    const ms = C.MISSIONS.filter((m) => m.world === 'callisto' && !m.repeat);       // the freight board's repeating runs are counted by test/freight-checks.mjs
     check('five jobs in the one thread: an oath job for each side (Mystara\'s ice, the prospectors\' claim), a port relay walk, the joint seal, and a desk hire', ms.length === 5 && C.threadById('callisto-quiet-road') && ms.filter((m) => m.oath).map((m) => m.faction).sort().join() === 'mystara,unbound' && ms.filter((m) => m.side === 'joint').length === 1);
     check('every giver and every place resolves on Callisto, and no spot stands inside a wall', ms.every((m) => {
       const g = W.resolve(m.giver); if (!g || g.frame !== 'callisto') return false;

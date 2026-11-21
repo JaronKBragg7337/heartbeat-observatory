@@ -58,7 +58,7 @@ try {
       workers.members.length===15 && workers.members.filter(m=>m.pose==='seated').length===5 &&
       workers.members.filter(m=>m.id.startsWith('trader-')).length===4);
     check('port workers only reuse cached models; no additional GLB is requested',
-      spawns.length===15 && spawns.every(file=>file==='cached.glb'));
+      spawns.length>=15 && spawns.every(file=>file==='cached.glb'));       // 15 at their posts, plus the walkers a phone is allowed (portPeople.js)
     const faces={south:[0,1],north:[0,-1],east:[1,0],west:[-1,0]};
     check('workers occupy their marked posts and face their work with Sit or Idle',
       workers.members.every(m=>{

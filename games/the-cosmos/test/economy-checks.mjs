@@ -105,7 +105,8 @@ export async function runEconomyChecks({ROOT,check,section,mars,FIELD}) {
   walk(join(ROOT,'src'));files.push(join(ROOT,'index.html'));
   const missing=[];
   for(const file of files) {
-    const text=readFileSync(file,'utf8'),strings=[];
+    // a hint written with hintFor({ keys, touch, pad }) names its own touch path beside the key: not a bare key prompt
+    const text=readFileSync(file,'utf8').replace(/hintFor\(\{[^}]*\btouch:[^}]*\}\)/g,'hintFor()'),strings=[];
     if(file.endsWith('.html'))strings.push(text);
     else for(let i=0;i<text.length;i++) {
       if(text.slice(i,i+2)==='//'){i=text.indexOf('\n',i);if(i<0)break;continue;}

@@ -6,6 +6,7 @@ import { buildSea } from './sea.js';
 import { buildGlobe } from './globe.js';
 import { buildComplex } from './complex.js';
 import { buildLife } from './life.js';
+import { buildEarthYard } from './yards.js';                  // the two sides seen at work (Skyward's payload stand, Homeguard's sea wall depot)
 import { buildBoard } from '../../missions/boardProp.js';       // MISSIONS: the dispatcher's notice board
 import { DESKS } from '../../missions/desk.js';
 import { MoonPeople } from '../moon/people.js';
@@ -23,13 +24,16 @@ export default {
     // the two people (cast.js): the Moon's person class reads the layout it is given, here Earth's, and builds them from the same Loft library when the world is built
     const people = new MoonPeople({ root: complex.root || engine.scene, people: space.peopleLib || null, space, pi, worldId: 'earth' });
     people.layout = layout;
+    let yard = null;
+    try { yard = buildEarthYard({ engine, world, space, parent: complex.root }); } catch (e) { console.error('Earth yard failed', e); }
     let t = 0;
     return {
-      complex, life, sea, globe, people,
+      complex, life, sea, globe, people, yard,
       update(dt, focus) {
         t += dt;
         globe.update(dt, focus); sea.update(dt, focus);
         complex.tick(dt, t);
+        if (yard) yard.update(dt, focus || space.walker.worldPos);
         if (space.peopleLib && !people.built) people.build().catch((e) => console.error('Earth people failed', e));
         if (space.walker) people.tick(dt, space.walker.worldPos);
         if (space && space.walker && !space.ship.aboard) {
@@ -41,7 +45,7 @@ export default {
           }
         }
       },
-      dispose() { life.dispose(); complex.dispose(); sea.dispose(); globe.dispose(); },
+      dispose() { if (yard) yard.dispose(); life.dispose(); complex.dispose(); sea.dispose(); globe.dispose(); },
     };
   },
 };

@@ -5,19 +5,23 @@
 // ============================================================================
 import { buildCamp } from './camp.js';
 import { acquireJupiter } from './jupiterSky.js';
+import { buildCallistoYards } from './yards.js';              // the two sides seen at work (Mystara's relay stand at the camp, the Unbound's freight pad at the prospectors' camp)
 
 export default {
   dress(world, { engine }) {
     const space = world.space;
     const camp = buildCamp({ engine, world, space, tier: world.tier });
     const jupiter = acquireJupiter({ engine, space });       // one Jupiter, shown while the ship is in Callisto's frame
+    let yards = [null, null];
+    try { yards = buildCallistoYards({ engine, world, space, camp }); } catch (e) { console.error('Callisto yards failed', e); }
     return {
-      camp, people: camp.people, jupiter,
-      update(dt) {
+      camp, people: camp.people, jupiter, yard: yards[0], yard2: yards[1],
+      update(dt, focus) {
+        for (const y of yards) if (y) y.update(dt, focus || space.walker.worldPos);
         if (space.peopleLib && !camp.people.built) camp.people.build().catch((e) => console.error('Callisto people failed', e));
         camp.update(dt, space.walker.worldPos, space.ship.aboard ? null : space.walker);
       },
-      dispose() { jupiter.release(); camp.dispose(); },
+      dispose() { for (const y of yards) if (y) y.dispose(); jupiter.release(); camp.dispose(); },
     };
   },
 };
