@@ -402,6 +402,7 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize); window.addEventListener('orientationchange', resize); resize();
+if (camera.aspect < 1) camera.position.sub(controls.target).multiplyScalar(1.8).add(controls.target);   // a tall phone screen needs to stand further back to see the same yard
 idleStatus(); shadowsDirty();
 let last = performance.now();
 renderer.setAnimationLoop((now) => {
