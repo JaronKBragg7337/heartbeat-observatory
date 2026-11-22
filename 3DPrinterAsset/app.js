@@ -332,6 +332,17 @@ goBtn.addEventListener('click', async () => {
   say(queue.length > 1 || job ? `${current.label} added to the print line.` : `${current.label} ordered.`, 2500);
 });
 $('mode').addEventListener('click', () => setMode(!removing));
+// the sheet's handle: a tap flips it, a drag down hides it, a drag up brings it back
+{
+  const tray = $('tray'), grip = $('grip'); let g = null;
+  const setDown = (d) => { tray.classList.toggle('down', d); grip.setAttribute('aria-expanded', String(!d)); grip.lastElementChild.textContent = d ? 'Show controls' : 'Hide controls'; tray.style.transform = ''; };
+  window.__printer_sheet = setDown;
+  grip.addEventListener('pointerdown', (e) => { g = { y: e.clientY, dy: 0 }; try { grip.setPointerCapture(e.pointerId); } catch (_) {} });
+  grip.addEventListener('pointermove', (e) => { if (!g) return; g.dy = e.clientY - g.y; if (!tray.classList.contains('down') && !matchMedia('(min-width: 760px)').matches) tray.style.transform = `translateY(${Math.max(0, g.dy)}px)`; });
+  const end = (e) => { if (!g) return; const dy = g.dy, was = tray.classList.contains('down'); g = null; if (Math.abs(dy) < 10) setDown(!was); else setDown(dy > 0); e.preventDefault(); };
+  grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', () => { g = null; tray.style.transform = ''; });
+  grip.addEventListener('click', (e) => { if (e.detail === 0) setDown(!tray.classList.contains('down')); });   // keyboard
+}
 for (const b of $('speed').children) b.addEventListener('click', () => { speed = +b.dataset.s; for (const o of $('speed').children) o.classList.toggle('on', o === b); });
 window.addEventListener('keydown', (e) => { if (e.key === 'r' || e.key === 'R') turnBtn.click(); else if (e.key === 'Enter' && !act.hidden) goBtn.click(); else if (e.key === 'Escape') $('cancel').click(); });
 

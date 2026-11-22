@@ -62,3 +62,13 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 #own input[type=range] { grid-column: 1 / -1; width: 100%; height: 26px; margin: 0; accent-color: #c8641e; }
 #own label.check { grid-column: 1 / -1; display: flex; gap: 8px; min-height: 30px; }
 #own label.check input { width: 18px; height: 18px; accent-color: #c8641e; }
+
+/* the sheet's handle: tap it, or drag it down / up */
+#grip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 44px;
+  margin: -8px 0 0; padding: 0; border: 0; background: none; touch-action: none; -webkit-user-select: none; user-select: none; }
+#grip i { display: block; width: 46px; height: 5px; border-radius: 3px; background: rgba(60, 45, 25, .38); }
+#grip span { font-size: 11px; color: #5d5245; }
+#tray.down > :not(#grip):not(#act) { display: none; }
+#tray { transition: transform .18s ease-out; }
+/* the site's phone tab sits up by the title on this page, never on top of the sheet */
+.hbp-launch.edge { top: calc(env(safe-area-inset-top, 0px) + 62px) !important; transform: none !important; }
