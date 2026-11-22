@@ -6,7 +6,7 @@
 <meta name="description" content="World Printer: one printing flow that makes every part. Pick a part, tap the yard, and watch the nozzle lay it layer by layer in a shared yard anyone can build in.">
 <meta name="theme-color" content="#efe6d6">
 <title>World Printer - Heartbeat Observatory</title>
-<link rel="stylesheet" href="./style.css?v=3a">
+<link rel="stylesheet" href="./style.css?v=3b">
 <script type="importmap">
 { "imports": {
   "three": "./vendor/three.module.min.js",
@@ -26,14 +26,14 @@
     <a class="old" href="./classic/">Old lab</a>
   </header>
 
-  <div id="act" hidden>
-    <button id="turn" type="button">Turn</button>
-    <button id="go" type="button" class="main">Print here</button>
-    <button id="cancel" type="button" aria-label="Cancel">&#10005;</button>
-  </div>
-
   <section id="tray" aria-label="Printer controls">
+    <div id="act" hidden>
+      <button id="turn" type="button">Turn</button>
+      <button id="go" type="button" class="main">Print here</button>
+      <button id="cancel" type="button" aria-label="Cancel">&#10005;</button>
+    </div>
     <div id="whyrow"><p id="why"></p><button id="mode" type="button">Remove</button></div>
+    <div id="own" hidden aria-label="Shape your own part"></div>
     <div id="parts" role="listbox" aria-label="Parts"></div>
     <div id="opts">
       <div id="mats" role="radiogroup" aria-label="Material"></div>
@@ -46,6 +46,6 @@
   </section>
 </div>
 <noscript>World Printer needs JavaScript and WebGL.</noscript>
-<script type="module" src="./app.js?v=3a"></script>
+<script type="module" src="./app.js?v=3b"></script>
 </body>
 </html>

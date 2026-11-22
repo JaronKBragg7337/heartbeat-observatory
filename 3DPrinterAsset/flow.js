@@ -171,6 +171,52 @@ export const PARTS = [
     } },
 ];
 
+// ---------- your own part: the same flow with the numbers left open ----------
+// id = "spin~sides~width~layers~lean~twist~waves~lid" (whole numbers). One loop, changed a little
+// each layer. A real printer cannot lean a layer out further than about half a bead, so neither can
+// this: the radius may change by at most 6 cm per layer, whatever the sliders ask for.
+function polyExtent(P, inset) {
+  return (z) => {
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < P.length; i++) {
+      const a = P[i], b = P[(i + 1) % P.length];
+      if ((a[1] - z) * (b[1] - z) > 0 || a[1] === b[1]) continue;
+      const x = a[0] + (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]); if (x < lo) lo = x; if (x > hi) hi = x;
+    }
+    return hi - lo > inset * 2 + W * 0.5 ? [lo + inset, hi - inset] : null;
+  };
+}
+const customCache = new Map();
+export function customPart(id) {
+  const a = String(id).split('~'); if (a[0] !== 'spin') return null;
+  const I = (k, lo, hi, d) => { const v = parseInt(a[k], 10); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+  let n = I(1, 0, 8, 0); if (n > 0 && n < 3) n = 3;
+  const w = I(2, 4, 24, 10), h = I(3, 3, 40, 15), t = I(4, -5, 5, 0), q = I(5, 0, 9, 0), v = I(6, 0, 4, 0), lid = I(7, 0, 1, 0);
+  const key = ['spin', n, w, h, t, q, v, lid].join('~');
+  if (customCache.has(key)) return customCache.get(key);
+  const sides = n ? n : 20, r0 = w / 20, radii = [];
+  let r = r0;
+  for (let i = 0; i < h; i++) {
+    const target = (r0 + i * t * 0.012) * (1 + 0.14 * Math.sin(2 * Math.PI * v * i / h));
+    if (i > 0) r += Math.max(-0.06, Math.min(0.06, target - r));
+    r = Math.min(1.4, r); if (r < 0.08) break; radii.push(r);
+  }
+  const rmax = Math.max(...radii), wide = Math.round(rmax * 20 + 1) / 10;
+  const part = {
+    id: key, label: 'Own shape', custom: true, size: [wide, +(radii.length * H).toFixed(2), wide],
+    why: 'One loop, changed a little each layer. A layer can only lean half a bead, like a real printer.',
+    build() {
+      return radii.map((rad, i) => {
+        const P = circle(0, 0, rad, sides, i * q * 0.012 + (n === 4 ? Math.PI / 4 : 0)), o = [loop(P)];
+        if (lid && (i === 0 || i === radii.length - 1)) { const zs = P.map(p => p[1]); const ras = raster(Math.min(...zs) + W, Math.max(...zs) - W, polyExtent(P, W * 0.9)); if (ras.length > 1) o.push(line(ras)); }
+        return o;
+      });
+    },
+  };
+  if (customCache.size > 400) customCache.clear();
+  customCache.set(key, part); return part;
+}
+
 // ---------- the mesher: sweep the bead along the path ----------
 // Returns typed arrays ready for a BufferGeometry, plus the nozzle route (pts + cum distance).
 // attribute "dist" = how far along the whole route each vertex was laid: the page reveals the
@@ -206,7 +252,9 @@ export function meshPart(part) {
         const sx = mx * w / 2 * k, sz = mz * w / 2 * k;
         visit(c[0], yc, c[1]);
         const shade = tone * (0.94 + 0.06 * hash(li * 3.1 + j * 0.37 + c[0] * 5.1));
-        const ring = [[sx, H / 4, sz, mx, 0.5, mz], [0, H / 2, 0, 0, 1, 0], [-sx, H / 4, -sz, -mx, 0.5, -mz], [-sx, -H / 4, -sz, -mx, -0.5, -mz], [0, -H / 2, 0, 0, -1, 0], [sx, -H / 4, sz, mx, -0.5, mz]];
+        // cross-section of a real bead: pressed flat on top and bottom, bulging at the sides
+        const fx = sx * 0.6, fz = sz * 0.6, e = 0.35;
+        const ring = [[sx, 0, sz, mx, 0, mz], [fx, H / 2, fz, mx * e, 1, mz * e], [-fx, H / 2, -fz, -mx * e, 1, -mz * e], [-sx, 0, -sz, -mx, 0, -mz], [-fx, -H / 2, -fz, -mx * e, -1, -mz * e], [fx, -H / 2, fz, mx * e, -1, mz * e]];
         for (const v of ring) {
           const px = c[0] + v[0], py = yc + v[1], pz = c[1] + v[2];
           pos.push(px, py, pz);

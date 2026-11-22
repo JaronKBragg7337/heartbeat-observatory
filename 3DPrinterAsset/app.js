@@ -3,7 +3,7 @@
 // from flow.js: a path the nozzle follows. This file never draws a part any other way.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { PARTS, meshPart, nozzleAt, H } from './flow.js';
+import { PARTS, customPart, meshPart, nozzleAt, H } from './flow.js';
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $('status');
@@ -39,9 +39,9 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xdfe6ea);
 scene.fog = new THREE.Fog(0xe9e4da, 70, 260);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
-camera.position.set(8.5, 6.5, 11.5);
+camera.position.set(4.2, 6.2, 8.6);
 const controls = new OrbitControls(camera, canvas);
-controls.target.set(0, 1.1, 0);
+controls.target.set(-0.9, 1.3, -3.4);
 controls.enableDamping = true; controls.dampingFactor = 0.09;
 controls.minDistance = 2.5; controls.maxDistance = 55; controls.maxPolarAngle = Math.PI * 0.492;
 controls.zoomSpeed = 0.9; controls.rotateSpeed = 0.7;
@@ -111,10 +111,13 @@ function poseGantry() {
 poseGantry();
 
 // ---------- parts: geometry straight from the flow ----------
-const meshed = {}, geos = {}, partById = {};
-for (const p of PARTS) {
-  partById[p.id] = p;
-  const m = meshed[p.id] = meshPart(p), g = new THREE.BufferGeometry();
+// reg(id) -> { part, m (the meshed flow), geo } for a catalogue part or a "spin~..." own shape; made on first ask
+const registry = new Map();
+function reg(id) {
+  if (registry.has(id)) return registry.get(id);
+  const p = PARTS.find(x => x.id === id) || customPart(id); if (!p) return null;
+  if (registry.has(p.id)) return registry.get(p.id);
+  const m = meshPart(p), g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(m.position, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(m.normal, 3));
   g.setAttribute('color', new THREE.BufferAttribute(m.color, 3));
@@ -122,8 +125,9 @@ for (const p of PARTS) {
   g.setIndex(new THREE.BufferAttribute(m.index, 1));
   g.boundingBox = new THREE.Box3(new THREE.Vector3(...m.bbox.min), new THREE.Vector3(...m.bbox.max));
   g.computeBoundingSphere();
-  geos[p.id] = g;
+  const entry = { part: p, m, geo: g }; registry.set(p.id, entry); return entry;
 }
+for (const p of PARTS) reg(p.id);
 const doneMats = {};
 for (const [k, v] of Object.entries(MATS)) doneMats[k] = new THREE.MeshStandardMaterial({ color: v.color, vertexColors: true, roughness: 0.93, metalness: 0 });
 // while a part is being printed, only the bead already laid is drawn, and fresh bead is darker (wet)
@@ -143,17 +147,17 @@ const parts = [];                 // every part mesh in the yard (printed, print
 const byRow = new Map();          // db id -> mesh
 const queue = []; let job = null; const curing = [];
 function makePart(partId, matKey, x, y, z, rot, rowId, mine) {
-  const mesh = new THREE.Mesh(geos[partId], doneMats[matKey]);
+  const mesh = new THREE.Mesh(reg(partId).geo, doneMats[matKey]);
   mesh.position.set(x, y, z); mesh.rotation.y = rot; mesh.updateMatrixWorld(true);
   mesh.receiveShadow = true; mesh.castShadow = true;
-  mesh.userData = { partId, matKey, rowId, mine, box: new THREE.Box3().copy(geos[partId].boundingBox).applyMatrix4(mesh.matrixWorld) };
+  mesh.userData = { partId, matKey, rowId, mine, box: new THREE.Box3().copy(reg(partId).geo.boundingBox).applyMatrix4(mesh.matrixWorld) };
   scene.add(mesh); parts.push(mesh); if (rowId) byRow.set(rowId, mesh);
   return mesh;
 }
 function order(mesh, speedMul) {   // hand a part to the printer
   const mat = printingMat(mesh.userData.matKey); mesh.material = mat; mesh.castShadow = false;
   const marker = new THREE.Box3Helper(mesh.userData.box, 0xc8641e); marker.material.transparent = true; marker.material.opacity = 0.7; scene.add(marker);
-  queue.push({ mesh, mat, marker, m: meshed[mesh.userData.partId], d: 0, speedMul, phase: 'travel' });
+  queue.push({ mesh, mat, marker, m: reg(mesh.userData.partId).m, d: 0, speedMul, phase: 'travel' });
 }
 function dropPart(mesh) {
   const i = parts.indexOf(mesh); if (i >= 0) parts.splice(i, 1);
@@ -180,13 +184,13 @@ function work(dt) {
       nozzleAt(m, 0, arr); tmp.set(arr[0], arr[1] + H / 2, arr[2]).applyMatrix4(mesh.matrixWorld);
       const dist = nozzle.distanceTo(tmp), step = 11 * Math.max(1, mul) * dt;
       if (dist <= step) { nozzle.copy(tmp); job.phase = 'print'; scene.remove(job.marker); } else nozzle.lerp(tmp, step / dist);
-      if (performance.now() > statusHold) statusEl.textContent = `Moving to print the ${partById[mesh.userData.partId].label.toLowerCase()}...`;
+      if (performance.now() > statusHold) statusEl.textContent = `Moving to print the ${reg(mesh.userData.partId).part.label.toLowerCase()}...`;
     } else {
       job.d = Math.min(m.length, job.d + NOZZLE_SPEED * mul * dt);
       job.mat.userData.uD.value = job.d;
       nozzleAt(m, job.d, arr); const layer = Math.min(m.layers, Math.floor(arr[1] / H) + 1);
       nozzle.set(arr[0], arr[1] + H / 2, arr[2]).applyMatrix4(mesh.matrixWorld);
-      if (performance.now() > statusHold) statusEl.textContent = `Printing ${partById[mesh.userData.partId].label.toLowerCase()}: layer ${layer} of ${m.layers}` + (queue.length ? ` (${queue.length} waiting)` : '');
+      if (performance.now() > statusHold) statusEl.textContent = `Printing ${reg(mesh.userData.partId).part.label.toLowerCase()}: layer ${layer} of ${m.layers}` + (queue.length ? ` (${queue.length} waiting)` : '');
       if (job.d >= m.length) { mesh.castShadow = true; shadowsDirty(); curing.push(job); job = null; if (!queue.length) idleStatus(); }
     }
   } else if (nozzle.y < 2.2) nozzle.y = Math.min(2.2, nozzle.y + 2.5 * dt);   // lift clear when idle
@@ -212,8 +216,8 @@ const ready = (async () => {
 })();
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16)));
 function fromRow(row, animate) {
-  const t = String(row.type || '').split(':'); if (t[0] !== 'flow' || !partById[t[1]] || byRow.has(row.id)) return null;
-  const mesh = makePart(t[1], MATS[t[2]] ? t[2] : 'concrete', row.x, row.y, row.z, row.rot_y || 0, row.id, !!me && row.placed_by === me);
+  const t = String(row.type || '').split(':'); if (t[0] !== 'flow' || !reg(t[1]) || byRow.has(row.id)) return null;
+  const mesh = makePart(reg(t[1]).part.id, MATS[t[2]] ? t[2] : 'concrete', row.x, row.y, row.z, row.rot_y || 0, row.id, !!me && row.placed_by === me);
   if (animate && queue.length < 4) order(mesh, 4);
   return mesh;
 }
@@ -221,7 +225,7 @@ async function saveRow(mesh) {
   await ready; if (!sb) return;
   const u = mesh.userData;
   try {
-    const { error } = await sb.from('placements').insert({ id: u.rowId, world: WORLD, type: `flow:${u.partId}:${u.matKey}`, label: partById[u.partId].label, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z, rot_y: mesh.rotation.y, scale: 1, placed_by: me });
+    const { error } = await sb.from('placements').insert({ id: u.rowId, world: WORLD, type: `flow:${u.partId}:${u.matKey}`, label: reg(u.partId).part.label, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z, rot_y: mesh.rotation.y, scale: 1, placed_by: me });
     if (error) say('Could not save that one to the shared yard. It stays on your screen only.', 5000);
   } catch (e) { /* offline: local only */ }
 }
@@ -241,7 +245,7 @@ async function saveRow(mesh) {
 
 // ---------- controls: pick a part, tap a spot, print ----------
 let current = PARTS[0], matKey = 'concrete', removing = false, picked = null;
-const ghost = new THREE.Mesh(geos[current.id], new THREE.MeshBasicMaterial({ color: 0xe0782a, transparent: true, opacity: 0.38, depthWrite: false }));
+const ghost = new THREE.Mesh(reg(current.id).geo, new THREE.MeshBasicMaterial({ color: 0xe0782a, transparent: true, opacity: 0.38, depthWrite: false }));
 ghost.visible = false; ghost.renderOrder = 2; scene.add(ghost);
 const pickBox = new THREE.Box3Helper(new THREE.Box3(), 0xa63a2a); pickBox.visible = false; scene.add(pickBox);
 const act = $('act'), goBtn = $('go'), turnBtn = $('turn');
@@ -261,9 +265,12 @@ function cancelGhost() { ghost.visible = false; if (!removing) showAct(null); }
 function setWhy() { const s = current.size; $('why').innerHTML = `<b>${current.label}</b> ${s[0]} x ${s[2]} m, ${s[1]} m tall. ${current.why}`; }
 
 function choosePart(p) {
-  current = p; ghost.geometry = geos[p.id];
+  const old = current.id;
+  current = p; ghost.geometry = reg(p.id).geo; $('own').hidden = !p.custom;
+  // an own shape that was only ever a preview is thrown away again
+  if (old !== p.id && old.startsWith('spin~') && old !== OWN_SAMPLE && !parts.some(m => m.userData.partId === old)) { const e = registry.get(old); if (e) { e.geo.dispose(); registry.delete(old); } }
   if (p.mat && MATS[p.mat]) chooseMat(p.mat);
-  for (const el of $('parts').children) el.classList.toggle('on', el.dataset.id === p.id);
+  for (const el of $('parts').children) el.classList.toggle('on', el.dataset.id === (p.custom ? 'own' : p.id));
   setWhy(); if (removing) setMode(false);
 }
 function chooseMat(k) { matKey = k; for (const el of $('mats').children) el.classList.toggle('on', el.dataset.k === k); }
@@ -287,7 +294,7 @@ function onTap(ev) {
   if (removing) {
     if (!hit) { unpick(); return; }
     picked = hit.part; pickBox.box.copy(picked.userData.box); pickBox.visible = true; showAct('remove');
-    say(`${partById[picked.userData.partId].label} selected.`, 2500); return;
+    say(`${reg(picked.userData.partId).part.label} selected.`, 2500); return;
   }
   let x, y = 0, z;
   if (hit && Math.abs(hit.point.y - hit.part.userData.box.max.y) < 0.03) { x = hit.point.x; z = hit.point.z; y = hit.part.userData.box.max.y; }
@@ -328,19 +335,20 @@ $('mode').addEventListener('click', () => setMode(!removing));
 for (const b of $('speed').children) b.addEventListener('click', () => { speed = +b.dataset.s; for (const o of $('speed').children) o.classList.toggle('on', o === b); });
 window.addEventListener('keydown', (e) => { if (e.key === 'r' || e.key === 'R') turnBtn.click(); else if (e.key === 'Enter' && !act.hidden) goBtn.click(); else if (e.key === 'Escape') $('cancel').click(); });
 
+const OWN_SAMPLE = 'spin~6~10~18~-1~4~2~0';
 // part cards with a small picture of the real printed part
 function thumbnails() {
   const out = {};
   try {
     const s2 = new THREE.Scene(); s2.background = new THREE.Color(0xefe6d6);
     s2.add(new THREE.HemisphereLight(0xffffff, 0xa08c70, 1.5)); const d = new THREE.DirectionalLight(0xffffff, 2.2); d.position.set(-3, 5, 4); s2.add(d);
-    const cam = new THREE.PerspectiveCamera(30, 72 / 60, 0.1, 100), mesh = new THREE.Mesh(geos.wall, doneMats.sand); s2.add(mesh);
+    const cam = new THREE.PerspectiveCamera(30, 72 / 60, 0.1, 100), mesh = new THREE.Mesh(reg('wall').geo, doneMats.sand); s2.add(mesh);
     renderer.setPixelRatio(1); renderer.setSize(216, 180, false);
-    for (const p of PARTS) {
-      mesh.geometry = geos[p.id]; mesh.material = doneMats[p.mat || 'sand'];
-      const b = geos[p.id].boundingBox, c = b.getCenter(new THREE.Vector3()), r = geos[p.id].boundingSphere.radius;
+    for (const p of [...PARTS, { id: OWN_SAMPLE, mat: 'clay', as: 'own' }]) {
+      mesh.geometry = reg(p.id).geo; mesh.material = doneMats[p.mat || 'sand'];
+      const b = reg(p.id).geo.boundingBox, c = b.getCenter(new THREE.Vector3()), r = reg(p.id).geo.boundingSphere.radius;
       cam.position.set(c.x + r * 2.3, c.y + r * 1.5, c.z + r * 2.9); cam.lookAt(c); renderer.render(s2, cam);
-      out[p.id] = canvas.toDataURL('image/jpeg', 0.8);
+      out[p.as || p.id] = canvas.toDataURL('image/jpeg', 0.8);
     }
   } catch (e) { /* cards fall back to plain */ }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -353,6 +361,31 @@ function thumbnails() {
     b.innerHTML = (pics[p.id] ? `<img alt="" src="${pics[p.id]}">` : '<i class="ph"></i>') + `<span>${p.label}</span>`;
     b.addEventListener('click', () => choosePart(p)); wrap.appendChild(b);
   }
+  // "Your own": the same flow with the numbers left open
+  const own = document.createElement('button'); own.type = 'button'; own.className = 'part'; own.dataset.id = 'own'; own.setAttribute('role', 'option');
+  own.innerHTML = (pics.own ? `<img alt="" src="${pics.own}">` : '<i class="ph"></i>') + '<span>Your own</span>';
+  wrap.insertBefore(own, wrap.children[1] || null);
+  const SIDES = [0, 3, 4, 5, 6, 8], vals = { n: 4, w: 10, h: 18, t: -1, q: 4, v: 2, lid: 0 };
+  const spec = [
+    ['n', 'Sides', 0, 5, v => SIDES[v] ? String(SIDES[v]) : 'Round'], ['w', 'Width', 4, 24, v => (v / 10).toFixed(1) + ' m'],
+    ['h', 'Height', 3, 40, v => (v * H).toFixed(2) + ' m'], ['t', 'Lean', -5, 5, v => v === 0 ? 'Straight' : (v > 0 ? 'Out ' : 'In ') + Math.abs(v)],
+    ['q', 'Twist', 0, 9, v => v ? String(v) : 'None'], ['v', 'Waves', 0, 4, v => v ? String(v) : 'None'],
+  ];
+  const ownKey = () => ['spin', SIDES[vals.n], vals.w, vals.h, vals.t, vals.q, vals.v, vals.lid].join('~');
+  let ownFirst = true;
+  const applyOwn = () => {
+    choosePart(customPart(ownKey())); if (ownFirst) { ownFirst = false; chooseMat('clay'); }
+    if (!ghost.visible) { ghost.position.set(snap(controls.target.x), 0, snap(controls.target.z)); ghost.visible = true; showAct('build'); }
+  };
+  const panel = $('own');
+  for (const [k, label, min, max, fmt] of spec) {
+    const l = document.createElement('label'); l.innerHTML = `<span>${label}</span><output>${fmt(vals[k])}</output><input type="range" min="${min}" max="${max}" step="1" value="${vals[k]}" aria-label="${label}">`;
+    const inp = l.querySelector('input'), o = l.querySelector('output');
+    inp.addEventListener('input', () => { vals[k] = +inp.value; o.textContent = fmt(vals[k]); applyOwn(); });
+    panel.appendChild(l);
+  }
+  { const l = document.createElement('label'); l.className = 'check'; l.innerHTML = '<input type="checkbox"><span>Closed top and bottom</span>'; l.querySelector('input').addEventListener('change', (e) => { vals.lid = e.target.checked ? 1 : 0; applyOwn(); }); panel.appendChild(l); }
+  own.addEventListener('click', applyOwn);
   const mw = $('mats');
   for (const [k, v] of Object.entries(MATS)) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'mat'; b.dataset.k = k; b.title = v.label; b.setAttribute('aria-label', v.label);
