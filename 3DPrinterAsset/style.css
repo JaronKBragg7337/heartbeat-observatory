@@ -26,7 +26,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 #tray { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 10px);
   background: rgba(250, 244, 232, .94); border-top: 1px solid rgba(60, 45, 25, .14); box-shadow: 0 -6px 24px rgba(60, 40, 10, .12);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-#whyrow { display: flex; align-items: center; gap: 8px; padding: 0 12px 6px 14px; }
+#whyrow { display: flex; align-items: center; gap: 10px; padding: 0 14px 6px 12px; }
 #why { margin: 0; flex: 1 1 auto; min-width: 0; font-size: 13px; color: #5d5245; min-height: 1.35em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #why b { color: #2b2620; }
 #parts { display: flex; gap: 8px; overflow-x: auto; padding: 2px 12px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -44,7 +44,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 #speed { display: flex; margin-left: auto; border: 1px solid rgba(60, 45, 25, .2); border-radius: 999px; overflow: hidden; background: #fffaf0; }
 #speed button { border: 0; background: none; padding: 0 10px; min-height: 36px; font-size: 13px; }
 #speed button.on { background: #2b2620; color: #fffaf0; }
-#mode { flex: 0 0 auto; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(60, 45, 25, .2); background: #fffaf0; font-size: 13px; }
+#mode { flex: 0 0 auto; order: -1; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(60, 45, 25, .2); background: #fffaf0; font-size: 13px; }
 #mode.on { background: #a63a2a; border-color: #84291c; color: #fff; }
 
 @media (max-width: 380px) { #opts { gap: 6px; } .mat { width: 30px; height: 30px; } #speed button { padding: 0 8px; } }
