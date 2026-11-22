@@ -1,25 +1,51 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <meta name="description" content="World Printer Lab v2i — modular world parts, real printer classes, connector snapping, and a persistent multiplayer sandbox." />
-    <title>World Printer Lab v2i</title>
-    <link rel="stylesheet" href="./style.css?v=2i" />
-    <script type="importmap">
-    {
-      "imports": {
-        "three": "./vendor/three.module.min.js",
-        "three/examples/jsm/controls/OrbitControls.js": "./vendor/OrbitControls.js"
-      }
-    }
-    </script>
-  <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
-<script defer src="/_vercel/insights/script.js"></script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="World Printer: one printing flow that makes every part. Pick a part, tap the yard, and watch the nozzle lay it layer by layer in a shared yard anyone can build in.">
+<meta name="theme-color" content="#efe6d6">
+<title>World Printer - Heartbeat Observatory</title>
+<link rel="stylesheet" href="./style.css?v=3a">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three.module.min.js",
+  "three/examples/jsm/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+} }
+</script>
 </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="./bootstrap.js?v=2i"></script>
-  <script defer src="/hb-editor.js"></script>
-  </body>
+<body>
+<div id="app">
+  <canvas id="view" aria-label="The print yard"></canvas>
+
+  <header id="top">
+    <div class="title">
+      <strong>World Printer</strong>
+      <span id="status">Warming up the printer...</span>
+    </div>
+    <a class="old" href="./classic/">Old lab</a>
+  </header>
+
+  <div id="act" hidden>
+    <button id="turn" type="button">Turn</button>
+    <button id="go" type="button" class="main">Print here</button>
+    <button id="cancel" type="button" aria-label="Cancel">&#10005;</button>
+  </div>
+
+  <section id="tray" aria-label="Printer controls">
+    <div id="whyrow"><p id="why"></p><button id="mode" type="button">Remove</button></div>
+    <div id="parts" role="listbox" aria-label="Parts"></div>
+    <div id="opts">
+      <div id="mats" role="radiogroup" aria-label="Material"></div>
+      <div id="speed" role="radiogroup" aria-label="Print speed">
+        <button type="button" data-s="0.3">Slow</button>
+        <button type="button" data-s="1" class="on">Normal</button>
+        <button type="button" data-s="4">Fast</button>
+      </div>
+    </div>
+  </section>
+</div>
+<noscript>World Printer needs JavaScript and WebGL.</noscript>
+<script type="module" src="./app.js?v=3a"></script>
+</body>
 </html>
