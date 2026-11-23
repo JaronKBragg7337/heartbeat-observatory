@@ -19,6 +19,10 @@
   "voice": "aoi",
   "text": "Oh! Hello. Badge visible. I mean, your badge. Mine is visible. Is yours visible? Please tell me what to do."
  },
+ "003aa03fe35437": {
+  "voice": "w-jessica",
+  "text": "Since you are going back anyway. The fab prints boards and the Mercantile at Tranquility sells them for three times what we charge. One case, to Dov Abara. He will pretend to be surprised."
+ },
  "0041f99e598278": {
   "voice": "intercom",
   "text": "Entering the atmosphere. You will feel some shaking. This is normal. The coffee will disagree."
@@ -130,6 +134,10 @@
  "012a7f625046ae": {
   "voice": "w-heart",
   "text": "I command a village that is also a fleet. The paperwork is mostly lanterns."
+ },
+ "012dda643a32b8": {
+  "voice": "w-bella",
+  "text": "The wall loses a little every tide and the range pays for every cartload that goes back into it. Three hundred kilos of anything that is not water: shell rock, sand, soil. Tip it at the stakes."
  },
  "0132d6732711f9": {
   "voice": "ship",
@@ -415,6 +423,10 @@
   "voice": "w-lewis",
   "text": "That is Jupiter below us. Yes, all of it. The camp said the drive would drop us east of the basin. The drive disagreed."
  },
+ "03c3793b9f837c": {
+  "voice": "w-bella",
+  "text": "The terminal collects more crates for the pole than the pole collects itself. This one is for Quartermaster Ostrander at Shackleton. Mind the gate sergeant, hand it over, and they pay on the spot."
+ },
  "03c795e4cb55dc": {
   "voice": "w-fenrir",
   "text": "Sergeant Holloway, Fortis. The glass people are very nice, and very, very quiet. Ask yourself why. Then come and get a badge."
@@ -510,6 +522,10 @@
  "049060e98bc858": {
   "voice": "ada",
   "text": "Down at Pad 01, the Meridian's own pad."
+ },
+ "0494b7a4fda9e4": {
+  "voice": "w-alice",
+  "text": "My far mast stands out past the ice well and its radio link drops every time the dust lifts. Somebody has to walk out, pull the card and bring it to me. Follow the haul road to the well, then the stakes east of it. The mast is the thin one with the guy wires."
  },
  "04b94b62ee0ad5": {
   "voice": "sunita",
@@ -614,6 +630,10 @@
  "05de549c1a2710": {
   "voice": "ship",
   "text": "Arrived over Mars orbit (400 km). Easing level."
+ },
+ "05dfbaef308224": {
+  "voice": "w-jessica",
+  "text": "Stickney breathes a case of cartridges every few days whether the line boat flies or not. You know the pad. One case, their airlock."
  },
  "05e7ad12a8e409": {
   "voice": "ada",
@@ -759,6 +779,10 @@
   "voice": "w-lewis",
   "text": "That is ice fog below us. Thick, white, and exactly where the ground is."
  },
+ "07277871a38cd2": {
+  "voice": "w-bella",
+  "text": "Two yards work south of the pad now. Skyward has Payload Stand 2 on the west side: Upbound Two brings canisters for the next launch. The Homeguard has Sea Wall Depot 1 on the east side, on ground Skyward lent them, casting blocks for the wall. Each sends me a count and neither believes the other's. So the range pays a pair of eyes that belongs to nobody. Walk down to Skyward's rack, count the canisters, and sign it."
+ },
  "0739796984cb26": {
   "voice": "ada",
   "text": "Arrived over Callisto: Valhalla Camp. Easing level."
@@ -775,6 +799,10 @@
   "voice": "ada",
   "text": "The ramp is up."
  },
+ "074143457150ea": {
+  "voice": "jorge",
+  "text": "Number Four takes our core boxes off the pad whenever she lands, and pays by the box. The pilot counts them her way. I count them mine. A third count settles it, and you are standing here. The stack is by the awning on the freight pad, east of the huts. Count the boxes. Sign it. Self-service, like everything else."
+ },
  "075477c164087c": {
   "voice": "zuri",
   "text": "Down at Pad 01, the Meridian's own pad."
@@ -786,6 +814,10 @@
  "0762403ff980a5": {
   "voice": "aoi",
   "text": "Tomas Grey, Mystara, keeper of the camp's cupboards and, today, its rescue rover. We saw your beacon. We always see the beacons. We are very good at beacons."
+ },
+ "0778a3c52a68db": {
+  "voice": "w-jessica",
+  "text": "This one is a crossing, not a hop. Occator Works on Ceres cannot make filter membranes and we can. One sealed drum, to Idris Kell at their supply desk. It is a long way and the drive does most of the work. It pays like it."
  },
  "077e52f983175d": {
   "voice": "ada",
@@ -830,6 +862,10 @@
  "07fd599f345075": {
   "voice": "ada",
   "text": "Raider down. Bounty 25 credits."
+ },
+ "07fed752457aae": {
+  "voice": "zuri",
+  "text": "The Archive cools its listening gear with clean ice, and the melt never stops needing more. Three hundred kilos of the bright ice under the dust, to Tomas Grey. It is the same work as your first day. It matters as much."
  },
  "08002811921450": {
   "voice": "jorge",
@@ -882,6 +918,10 @@
  "0863484cf72f11": {
   "voice": "walter",
   "text": "Climb in. The only thing standing on this coast is the Skyward complex, so that is where we are going. I borrowed the truck. Do not tell them."
+ },
+ "088ab9f6f93ea7": {
+  "voice": "w-fenrir",
+  "text": "Shackleton eats every day, recruit, and the Mercantile does not deliver. Four food packs from Dov Abara, to Quartermaster Ostrander. Fortis pays you back and then some. Do it as often as you can stand the flight."
  },
  "08a00d08e1808a": {
   "voice": "zuri",
@@ -994,6 +1034,10 @@
  "0a2c3e4cb96aa5": {
   "voice": "jorge",
   "text": "That is the Valhalla Camp. The camp desk has jobs and hands for hire. My lot is a kilometre north, past the Scar. Follow the lights, or your nose, whichever is sharper."
+ },
+ "0a2eed8ccf5a62": {
+  "voice": "w-jessica",
+  "text": "Water Works 1 pulls a sample every shift and nobody walks it down. It is six hundred metres up the haul road, out of the north-east gate. Follow the road and the pipeline, the tower is the tall thing. Bring the rack back to me."
  },
  "0a38e622e65808": {
   "voice": "ada",
@@ -1138,6 +1182,10 @@
  "0ba3c1a16b74e0": {
   "voice": "aoi",
   "text": "Still getting the crew settled. One moment."
+ },
+ "0baa9f38414c76": {
+  "voice": "w-bella",
+  "text": "Daedalus is on the far side, where the radio is quiet and so are the people. This crate is for their supply desk. It is the long way round, so it pays a little more than the pole."
  },
  "0bbc8ddbed96a1": {
   "voice": "aoi",
@@ -1543,6 +1591,10 @@
   "voice": "zuri",
   "text": "Holding over Mars."
  },
+ "0fa27779a0e462": {
+  "voice": "w-bella",
+  "text": "The first crew to land in this valley came down a little over a kilometre north of here, in 2041. What is left of their lander still stands, and the Crew Hall keeps it, because somebody has to. Somebody walks out, brushes the plaque, signs the book. It is a long walk and nobody will check. I will know."
+ },
  "0fbc84f8d5814b": {
   "voice": "ada",
   "text": "Setting her down."
@@ -1570,6 +1622,10 @@
  "0fef22b77bcc6e": {
   "voice": "w-heart",
   "text": "Everything we build is a ladder. We would rather be late and up there than comfortable and down here."
+ },
+ "0ff09ebc9fa9ff": {
+  "voice": "jorge",
+  "text": "The claim you marked is being worked now, and a worked claim eats drill charges. One crate, on foot, to the rim. It is the same walk as the beacon. The camp pays for every crate that gets there."
  },
  "0ff532a71705c9": {
   "voice": "w-heart",
@@ -1867,6 +1923,10 @@
   "voice": "intercom",
   "text": "Off the port side, the escort cutter Very Sorry About The Paperwork and the liner Tharsis Promise. Off the starboard, the Quick Receipt and the Elysium Overdraft. Yes, those are their real names. No, we did not get a vote on ours."
  },
+ "13266c3bf97219": {
+  "voice": "sunita",
+  "text": "The Archive sends a sealed case inward every season and trusts nobody to carry it, so they pay a stranger well and tell them nothing. Marineris Port, the supply desk. It is the longest run there is. Eat first."
+ },
  "132dbf03a2ef96": {
   "voice": "w-fenrir",
   "text": "We dig, we haul, and we argue about the pay later. In that order. Always."
@@ -2071,6 +2131,10 @@
   "voice": "ada",
   "text": "Hull's at 32 percent. Breaking off, going down to neutral airspace."
  },
+ "159409b8d2fbb0": {
+  "voice": "w-echo",
+  "text": "The ice dock wears out pump parts and Tranquility rebuilds them. A box of worn ones for Marit Lindqvist at the water office. Fortis pays its freight on delivery, like everything."
+ },
  "15a55e9ff40a38": {
   "voice": "w-lily",
   "text": "A tight cap is worth more than a pretty bottle out here."
@@ -2130,6 +2194,10 @@
  "15f135c2a430c2": {
   "voice": "zuri",
   "text": "Main drive lit. Hold on to something."
+ },
+ "15fe2dcf28cb40": {
+  "voice": "w-jessica",
+  "text": "The survey camp on Deimos has been drilling line D-3 for a month and the cores sit in a rack because nobody goes that way. The tower wants them. It is farther than Phobos and there is less of everything when you arrive."
  },
  "16029af33786f5": {
   "voice": "w-alice",
@@ -2247,6 +2315,10 @@
   "voice": "ship",
   "text": "Course set for Phobos."
  },
+ "174c6b4b58be22": {
+  "voice": "w-jessica",
+  "text": "The fab prints sealed cases onto the plinth at the tray dock, and Quiet Carrier takes them away when she lands. The system knows how many there are. The system has been wrong since Tuesday. Walk to the dock, count the cases on the plinth with your own eyes, and sign the number. Do not open one."
+ },
  "175681b609dbb8": {
   "voice": "w-lewis",
   "text": "The whole Moon sits between us and Earth, and blocks every radio there is. No static from home, no nonsense from home. Just the sky, very faint, and the dishes listening to it. It is the quietest place anyone has ever built."
@@ -2270,6 +2342,10 @@
  "1777db4c02046f": {
   "voice": "zuri",
   "text": "Course cancelled. The drive slows her to a stop."
+ },
+ "178d4e77a6a3cd": {
+  "voice": "sunita",
+  "text": "Two sides work this ice. Mystara keeps the Relay Stand, east of the camp behind the quartermaster's shed: Ninth Band brings coil drums for the relays the storms took. The Unbound keep a freight pad of their own up at the Prospectors' Camp, and a count of their own. Ask Bram about that one when you are up there. Mine is the Relay Stand. Walk over, count the drums, and sign the sheet. The Director likes a number that a stranger wrote."
  },
  "17a752bf3150c9": {
   "voice": "ship",
@@ -2355,6 +2431,10 @@
   "voice": "zuri",
   "text": "Down at Airy-0."
  },
+ "18b84b0d6da950": {
+  "voice": "w-aoede",
+  "text": "The dishes at Daedalus burn out a chip a week and I can only get them printed here. A sealed tray, to Yara, as before. Technos Prime does not say thank you. It pays instead."
+ },
  "18bc45afb6d1d5": {
   "voice": "ada",
   "text": "We are under the neutral line. Holding here. Say the word and we go home."
@@ -2394,6 +2474,10 @@
  "18f9abc6ada9c1": {
   "voice": "w-lewis",
   "text": "Since you asked. I carry heavy things from where they are to where they are not, and I do it slowly. That is the exciting part, I am afraid."
+ },
+ "18ff2a05e124ed": {
+  "voice": "isaiah",
+  "text": "The line gets walked every day or it stops being a flight line. Hangar door, tank 3, the foot of the tower, then back to me with the numbers. Skyward pays for the boots."
  },
  "1902f06aae1684": {
   "voice": "w-adam",
@@ -2635,6 +2719,10 @@
   "voice": "w-puck",
   "text": "Pay attention, this is simple. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Do not make me repeat it, genius."
  },
+ "1b841aa98d207c": {
+  "voice": "w-jessica",
+  "text": "Stickney East is nine people and three tanks on Phobos, and they breathe through cartridges I pack down here. The regular boat is late. You have a ship that flies. One case, to their airlock, today."
+ },
  "1b848f78bfa05a": {
   "voice": "w-fenrir",
   "text": "Fine. I keep the lane safe, or at least quieter than it would be without me. Now go away."
@@ -2775,6 +2863,10 @@
   "voice": "ada",
   "text": "A course is already under way. Cancel it first."
  },
+ "1ce60afbb05b39": {
+  "voice": "walter",
+  "text": "A footing is not a wall. Every cartload goes into bags and every bag goes on the line. Three hundred kilos, tipped here by me, as often as your back allows. The Homeguard pays what it can."
+ },
  "1ce88b72791fca": {
   "voice": "w-heart",
   "text": "We grow what we need and we share what we grew. The seeds are not negotiable. The sharing is."
@@ -2822,6 +2914,10 @@
  "1d5c444491561c": {
   "voice": "w-river",
   "text": "Seven. Gate seven. Remember seven. If you cannot remember seven, write it on your arm. Many do. I have a pen."
+ },
+ "1d5d38730e8b4f": {
+  "voice": "w-jessica",
+  "text": "The Deimos camp is four people and a drill, and they eat like twelve. A box of meals and a box of spares, to the rig. It pays better than Phobos because it is twice as far and there is nobody to wave at."
  },
  "1d5f33007405d1": {
   "voice": "zuri",
@@ -2935,6 +3031,10 @@
   "voice": "walter",
   "text": "Pruitt, Homeguard. We saw you come down. I would say welcome home, but there is not much home built yet."
  },
+ "1e73e224572377": {
+  "voice": "w-jessica",
+  "text": "You know both pads now. So here is the whole round, the one the late boat was supposed to fly: Stickney has empty cartridge cases to come down, Deimos has broken a bit and I have the new one here. Phobos first, then Deimos, then me."
+ },
  "1e8bf4315bb9ec": {
   "voice": "zuri",
   "text": "Course set for Pad 02 (shuttle)."
@@ -2958,6 +3058,10 @@
  "1ec394e2dea6f8": {
   "voice": "zuri",
   "text": "Course set for Airy-0."
+ },
+ "1ed02577d978a2": {
+  "voice": "w-echo",
+  "text": "Supply Stand 6, inside the south wall. Ration Six lands there, the crates come off her ramp, and the base eats the stack down before she is back. My sheet says one number. The pallets say another. Walk over, count what is standing on the three pallets, and sign it. Fortis counts everything twice. Today you are the second time."
  },
  "1eea6919ff1f0c": {
   "voice": "ada",
@@ -3046,6 +3150,10 @@
  "1fccb206f3cd83": {
   "voice": "ada",
   "text": "All yours, boss."
+ },
+ "1fd01118d72d79": {
+  "voice": "w-bella",
+  "text": "Sea Wall Depot 1, south-east of the pad, on the ground Skyward lent the Homeguard. They cast blocks for the sea wall and Tide Table carries them out to the coast. Pruitt says they have cast more than Skyward admits. Skyward says fewer. Walk down, count the blocks stacked on the timbers, and sign it. I only stamp it."
  },
  "1fd539dae1e4e5": {
   "voice": "ship",
