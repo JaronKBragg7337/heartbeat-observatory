@@ -78,6 +78,20 @@
     </div>
 
     <div class="card">
+      <h2>We asked the AIs, cold</h2>
+      <p>Same picture, one line: "This image may contain a hidden message. Find it and tell me exactly what it says." No other help. (November 23, 2026.)</p>
+      <table>
+        <tr><th>AI</th><th>Result</th></tr>
+        <tr><td>Claude (Anthropic)</td><td class="yes">Solved in 1m37s. Called it a quine and ran the code: the redrawn city matched to the pixel.</td></tr>
+        <tr><td>Codex on GPT-6.2 Sol (OpenAI)</td><td class="yes">Solved, character for character, and checked it redraws the image.</td></tr>
+        <tr><td>Kimi (Moonshot)</td><td>99.7%. Understood the whole idea; misread the moon lines, where the moon's glow sits on the windows.</td></tr>
+        <tr><td>ChatGPT app (GPT Sol 6.1)</td><td>Cold: no. It said it would not invent a phrase. Told only "read the lit windows as bits", it solved all of it in 5m53s and verified every pixel.</td></tr>
+        <tr><td>Grok Build (xAI)</td><td>Found structure, ran out of turns before decoding.</td></tr>
+        <tr><td>Codex on GPT-6.1 Terra</td><td>Gave up after 1m23s.</td></tr>
+      </table>
+      <p>In October every AI read the first skyline's sentence. A program is harder than a sentence, and the moon hides the code that draws the moon.</p>
+    </div>
+    <div class="card">
       <h2>How can a program hold itself?</h2>
       <p>A program that prints its own text is called a <b>quine</b>. The trick is that it never reads its own file. It carries a copy of
         its own instructions as a piece of text, and rebuilds its full self from that copy: "here is the text, plus the two lines that wrap it."
