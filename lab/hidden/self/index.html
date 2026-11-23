@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>The City That Is Its Own Code · Heartbeat Observatory</title>
+<meta name="description" content="A night skyline whose lit windows spell out a program. Run that program and it draws this exact picture, down to the last pixel." />
+<link rel="stylesheet" href="/section.css" />
+<style>
+  .wrap { padding-left: 16px; padding-right: 16px; max-width: 860px; margin: 0 auto; }
+  .skybox { overflow-x: auto; border-radius: 14px; border: 1px solid var(--line); -webkit-overflow-scrolling: touch; }
+  .sky { width: 100%; height: auto; display: block; }
+  .skybox.zoom .sky { width: 1655px; max-width: none; }
+  .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 16px 18px; margin: 14px 0; line-height: 1.55; }
+  .card h2 { font-size: 1.15rem; margin: 0 0 8px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  button.reveal { min-height: 44px; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line); background: #1c2530; color: inherit; font-size: 1rem; cursor: pointer; }
+  .answer { display: none; margin-top: 12px; }
+  .answer.on { display: block; }
+  pre { background: #0b1018; border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; font-size: .8rem; line-height: 1.4; max-height: 520px; }
+  code { font-size: .9em; }
+  .hash { word-break: break-all; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; }
+  .yes { color: #3fb950; font-weight: 700; }
+  .small { font-size: .88rem; }
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <header class="hero">
+      <h1>The City That Is Its Own Code</h1>
+      <p class="lede">The windows in this city spell out a program. Run that program, and it draws this city. The same one, down to the last pixel.</p>
+    </header>
+
+    <div class="skybox" id="skybox">
+      <img class="sky" id="sky" src="city.png" width="1655" height="710" alt="A night city skyline: tall buildings full of lit and dark windows, a full moon, stars, and the city reflected in the water." />
+    </div>
+    <div class="row"><button class="reveal" id="zoom" type="button">See it full size</button></div>
+
+    <div class="card">
+      <h2>Your turn</h2>
+      <p>This is the sequel to <a href="../">Hidden in the Skyline</a>. Same kind of code: every window is lit or dark, two choices each.
+        But this time the message isn't a sentence. It's instructions for a computer, and the instructions are for drawing&hellip; this.</p>
+      <p class="small muted">Hint: read each building's window columns from left to right, each column from the top down. Seven windows make one letter.</p>
+      <div class="row">
+        <button class="reveal" id="reveal" type="button">Show the answer</button>
+      </div>
+      <div class="answer" id="answer">
+        <p>Lit window = <code>1</code>, dark window = <code>0</code>. Every 7 windows down a column is one letter of plain computer text (ASCII):
+          <code>1110011</code> is <b>s</b>, <code>0100000</code> is a space, <code>0111101</code> is <b>=</b>. 17,094 windows make
+          2,336 letters, and those letters are a 60-line Python program. The last building is mostly dark: that's where the program ends.</p>
+        <p class="small muted" id="livenote">The text below was just read out of the picture by your own device, window by window, not copied from a file.</p>
+        <pre id="code">Reading the windows&hellip;</pre>
+        <p class="small">Want to run it? Save it as <code>city.py</code> (or grab <a href="city.py">city.py</a>), then
+          <code>pip install pillow</code> and <code>python city.py</code>. It writes <code>city.png</code>: this picture.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>The proof</h2>
+      <p>We ran the loop on our own computer (November 23, 2026; Python 3.12, Pillow 12.2):</p>
+      <ol>
+        <li>Ran <a href="city.py">city.py</a>. It drew <code>city.png</code>.</li>
+        <li>A separate reader, <a href="decode.py">decode.py</a>, which knows only the window rule, read the picture back into text.</li>
+        <li>That text matched <code>city.py</code> exactly, every character.</li>
+        <li>Ran the decoded text in an empty folder. It drew a new <code>city.png</code>.</li>
+        <li>Compared the two pictures: <span class="yes">the same file, byte for byte</span> (so every pixel too). Then did it all once more, starting from the new picture. Same again.</li>
+      </ol>
+      <p class="small">Fingerprint (SHA-256) of the picture, before and after:</p>
+      <p class="hash">9028a3d45819737c912f5a3bea570540a1526826675b1c82c4574fca6b1d33d8</p>
+      <p class="small">Fingerprint of the program, and of the text read out of the windows:</p>
+      <p class="hash">a56cccf4753f42807f3a170837e34a6c86d4174c31f1ca19d651b3ce6f223307</p>
+      <p class="small muted">Run the whole loop yourself with <a href="prove.py">prove.py</a>. With a different Pillow version the picture's file fingerprint can change (Pillow packs PNG files its own way); the pixels should not.</p>
+    </div>
+
+    <div class="card">
+      <h2>How can a program hold itself?</h2>
+      <p>A program that prints its own text is called a <b>quine</b>. The trick is that it never reads its own file. It carries a copy of
+        its own instructions as a piece of text, and rebuilds its full self from that copy: "here is the text, plus the two lines that wrap it."
+        This one goes a step further: instead of printing itself, it turns its own letters into lit and dark windows, then builds the city around them.
+        How many buildings there are comes from how long the program is.</p>
+      <p class="small muted">The hard part: any change to the drawing code changes the windows, which changes the code the windows spell. The trick
+        above is what keeps that from going around in circles forever.</p>
+    </div>
+  </div>
+<script>
+  document.getElementById('zoom').addEventListener('click', function () {
+    var on = document.getElementById('skybox').classList.toggle('zoom');
+    this.textContent = on ? 'Fit to screen' : 'See it full size';
+  });
+  // Reads the windows straight out of the picture, with the same rule as decode.py.
+  function readWindows() {
+    var img = document.getElementById('sky');
+    var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    var g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    var W = c.width, H = c.height, p = g.getImageData(0, 0, W, H).data;
+    function kind(x, y) {
+      var i = (y * W + x) * 4, r = p[i], gg = p[i + 1], b = p[i + 2];
+      if (r === 255 && gg >= 180 && b <= 160) return 1;
+      if (r === 30 && gg === 40 && b === 64) return 0;
+      return -1;
+    }
+    var cols = {};
+    for (var y = 1; y < H; y++) for (var x = 1; x < W; x++) {
+      var k = kind(x, y);
+      if (k >= 0 && kind(x - 1, y) < 0 && kind(x, y - 1) < 0) (cols[x] = cols[x] || []).push(k);
+    }
+    var bits = [];
+    Object.keys(cols).map(Number).sort(function (a, b) { return a - b; }).forEach(function (x) { bits = bits.concat(cols[x]); });
+    var s = '';
+    for (var j = 0; j + 7 <= bits.length; j += 7) s += String.fromCharCode(parseInt(bits.slice(j, j + 7).join(''), 2));
+    return s.replace(/\u0000+$/, '');
+  }
+  document.getElementById('reveal').addEventListener('click', function () {
+    var a = document.getElementById('answer'); var on = a.classList.toggle('on');
+    this.textContent = on ? 'Hide the answer' : 'Show the answer';
+    if (on) {
+      var pre = document.getElementById('code');
+      try {
+        var t = readWindows();
+        if (t.indexOf('exec(s)') < 0) throw new Error('unreadable');
+        pre.textContent = t;
+      } catch (e) {
+        document.getElementById('livenote').textContent = 'Your browser would not let the page read the picture exactly, so this is the program file itself.';
+        fetch('city.py').then(function (r) { return r.text(); }).then(function (t) { pre.textContent = t; });
+      }
+    }
+  });
+</script>
+</body>
+</html>
