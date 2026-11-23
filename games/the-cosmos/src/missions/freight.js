@@ -18,7 +18,13 @@
 // Mars is neutral: its freight takes no side. Most freight elsewhere is side 'port' too (it moves no balance). Every side of every two-sided world has a run of its own
 // (faction + side 'home'): open after that side's oath job, it feeds that side's home a little every time (Ironclad and Greenhaven, Fortis and Technos Prime,
 // Skyward and the Homeguard, Mystara and the Unbound).
+//
+// TALLY RUNS (11/23): every home side has a yard where its ship lands and its stock rises and falls (worlds/_kit/sideYard.js, worlds/ceres/activity.js).
+// A tally run sends you there to count what is really standing on the stand and sign the number: one step of kind `count` (worlds/yardBook.js holds the
+// place and the truth; the authority checks the number against the same clock the yard is drawn from). They take no side (side 'port'): a neutral pair of
+// eyes is the point. They are the cheapest run on each board, so the giver's pitch, which names both of the world's yards, is the first thing a pilot hears.
 // ============================================================================
+import { TALLIES } from '../worlds/yardBook.js';
 
 /** runs needed, the name, and the bonus on freight pay. */
 export const FREIGHT_RANKS = [
@@ -45,6 +51,9 @@ export const FREIGHT_THREADS = [
 ];
 
 const F = (m) => ({ side: 'port', repeat: true, ...m });
+/** The one step of a tally run: stand at a side's stock, count it, set the number and sign it. `beat` is said when the count is taken: {n} is what stands
+ *  there, {ship} is a sentence about the side's ship (down on the stand, or how long until she is due). */
+const COUNT = (key, text, beat) => { const t = TALLIES[key]; return { k: 'count', tally: key, to: { at: t.at, frame: t.frame, name: t.place }, r: t.r, text, beat }; };
 const PHOBOS_LOCK = { at: [35, -3], frame: 'phobos', name: 'the station airlock' };
 const DEIMOS_RIG = { at: [33, 12], frame: 'deimos', name: 'the drill rig' };
 const WELL = { port: [407, -626], name: 'the ice well' };
@@ -204,6 +213,23 @@ export const FREIGHT = [
     ],
     done: 'Dov Abara: Paid. The far side is good for business as long as nobody has to live there.' }),
 
+  // The tally runs: each landing's own freight keeper sends you to the yard beside them
+  F({ id: 'moon-fr-tally-fortis', thread: 'moon-freight', world: 'moon', giver: 's-quarter', title: 'Count the stand', pay: 60,
+    brief: 'Walk to Supply Stand 6 inside the south wall, count the crates on the three pallets, and sign the tally.',
+    pitch: 'Supply Stand 6, inside the south wall. Ration Six lands there, the crates come off her ramp, and the base eats the stack down before she is back. My sheet says one number. The pallets say another. Walk over, count what is standing on the three pallets, and sign it. Fortis counts everything twice. Today you are the second time.',
+    take: 'South-east of here, past the motor pool. Red lamps round a numbered slab. Count the crates, not the pallets.',
+    steps: [COUNT('fortis', 'Walk to Supply Stand 6 (south-east of the quartermaster, inside the wall: red lamps round a numbered slab) and count the crates on the three pallets beside the ration store. Set the number and sign the tally.',
+      'Tally hand: {n}. That is what I have. {ship}')],
+    done: 'Quartermaster Ostrander (radio): The sheet and the pallets agree. Do not expect it to last.' }),
+
+  F({ id: 'moon-fr-tally-technos', thread: 'moon-freight', world: 'moon', giver: 'd-supply', title: 'Count the trays', pay: 60,
+    brief: 'Walk to the tray dock in front of Fab Floor 2, count the sealed cases on the plinth, and sign the tally.',
+    pitch: 'The fab prints sealed cases onto the plinth at the tray dock, and Quiet Carrier takes them away when she lands. The system knows how many there are. The system has been wrong since Tuesday. Walk to the dock, count the cases on the plinth with your own eyes, and sign the number. Do not open one.',
+    take: 'West of my desk, on the white deck with the blue lines. The cases on the plinth, not the two by the arch.',
+    steps: [COUNT('technos', 'Walk west to the tray dock (the white deck with blue light-lines in front of Fab Floor 2) and count the sealed cases on the plinth. Set the number and sign the tally.',
+      'Seal checker: {n} on the plinth. The system said otherwise. The system is being looked at. {ship}')],
+    done: 'Supply Clerk Stroud (radio): Logged by a person. I will tell the system. It will not like it.' }),
+
   // The Moon's two sides (open after each side's oath job; they feed that side's home)
   F({ id: 'moon-fr-rations', thread: 'moon-freight', world: 'moon', giver: 'h-recruit-fortis', title: 'Rations for the gate', pay: 160, needs: ['moon-ration'],
     faction: 'fortis', side: 'home', trade: 'defences', size: 0.5,
@@ -229,6 +255,23 @@ export const FREIGHT = [
     done: 'Doctor Pryce: The dishes hear a little further tonight. Technos Prime remembers who carried the tray.' }),
 
   // ============================================================================ CERES (the flight office, beside the JOBS board)
+  // The tally runs: the flight office wants each side's stock counted by somebody who is paid by neither
+  F({ id: 'ceres-fr-tally-ironclad', thread: 'ceres-freight', world: 'ceres', giver: 'lane-clerk', title: 'Count the bunker', pay: 70,
+    brief: 'Walk to Ironclad\'s ore bunker west of the foundry, count how many of its three bays have ore in them, and sign the tally.',
+    pitch: 'Ironclad\'s ore bunker, west of the foundry. Three bays. The pit fills them and Pit Seven empties them when she lands. The foreman says the bunker is never full, and she would say that. Walk over and count how many of the three bays have ore in them. A bay with any ore in it counts.',
+    take: 'North-west of the pad, west of the foundry. Three bays. A bay with any ore in it counts.',
+    steps: [COUNT('ironclad', 'Walk to Ironclad\'s ore bunker (north-west of the pad, west of the foundry) and count how many of its three bays have ore in them. Set the number and sign the tally.',
+      'Yard hand: {n} with ore in. The pit fills them, the hauler empties them, and I sweep. {ship}')],
+    done: 'Flight office (radio): Ironclad\'s bunker, counted by nobody\'s friend. Filed.' }),
+
+  F({ id: 'ceres-fr-tally-greenhaven', thread: 'ceres-freight', world: 'ceres', giver: 'lane-clerk', title: 'Read the tanks', pay: 60,
+    brief: 'Walk to Greenhaven\'s four clean-water tanks south of the flight office, read the lit gauge, and sign how full they are.',
+    pitch: 'Two sides share these Works and each has a yard. Greenhaven has the four clean-water tanks south of my office: Good Soup fills them and the Works drinks them down. Ironclad has the ore bunker west of the foundry: Pit Seven empties it. Both sides tell me what they have. I would rather hear it from somebody who is paid by neither. Start with the tanks. Read the lit gauge on their side and tell me how full: a quarter, half, three quarters, or full.',
+    take: 'South of here, the row of four tanks. The lit bar on the side is the gauge.',
+    steps: [COUNT('greenhaven', 'Walk to Greenhaven\'s clean-water tanks (the row of four, south of the flight office) and read the lit gauge on their side. Set how full they are and sign the tally.',
+      'Valve hand: {n}, as near as the glass shows. The trays drink first, then everybody else. {ship}')],
+    done: 'Flight office (radio): Greenhaven\'s water, read by nobody\'s friend. Filed.' }),
+
   // The two sides' own runs: each is open once you have done that side's oath job, feeds that side's home (roles/balance.js) and shows on the standing board
   // by the pad (worlds/ceres/activity.js). Half the size of the oath job, so one pilot moves the board slowly.
   F({ id: 'ceres-fr-ore', thread: 'ceres-freight', world: 'ceres', giver: 'foreman', title: 'Ore for the bunker', pay: 130, needs: ['ceres-pit'],
@@ -265,6 +308,23 @@ export const FREIGHT = [
     done: 'Supply clerk: Good metal. I will say so in writing. There is a drum going back to Ceres if you are.' }),
 
   // ============================================================================ EARTH (Range Control dispatch)
+  // The tally runs: two yards south of the pad, and a dispatcher who trusts neither side's own count
+  F({ id: 'earth-fr-tally-skyward', thread: 'earth-freight', world: 'earth', giver: 'e-dispatch', title: 'Count the canisters', pay: 70,
+    brief: 'Walk to Payload Stand 2 south-west of the pad, count the canisters in the rack, and sign the tally.',
+    pitch: 'Two yards work south of the pad now. Skyward has Payload Stand 2 on the west side: Upbound Two brings canisters for the next launch. The Homeguard has Sea Wall Depot 1 on the east side, on ground Skyward lent them, casting blocks for the wall. Each sends me a count and neither believes the other\'s. So the range pays a pair of eyes that belongs to nobody. Walk down to Skyward\'s rack, count the canisters, and sign it.',
+    take: 'South-west of the pad. The white canisters in the rack beside the gantry with the orange arm.',
+    steps: [COUNT('skyward', 'Walk to Payload Stand 2 (south-west of the landing pad, by the lattice gantry with the orange arm) and count the white canisters in the rack. Set the number and sign the tally.',
+      'Stand marshal: {n} in the rack. Write it big, the range reads small. {ship}')],
+    done: 'Marisol Quintero (radio): Skyward\'s number, counted by somebody who is not Skyward. Stamped.' }),
+
+  F({ id: 'earth-fr-tally-homeguard', thread: 'earth-freight', world: 'earth', giver: 'e-dispatch', title: 'Count the wall blocks', pay: 70,
+    brief: 'Walk to Sea Wall Depot 1 south-east of the pad, count the wall blocks stacked on the timbers, and sign the tally.',
+    pitch: 'Sea Wall Depot 1, south-east of the pad, on the ground Skyward lent the Homeguard. They cast blocks for the sea wall and Tide Table carries them out to the coast. Pruitt says they have cast more than Skyward admits. Skyward says fewer. Walk down, count the blocks stacked on the timbers, and sign it. I only stamp it.',
+    take: 'South-east of the pad. The grey blocks on timbers, by the brick hut.',
+    steps: [COUNT('homeguard', 'Walk to Sea Wall Depot 1 (south-east of the landing pad, by the brick site hut) and count the grey wall blocks stacked on the timbers. Set the number and sign the tally.',
+      'Depot tally: {n}, cast and cured. Every one of them is a metre of coast. {ship}')],
+    done: 'Marisol Quintero (radio): The Homeguard\'s number, counted by somebody who is not the Homeguard. Stamped.' }),
+
   F({ id: 'earth-fr-fill', thread: 'earth-freight', world: 'earth', giver: 'e-dispatch', title: 'Fill for the sea wall', pay: 90,
     brief: 'Dig 300 kg of ground and cart it to the stakes by the road to Range Control.',
     pitch: 'The wall loses a little every tide and the range pays for every cartload that goes back into it. Three hundred kilos of anything that is not water: shell rock, sand, soil. Tip it at the stakes.',
@@ -300,6 +360,23 @@ export const FREIGHT = [
     done: 'Pruitt: Another course on the wall. People see it from the road now.' }),
 
   // ============================================================================ CALLISTO (the camp desk)
+  // The tally runs: the camp desk sends you to Mystara's stand; the Unbound keep their own count at their own camp (ask Bram there)
+  F({ id: 'callisto-fr-tally-mystara', thread: 'callisto-freight', world: 'callisto', giver: 'c-dispatcher', title: 'Count the coils', pay: 60,
+    brief: 'Walk to the Relay Stand east of the camp, count the coil drums, and sign the tally.',
+    pitch: 'Two sides work this ice. Mystara keeps the Relay Stand, east of the camp behind the quartermaster\'s shed: Ninth Band brings coil drums for the relays the storms took. The Unbound keep a freight pad of their own up at the Prospectors\' Camp, and a count of their own. Ask Bram about that one when you are up there. Mine is the Relay Stand. Walk over, count the drums, and sign the sheet. The Director likes a number that a stranger wrote.',
+    take: 'East of the camp. Violet drums with gold bands, by the measuring house.',
+    steps: [COUNT('mystara', 'Walk east to the Relay Stand (behind the quartermaster\'s shed: violet stone and standing stones) and count the coil drums by the measuring house, the ones on top too. Set the number and sign the tally.',
+      'Measurer: {n}. Each one is a relay that will answer again. {ship}')],
+    done: 'Farah Adeyemi (radio): Written by a stranger, so the Director will believe it. Thank you.' }),
+
+  F({ id: 'callisto-fr-tally-unbound', thread: 'callisto-freight', world: 'callisto', giver: 'c-prospector', title: 'Count the core boxes', pay: 60,
+    brief: 'Walk to the claim freight pad just east of the Prospectors\' Camp, count the core boxes by the awning, and sign the tally.',
+    pitch: 'Number Four takes our core boxes off the pad whenever she lands, and pays by the box. The pilot counts them her way. I count them mine. A third count settles it, and you are standing here. The stack is by the awning on the freight pad, east of the huts. Count the boxes. Sign it. Self-service, like everything else.',
+    take: 'East of the huts. The stack on skids by the tarp awning. Weigh nothing. Just count.',
+    steps: [COUNT('unbound', 'Walk east to the claim freight pad (salvaged deck plates with an orange cross) and count the core boxes stacked by the tarp awning. Set the number and sign the tally.',
+      'Bench hand: {n}. Same as mine, which makes two against the pilot. {ship}')],
+    done: 'Bram Okonkwo: A count nobody paid for is the only kind I trust. The camp paid for this one anyway.' }),
+
   F({ id: 'callisto-fr-ice', thread: 'callisto-freight', world: 'callisto', giver: 'c-director', title: 'Clean ice for the Archive', pay: 90, needs: ['callisto-ice'],
     faction: 'mystara', side: 'home', trade: 'wealth', size: 0.5,
     brief: 'Mystara work. Dig 300 kg of bright ice and cart it to the Archive quartermaster.',

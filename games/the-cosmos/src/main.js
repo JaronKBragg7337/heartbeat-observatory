@@ -78,6 +78,8 @@ import { currentSeason } from './opening/season.js';
 import { arrivalNoteFor } from './opening/dialogue.js';
 import { RepairChain } from './opening/repair.js';
 import { MissionTracker } from './missions/tracker.js';       // MISSIONS: jobs and stories
+import { TallyUI } from './missions/tallyUI.js';             // the count card of a tally run (a job that ends at a side's yard)
+import { KeepWalking } from './ui/keepWalking.js';           // a long walk without a held thumb
 import { readOpeningCheckpoint } from './opening/checkpoint.js';
 import { buildShowcase } from './port/showcase.js';
 
@@ -101,7 +103,7 @@ const legacyReview=openingParams.get('dev')==='1'&&openingParams.get('opening')=
 if(!world.remote&&!legacyReview&&needsOpening(world.state.opening,savedWorld.record)){
   world.state.opening=readOpeningCheckpoint()||world.state.opening||freshOpening({season:currentSeason(Date.now(),openingParams.get('cause'))});world.state.shipType='lifeboat';
 }
-let opening=null,repair=null,missions=null;
+let opening=null,repair=null,missions=null,tallyUI=null;
 
 const engine = new Engine(canvas, { fov: 72,world });
 const safeGraphics=engine.safe;
@@ -654,6 +656,7 @@ engine.scene.fog = new THREE.FogExp2(body.atmosphere.horizonColor, TERRAIN_FOG_D
 // Input + camera
 // ---------------------------------------------------------------------------
 const touch = new TouchControls(canvas);
+const keepWalking = new KeepWalking({ touch, note: (t) => ship.note(t) });
 const desktop = new DesktopControls(canvas);
 // PLATFORMS (11/19): a controller plays the whole game through the same keys and look the keyboard and mouse use (ui/gamepad.js).
 const gamepad = new GamepadControls(desktop, { onFirstUse: () => {
@@ -848,12 +851,34 @@ window.addEventListener('keydown', (e) => {
   else if (document.documentElement.classList.contains('cinema-on')) settingsPanel.classList.add('open');
 });
 
-/** FIX-R3: the status card plus, for a new pilot, the one plain next step (RepairChain.nextGoal). */
+/** FIX-R3: the status card plus, for a new pilot, the one plain next step (RepairChain.nextGoal).
+ *  Phone comfort (11/23): the step folds to three lines so the card does not cover the world; a tap unfolds it (and folds it again). While the count card of a
+ *  tally run is up it steps aside altogether: the card says what to do, and the player needs the screen to count. */
+let nextOpen = '', nextSig = '';
+const hudNext = document.createElement('div'); hudNext.id = 'hud-next'; hudRoot.prepend(hudNext);       // stays put: the readings under it are rewritten five times a second, this is not
 function refreshHud() {
   refreshHudBase();
-  const goal = repair?.nextGoal(ship.ready && ship.aboard);
-  if (goal) { hud.insertAdjacentHTML('afterbegin', `<div class="next-goal"><b>NEXT</b> ${goal.text.replace(/[<>&]/g, '')}</div>`); document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`); }
+  const goal = tallyUI && tallyUI.shown ? null : repair?.nextGoal(ship.ready && ship.aboard);
+  const text = goal ? goal.text.replace(/[<>&]/g, '') : '', open = !!text && nextOpen === text, sig = text + '|' + open + '|' + hudRoot.clientWidth;
+  if (sig !== nextSig) {
+    nextSig = sig;
+    if (!text) hudNext.innerHTML = '';
+    else {
+      hudNext.innerHTML = `<div class="next-goal${open ? ' open' : ''}"><b>NEXT</b> ${text}</div>`;
+      const el = hudNext.firstElementChild;
+      if (open || el.scrollHeight > el.clientHeight + 2) el.insertAdjacentHTML('afterend', `<div class="next-more">${open ? 'Tap to fold it' : 'Tap to read all of it'}</div>`);
+      else el.classList.add('whole');
+    }
+  }
+  document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`);
 }
+hudNext.addEventListener('click', (e) => {
+  const el = hudNext.querySelector('.next-goal'); if (!el || el.classList.contains('whole')) return;
+  e.preventDefault(); e.stopPropagation();
+  const text = el.textContent.replace(/^NEXT\s*/, '');
+  nextOpen = nextOpen === text ? '' : text; refreshHud();
+});
+for (const ev of ['pointerdown', 'pointerup', 'touchstart']) hudNext.addEventListener(ev, (e) => { if (hudNext.querySelector('.next-more')) e.stopPropagation(); });       // a press on it is not a look-around drag
 function refreshHudBase() {
   const g = walker.geodetic;
   const load = carriedMass();
@@ -1135,6 +1160,9 @@ engine.addUpdater((dt) => {
     run: touch.run || desktop.run,
     jump: touch.consumeJump() || desktop.consumeJump(),
   };
+  // Keep walking: on a long walk the walker runs on the way the view faces with no thumb on the stick (ui/keepWalking.js)
+  keepWalking.update({ dt, onFoot: !(ship.ready && ship.aboard), modal: !!document.querySelector('#phone-ui.modal'), speed: Math.hypot(walker.velocity.x, walker.velocity.y, walker.velocity.z), goalId: missions ? missions.goalId : null });
+  keepWalking.apply(input);
 
   // The ship gets first refusal. Aboard, it owns the body and the camera; outside
   // it still flies itself (hover, ramps) and checks whether you are boarding.
@@ -1187,6 +1215,7 @@ engine.addUpdater((dt) => {
   economyUI.tick(dt);
   repair?.tick(dt);
   missions?.tick(dt,!!repair?._mine());
+  tallyUI?.tick(dt);
   damageView.tick(dt,walker.worldPos);
   if (suitGroup.visible && playerPerson.loaded) {
     // the body stands or walks with what the legs are doing
@@ -1295,7 +1324,7 @@ if (ship.ready) {
   if (multiplayer) multiplayer.vehicles = vehicles;
 }
 repair=world.remote?new RepairChain({world,walker,portSite,space,engine,shipSystem:ship,vehicles}):null;ship.liftBlockReason=()=>repair?.liftBlock()||'';   // OPENING2: the drained lifeboat's parts
-missions=world.remote?new MissionTracker({world,space,portSite,engine,shipSystem:ship,note:(t,imp)=>ship.note(t,imp)}):null;if(repair)repair.missions=missions;if(multiplayer)multiplayer.missions=missions;   // MISSIONS
+missions=world.remote?new MissionTracker({world,space,portSite,engine,shipSystem:ship,note:(t,imp)=>ship.note(t,imp)}):null;if(repair)repair.missions=missions;if(multiplayer)multiplayer.missions=missions;tallyUI=missions?new TallyUI({tracker:missions,walker,space,portSite,ship,request:a=>multiplayer?multiplayer.request(a):world.request(a),onToggle:()=>refreshHud()}):null;   // MISSIONS
 opening=new Opening({engine,world,ship,people,port,tier,voice,onFinish:(pose,frameId)=>{
   const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
   const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);
@@ -1427,7 +1456,7 @@ if (devMode) window.cosmos = {
   buildId: BUILD_VERSION,
   opening,
   buildVersion:BUILD_VERSION,
-  multiplayer, vehicles, voice, get chat() { return chat; },
+  multiplayer, vehicles, voice, get chat() { return chat; }, get tallyUI() { return tallyUI; }, keepWalking,
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,
   gamepad, marsFill, setSkyShift, skyShiftFor, worldTimeS,                    // F2: review shots move the clock (cosmos.setSkyShift(seconds)) and ask for a named hour

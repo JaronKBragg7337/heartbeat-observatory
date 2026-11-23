@@ -24,13 +24,17 @@ import { takeMatter, lotKg } from '../src/economy/shops.js';
 import { WAGES, SOL_SECONDS } from '../src/economy/catalog.js';
 import { shipDef } from '../src/ships/registry.js';
 import { GROUND_MATS } from '../src/missions/catalog.js';
+import { tallyOf, tallyCheck, tallyWords, yardShipWords } from '../src/worlds/yardBook.js';       // what stands on a side's stand right now: the same clock the yard is drawn from
+import { worldTimeAt } from '../src/space/clock.js';
+import { frameToOutpost } from '../src/worlds/moon/place.js';
+import { makeMoon } from '../src/space/moonField.js';
 
 const SCALE = 2 ** 96;
 const big = (v) => BigInt(v * SCALE);
 const sumBig = (lots, key) => lots.reduce((s, l) => s + big(l[key]), 0n);
 const yes = (msg, extra = {}) => ({ ok: true, msg, ...extra });
 const live = (c) => !String(c.status || '').startsWith('leaving');
-export const MISSION_CFG = { stepS: 0.5, talkReach: 7, deskReach: 7, shipNearM: 900, portNearM: 600 };
+export const MISSION_CFG = { stepS: 0.5, talkReach: 7, deskReach: 7, shipNearM: 900, portNearM: 600, recountS: 15 };
 
 /** Take `kg` of dug ground (any of `mats`) out of a hopper's lots. Splits the last lot; every part keeps its mix; the exact mass and volume come back so the books stay balanced. */
 export function takeFromHopper(lots, mats, kg) {
@@ -70,6 +74,7 @@ export class MissionDirector {
     switch (a.type) {
       case 'mission-accept': return this.accept(p, a);
       case 'mission-choose': return this.choose(p, a);
+      case 'mission-count': return this.count(p, a);
       case 'mission-drop': return this.drop(p);
       case 'desk-hire': return this.deskHire(p, a);
       default: throw Error('Unsupported job action: ' + a.type);
@@ -127,6 +132,7 @@ export class MissionDirector {
       }
       case 'give': return this.give(p, m, st, a, near(st.to, st.r));
       case 'choose': return false;
+      case 'count': return false;        // waits for the number the player signs (count() below)
       default: return false;
     }
   }
@@ -193,6 +199,48 @@ export class MissionDirector {
     const o = st.options.find((q) => q.id === a.option); if (!o) throw Error('That is not one of the answers.');
     this.finish(p, m, o);
     return yes(o.beat, { mission: m.id, option: o.id });
+  }
+
+  /**
+   * A count signed at a side's yard (step kind `count`, worlds/yardBook.js). The player stands at the stock and says how much is there; the authority works the
+   * true number out from the world clock (and how strong the home is) and takes an answer that is right, or as near as the book allows. A wrong count is not
+   * an error (an error would roll the whole action back): the hand keeps the sheet a few seconds, so nobody gets paid by trying every number.
+   */
+  count(p, a) {
+    const r = this.of(p.id), act = r.active; if (!act) throw Error('You are on no job.');
+    const m = missionById(act.id), st = m.steps[act.step], t = st && st.k === 'count' ? tallyOf(st.tally) : null;
+    if (!t) throw Error('Nothing here wants counting right now.');
+    if (p.aboardShipId) throw Error('Step off the ship and walk over to it first.');
+    if (distanceTo(resolve(st.to), p.frameId, p.pose.worldPos, this.auth.site) > st.r + 2) throw Error(`Walk over to ${t.place} first: you cannot count it from here.`);
+    const said = Math.round(Number(a.n)); if (!Number.isFinite(said) || said < 0 || said > t.max) throw Error('Set a number first.');
+    const wait = this.cfg.recountS - (this.clock - (act.s.wrongAt ?? -1e9));
+    // (said on the count card, not as a ship's message: `hand`, with an empty `msg`)
+    if (wait > 0) return yes('', { wrong: true, waitS: Math.ceil(wait), hand: `The tally hand is still reading your last sheet. Look again, and sign in ${Math.ceil(wait)} seconds.` });
+    const h = this.roles.homes[m.world], now = worldTimeAt(this.auth.now());
+    const res = tallyCheck(st.tally, said, now, h && Number.isFinite(h.balance) ? B.strengthOf(h) : null, this.standBlocked(t));
+    if (!res.ok) {
+      act.s.wrongAt = this.clock; act.s.tries = (act.s.tries || 0) + 1;
+      return yes('', { wrong: true, waitS: this.cfg.recountS, hand: `The tally hand looks at your sheet, then at the stand. "${tallyWords(st.tally, said)}? Not by my count. Look again."` });
+    }
+    const near = res.exact ? '' : ` You wrote ${tallyWords(st.tally, said)}: near enough to sign.`;
+    const beat = String(st.beat || '{n}.').replace('{n}', tallyWords(st.tally, res.n)).replace('{ship}', yardShipWords(st.tally, now)) + near;
+    this.say(p.id, 'Story', beat, 'beat');
+    act.step++;
+    if (act.step >= m.steps.length) this.finish(p, m, null);
+    else { this.enter(p, act, m.steps[act.step]); this.say(p.id, 'Job', m.steps[act.step].text, 'next'); }
+    return yes('', { mission: m.id, counted: res.n, exact: res.exact });       // the hand's own line is in the story log (the tracker says it): not sent twice
+  }
+
+  /** Is somebody's ship parked on this side's landing stand? Then the side's own ship is being waved off and its stock stands still (worlds/_kit/sideYard.js). */
+  standBlocked(t) {
+    if (!t.stand) return false;
+    const pi = makeMoon(t.frame).padInfo;
+    for (const sim of this.auth.sims.values()) {
+      if (sim.frameId !== t.frame || !sim.flight || !sim.flight.landed) continue;
+      const o = frameToOutpost(pi, sim.flight.pos);
+      if (Math.hypot(o.x - t.stand[0], o.z - t.stand[1]) < t.clearM) return true;
+    }
+    return false;
   }
 
   /** The last step is done: pay, move the world's meters, remember the story. */

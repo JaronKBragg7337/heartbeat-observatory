@@ -15,21 +15,22 @@
 // Both grounds were looked at from above before a thing was placed. Nothing here is solid.
 // ============================================================================
 import { SideYard } from '../_kit/sideYard.js';
+import { YARD_TT } from '../yardBook.js';
 
 const PI = Math.PI;
-const FLY = { V: 46, a: 0.62, af: 1.1, av: 0.28, Hh: 45, HC: 45, hoverS: 10, descentS: 26, strobeY: 4.2 };
+const BK_M = YARD_TT['callisto-mystara'], BK_U = YARD_TT['callisto-unbound'];       // the stands, the flights and the stock numbers: one book for the picture and for the server's count (worlds/yardBook.js)
 const BOARD = { title: 'CALLISTO · THE TWO SIDES', sides: ['mystara', 'unbound'], roles: { mystara: 'the Archive · the array · the listening', unbound: 'drills · claims · the open seat' } };
 
 // ---- the Valhalla Camp: Mystara --------------------------------------------------------------------------------------------------------------
 const VIOLET = [0.17, 0.15, 0.26], BASALT = [0.22, 0.2, 0.31], GOLD = [0.85, 0.76, 0.48], PARCH = [0.94, 0.9, 0.78], GLV = [0.62, 0.45, 1.0];
-const M = { id: 'relay-stand', name: 'Relay stand', type: 'courier', x: 86, z: -6, y: 0.06, clearM: 18, bear: 80, out: -100 };
+const M = BK_M.sides[0].spot;
 const drum = (h, x, y, z) => { h.cyl('paint', x, y + 0.55, z, 0.5, 1.1, 12, { col: VIOLET }); h.cyl('paint', x, y + 0.8, z, 0.515, 0.12, 12, { col: GOLD }); h.cyl('paint', x, y + 0.3, z, 0.515, 0.06, 12, { col: GOLD }); h.X('paint', x, y + 1.11, z, 0.4, 0.02, 0.26, PARCH); };
 const MYSTARA = {
-  name: 'callisto-mystara', homeId: 'callisto', g: 1.236, slotS: 720, visitMaxS: 480, turns: 2, turn0: 0,
-  sides: [{ side: 'mystara', spot: M, fly: { ...FLY, n: 9, name: 'Ninth Band' },
+  name: 'callisto-mystara', homeId: 'callisto', ...BK_M,
+  sides: [{ ...BK_M.sides[0],
     hold: (k, b) => { for (const sx of [-1, 1]) for (const dz of [1.2, 2.6]) k.cyl('paint', b.x + sx * b.w * 0.24, b.y0 + 0.55, b.z0 + dz, 0.5, 1.1, 10, { col: VIOLET }); },
     // nine drums: five in a row and four on top of them. The courier's stay builds the row, the line crews take it down.
-    stock: { max: 9, mode: 'bring', low: 0.22, build: (j, h) => (j < 5 ? drum(h, M.x - 6 + j * 1.25, 0.26, M.z + 22) : drum(h, M.x - 5.38 + (j - 5) * 1.25, 1.38, M.z + 22)) } }],
+    stock: { ...BK_M.sides[0].stock, build: (j, h) => (j < 5 ? drum(h, M.x - 6 + j * 1.25, 0.26, M.z + 22) : drum(h, M.x - 5.38 + (j - 5) * 1.25, 1.38, M.z + 22)) } }],
   hands: [
     { side: 'mystara', id: 'coil-hand', push: { a: [M.x - 7, M.z + 25], b: [M.x + 5, M.z + 25], speed: 0.7, gap: 1.2, side: 1.0, rest: [12, 11] },
       cart: (h) => { h.B('paint', 0, 0.3, 0, 1.0, 0.1, 1.5, VIOLET, 0.02); for (const sx of [-0.42, 0.42]) for (const sz of [-0.5, 0.5]) h.cyl('rubber', sx, 0.13, sz, 0.13, 0.08, 8, { axis: 'x' });
@@ -74,14 +75,14 @@ const MYSTARA = {
 
 // ---- the Prospectors' Camp: the Unbound (port-local metres: x east, z south, origin the port's graded centre) ----------------------------------
 const PRIMER = [0.48, 0.29, 0.22], ALU = [0.66, 0.67, 0.65], HORANGE = [1.0, 0.42, 0.18], TARP = [0.55, 0.58, 0.59], WELD = [0.25, 0.22, 0.2], SCRAPE = [0.4, 0.38, 0.36], AMB = [1.0, 0.72, 0.4];
-const U = { id: 'claim-pad', name: 'Claim freight pad', type: 'courier', x: 37, z: 2, y: 0.1, clearM: 18, bear: 130, out: -40 };
+const U = BK_U.sides[0].spot;
 const coreBox = (h, x, y, z, i = 0) => { h.B('paint', x, y + 0.26, z, 1.8, 0.5, 0.62, i % 4 === 3 ? ALU : PRIMER, 0.03); h.X('paint', x - 0.5, y + 0.26, z - 0.315, 0.16, 0.5, 0.01, HORANGE); h.X('paint', x + 0.6, y + 0.3, z - 0.315, 0.22, 0.12, 0.01, WELD); };
 const UNBOUND = {
-  name: 'callisto-unbound', homeId: 'callisto', g: 1.236, slotS: 720, visitMaxS: 480, turns: 2, turn0: 1,
-  sides: [{ side: 'unbound', spot: U, fly: { ...FLY, V: 42, n: 4, name: 'Number Four' },
+  name: 'callisto-unbound', homeId: 'callisto', ...BK_U,
+  sides: [{ ...BK_U.sides[0],
     hold: (k, b) => { for (const sx of [-1, 1]) for (const dy of [0, 0.56]) k.box('paint', b.x + sx * b.w * 0.24, b.y0 + 0.28 + dy, b.z0 + 1.8, b.w * 0.36, 0.5, 1.8, { col: PRIMER }); },
     // ten core boxes, three to a course: the drills fill the stack, the courier's stay carries it away
-    stock: { max: 10, mode: 'take', build: (j, h) => coreBox(h, U.x - 6 + (j % 3) * 2.0, 0.14 + Math.floor(j / 3) * 0.54, U.z + 22, j) } }],
+    stock: { ...BK_U.sides[0].stock, build: (j, h) => coreBox(h, U.x - 6 + (j % 3) * 2.0, 0.14 + Math.floor(j / 3) * 0.54, U.z + 22, j) } }],
   hands: [
     { side: 'unbound', id: 'core-hand', push: { a: [U.x - 3, U.z + 19.4], b: [U.x - 13, U.z + 19.4], speed: 0.7, gap: 1.2, side: 1.0, rest: [13, 10] },
       cart: (h) => { h.B('metal', 0, 0.28, 0, 0.9, 0.08, 2.0, ALU, 0.02); for (const sx of [-0.4, 0.4]) h.cyl('rubber', sx, 0.16, 0.5, 0.16, 0.1, 8, { axis: 'x' });

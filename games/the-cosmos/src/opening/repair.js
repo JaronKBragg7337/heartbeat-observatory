@@ -100,6 +100,7 @@ export class RepairChain {
     const mt = this.missions, onJob = mt && mt.active();
     if (onJob) return mt.nextGoal(ship);
     if (this._firstFlight()) return { text: this._flightText(aboard) };
+    const paid = mt && mt.afterPay(); if (paid) return paid;       // a freight run was just paid: say so, and point back at the board
     const hereWorld = this.space.frameId;
     if (!(ship.crew || []).length && world === 'mars' && hereWorld === 'mars') return { text: `${p.home?.stay ? 'Your ship is on its pad.' : 'Lifeboat ready.'} Next: hire a crew. Walk to the Crew Hall at Marineris Port (the long building at the north end of the pads, an arrow points the way after a minute). Stand at its door and the six people inside come out to meet you; talk to one and tap Hire.` };
     const offer = mt && mt.nextGoal(ship);

@@ -11,7 +11,7 @@
 
 export const DOCKS = {
   right: ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift', '#btn-boost'],
-  left: ['#key-controls', '#multiplayer-button', '#shop-button', '#voice-talk'],
+  left: ['#key-controls', '#multiplayer-button', '#shop-button', '#voice-talk', '#btn-keepwalk'],       // Keep walking sits on top of the column: it only shows on a long walk
   bottom: ['#ff-bar', '#flight-speed'],   // FREEFLIGHT: the free-flight bar has the bottom row while it is on
 };
 // A panel that opens over the screen is a modal: the dock steps aside while it is open.

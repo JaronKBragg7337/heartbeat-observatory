@@ -13,23 +13,22 @@
 // Everything stands clear of the main pad, the people of cast.js and the solid boxes of layout.js. Nothing here is solid.
 // ============================================================================
 import { SideYard } from '../_kit/sideYard.js';
+import { YARD_TT } from '../yardBook.js';       // the stands, the flights and the stock numbers: one book for the picture and for the server's count
 
 const PI = Math.PI;
 const BOARD = { title: 'THE MOON · THE TWO SIDES', sides: ['fortis', 'technos'], roles: { fortis: 'walls · gates · the gunship apron', technos: 'dishes · chips · the signal' },
   none: 'Neither Fleet Command nor the Glass Hall has posted a standing today.' };
-const FLY = { V: 50, a: 0.8, af: 1.4, av: 0.35, Hh: 45, HC: 45, hoverS: 10, descentS: 26, strobeY: 4.2 };
 
 // ---- Shackleton: Fortis ----------------------------------------------------------------------------------------------------------------------
 const GUN = [0.3, 0.33, 0.36], OLIVE = [0.27, 0.3, 0.27], BONE = [0.81, 0.78, 0.7], RED = [0.84, 0.17, 0.17], BLOCK = [0.46, 0.46, 0.45], COLD = [0.8, 0.86, 1.0], REDL = [1.0, 0.22, 0.2];
-const S_SPOT = { id: 'supply-stand-6', name: 'Supply stand 6', type: 'courier', x: -48, z: 62, y: 0.06, clearM: 18, bear: 10, out: 190 };
+const BK_S = YARD_TT.shackleton, S_SPOT = BK_S.sides[0].spot;
 const ration = (h, x, y, z, i) => { h.B('paint', x, y + 0.45, z, 1.2, 0.9, 1.0, i % 3 === 2 ? GUN : OLIVE, 0.04); h.X('paint', x, y + 0.6, z - 0.505, 0.5, 0.22, 0.01, i % 3 === 2 ? RED : BONE); };
 const SHACKLETON = {
-  name: 'shackleton', homeId: 'moon', g: 1.62, slotS: 720, visitMaxS: 480,
-  origin: { x: 20, z: 0 },       // the yard was drawn 20 m further west, where the ice dock's weigh bay already stands
-  sides: [{ side: 'fortis', spot: S_SPOT, fly: { ...FLY, n: 6, name: 'Ration Six' },
+  name: 'shackleton', homeId: 'moon', ...BK_S,       // gravity, the slot, the origin (the yard was drawn 20 m further west, where the ice dock's weigh bay already stands)
+  sides: [{ ...BK_S.sides[0],
     hold: (k, b) => { for (const sx of [-1, 1]) for (const dz of [1.2, 2.6]) k.box('paint', b.x + sx * b.w * 0.24, b.y0 + 0.5, b.z0 + dz, b.w * 0.34, 1.0, 1.1, { col: OLIVE }); },
     // twelve crates on three pallets, two by two: the lighter's stay builds the stack, the base eats it down
-    stock: { max: 12, mode: 'bring', low: 0.25, build: (j, h) => { const p = Math.floor(j / 4), layer = Math.floor((j % 4) / 2), slot = j % 2; ration(h, -53.4 + p * 3.3, 0.24 + layer * 0.92, 83 + slot * 1.25, j); } } }],
+    stock: { ...BK_S.sides[0].stock, build: (j, h) => { const p = Math.floor(j / 4), layer = Math.floor((j % 4) / 2), slot = j % 2; ration(h, -53.4 + p * 3.3, 0.24 + layer * 0.92, 83 + slot * 1.25, j); } } }],
   hands: [
     { side: 'fortis', id: 'pallet-hand', push: { a: [-47.2, 79.6], b: [-33.5, 86.2], speed: 0.8, gap: 1.3, side: 1.0, rest: [12, 10] },
       cart: (h) => { h.B('steelDark', 0, 0.2, 0, 1.0, 0.1, 1.5, null, 0.02); for (const sx of [-0.4, 0.4]) for (const sz of [-0.55, 0.55]) h.cyl('rubber', sx, 0.1, sz, 0.1, 0.08, 8, { axis: 'x' });
@@ -74,15 +73,14 @@ const SHACKLETON = {
 
 // ---- Daedalus: Technos Prime --------------------------------------------------------------------------------------------------------------------
 const WHITE = [0.94, 0.96, 0.98], PEARL = [0.84, 0.88, 0.93], SLATE = [0.16, 0.2, 0.28], BLUEL = [0.35, 0.7, 1.0];
-const D_SPOT = { id: 'tray-dock', name: 'bay-2 / tray dock', type: 'courier', x: -44, z: 40, y: 0.06, clearM: 18, bear: -15, out: 165 };
+const BK_D = YARD_TT.daedalus, D_SPOT = BK_D.sides[0].spot;
 const trayCase = (h, x, y, z) => { h.B('white', x, y + 0.42, z, 1.1, 0.84, 1.3, WHITE, 0.08); h.X('glowBlue', x, y + 0.5, z - 0.655, 0.7, 0.05, 0.01); h.X('paint', x, y + 0.85, z, 0.5, 0.02, 0.9, SLATE); };
 const DAEDALUS = {
-  name: 'daedalus', homeId: 'moon', g: 1.62, slotS: 720, visitMaxS: 480,
-  origin: { x: 0, y: 0.3, z: 0 },       // the whole dock stands on a low white deck: the crater floor here is not as level as the pad
-  sides: [{ side: 'technos', spot: D_SPOT, fly: { ...FLY, V: 54, n: 2, name: 'Quiet Carrier' },
+  name: 'daedalus', homeId: 'moon', ...BK_D,       // gravity, the slot, the origin (the whole dock stands on a low white deck: the crater floor here is not as level as the pad)
+  sides: [{ ...BK_D.sides[0],
     hold: (k, b) => { for (const sx of [-1, 1]) for (const dz of [1.2, 2.7]) k.box('white', b.x + sx * b.w * 0.24, b.y0 + 0.45, b.z0 + dz, b.w * 0.34, 0.9, 1.2, { col: WHITE }); },
     // ten sealed cases on the plinth, two rows of five: the fab fills it, the courier's stay empties it
-    stock: { max: 10, mode: 'take', build: (j, h) => trayCase(h, -39 + (j % 5) * 1.5, 0.36, 57 + Math.floor(j / 5) * 1.8) } }],
+    stock: { ...BK_D.sides[0].stock, build: (j, h) => trayCase(h, -39 + (j % 5) * 1.5, 0.36, 57 + Math.floor(j / 5) * 1.8) } }],
   hands: [
     { side: 'technos', id: 'tray-hand', push: { a: [-46.5, 63.4], b: [-41.6, 55.4], speed: 0.8, gap: 1.2, side: 0.95, rest: [11, 12] },
       cart: (h) => { h.B('white', 0, 0.42, 0, 0.8, 0.08, 1.3, PEARL, 0.03); for (const sx of [-0.36, 0.36]) for (const sz of [-0.45, 0.45]) h.cyl('rubber', sx, 0.12, sz, 0.12, 0.07, 8, { axis: 'x' });

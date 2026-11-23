@@ -32,11 +32,21 @@ export class MissionTracker {
       const place = this._target(a.step);
       if (place && place.frame === this.space.frameId) { const target = toWorldPos(place, this.portSite); if (target) goal = { id: a.m.id + a.index, label: a.step.text, target, reach: Math.max(8, (a.step.r || 8) * 0.8), onPlanet: true }; }
     }
+    this.goalId = goal ? goal.id : null;       // what the arrow points at now (ui/keepWalking.js stops when it changes: you have arrived)
     this.hint.update(dt, goal);
+  }
+  /** For three minutes after a freight run is paid the card says so and points back at the board. (A paid run used to be followed by whatever came next
+   *  on the list, hiring a crew for one, as if nothing had happened.) { text } or null. */
+  afterPay() {
+    const r = this.rec(), snap = this.world.snapshot; if (!r || r.active || !r.log || !r.log.length || !Number.isFinite(snap.clock)) return null;
+    const l = r.log.slice(-2).reverse().find((x) => x.kind === 'pay'); if (!l || snap.clock - l.t > 180) return null;
+    const m = MISSIONS.find((x) => x.repeat && r.done[x.id] && l.text.startsWith(x.title + ': ')); if (!m) return null;
+    const who = personById(m.giver), paid = (l.text.match(/: (\d+) credits paid/) || [])[1];
+    return { text: `Paid${paid ? ` ${paid} credits` : ''}: ${m.title}. ${who ? who.name : 'The keeper'} has that run again, and more on the freight board: walk up, tap Talk, then "Is there paid work for me?".` };
   }
   /** The place a step points at, resolved, or null (a landing, a haul and a hire point nowhere). */
   _target(step) {
-    if (step.k === 'go' || step.k === 'choose') return resolve(step.to);
+    if (step.k === 'go' || step.k === 'choose' || step.k === 'count') return resolve(step.to);       // a count is signed standing at the stock (tallyUI.js)
     if (step.k === 'give' && step.to) return resolve(step.to);
     return null;
   }

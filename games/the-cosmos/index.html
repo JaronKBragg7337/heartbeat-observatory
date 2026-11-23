@@ -59,6 +59,12 @@
   #hud .dim { color: #9c8878; font-size: 12px; }
   /* part 1 (11/19): the next step leads the card; the readings (place, ground, cart) come after it */
   #hud .next-goal { margin: 0 0 6px; padding: 0 0 7px; border-bottom: 1px solid rgba(240, 185, 120, .35); font: 13px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #f6e3c8; white-space: normal; }
+  /* phone comfort (11/23): the step folds to three lines; a tap unfolds it. `.whole` = it fitted, there is nothing to unfold. */
+  #hud .next-goal { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; pointer-events: auto; padding-bottom: 0; border-bottom: 0; margin-bottom: 0; }
+  #hud .next-goal.open { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+  #hud-next { pointer-events: none; }
+  #hud .next-goal.whole { pointer-events: none; padding-bottom: 7px; border-bottom: 1px solid rgba(240, 185, 120, .35); margin-bottom: 6px; }
+  #hud .next-more { pointer-events: auto; margin: 0 0 6px; padding: 3px 0 7px; border-bottom: 1px solid rgba(240, 185, 120, .35); font: 11px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #f0b978; letter-spacing: .3px; }
 
   /* --- Buttons ------------------------------------------------------------- */
   .btn {

@@ -762,7 +762,7 @@ export class Authority {
       case 'shop-close':return this.shops.close(p,a);
       case 'shop-buy':return this.shops.buy(p,a);
       case 'faction-join':case 'faction-leave':case 'role-talk':case 'role-take':case 'role-leave':case 'role-work':case 'role-set':case 'role-stand':case 'role-vote':case 'project-deliver':case 'project-buy-half':case 'peace-step':return this.roles.act(p,a);   // F5/F4
-      case 'mission-accept':case 'mission-choose':case 'mission-drop':case 'desk-hire':return this.missions.act(p,a);   // MISSIONS
+      case 'mission-accept':case 'mission-choose':case 'mission-count':case 'mission-drop':case 'desk-hire':return this.missions.act(p,a);   // MISSIONS
       case 'buy-ship':return this.buyShip(p,a);
       case 'set-flagship':return this.setFlagship(p,a);
       case 'claim-ship':return this.claimShip(p,a);

@@ -14,31 +14,32 @@
 // Everything stands on the open grass south of the pad (looked at from above before a thing was placed), clear of cast.js and layout.js. Nothing is solid.
 // ============================================================================
 import { SideYard } from '../_kit/sideYard.js';
+import { YARD_TT } from '../yardBook.js';
 
 const PI = Math.PI;
-const FLY = { V: 85, a: 2.6, af: 3.2, av: 1.1, Hh: 40, HC: 40, hoverS: 6, descentS: 15, strobeY: 4.2 };
+const BK = YARD_TT.earth;       // the stands, the flights and the stock numbers: one book for the picture and for the server's count (worlds/yardBook.js)
 
 // ---- Skyward ------------------------------------------------------------------------------------------------------------------------------------
 const WHITE = [0.95, 0.96, 0.96], ORANGE = [0.91, 0.35, 0.12], LATTICE = [0.62, 0.7, 0.77], BLAST = [0.56, 0.56, 0.54], SKYL = [0.75, 0.88, 1.0], WARM = [1.0, 0.86, 0.62];
-const S = { id: 'payload-stand-2', name: 'Payload stand 2', type: 'courier', x: -58, z: 88, y: 0.06, clearM: 18, bear: -25, out: 145 };
+const S = BK.sides[0].spot;
 const canister = (h, x, y, z) => { h.cyl('paint', x, y + 0.95, z, 0.55, 1.9, 12, { col: WHITE }); h.cyl('paint', x, y + 1.5, z, 0.565, 0.22, 12, { col: ORANGE }); h.cyl('paint', x, y + 1.96, z, 0.3, 0.12, 8, { col: [0.2, 0.24, 0.3] }); };       // one material: a canister is one draw call
 
 // ---- Homeguard ----------------------------------------------------------------------------------------------------------------------------------
 const NAVY = [0.18, 0.29, 0.39], LIME = [0.79, 0.72, 0.6], BRICK = [0.54, 0.23, 0.17], WALLC = [0.62, 0.63, 0.61], TIDE = [0.4, 0.43, 0.4], BRASSL = [1.0, 0.74, 0.3], TIMBER = [0.42, 0.33, 0.22];
-const H = { id: 'sea-wall-depot-1', name: 'Sea wall depot 1', type: 'courier', x: 58, z: 88, y: 0.06, clearM: 18, bear: 25, out: 215 };
+const H = BK.sides[1].spot;
 const block = (h, x, y, z) => { h.B('concrete', x, y + 0.55, z, 1.7, 1.1, 1.7, WALLC, 0.1); h.X('concrete', x, y + 0.14, z, 1.72, 0.28, 1.72, TIDE); h.X('concrete', x, y + 1.13, z, 0.5, 0.06, 0.12, [0.2, 0.2, 0.2]); };
 
 const EARTH = {
-  name: 'earth', homeId: 'earth', g: 9.81, slotS: 720, visitMaxS: 480, medium: 'earth',
+  name: 'earth', homeId: 'earth', ...BK, medium: 'earth',
   sides: [
-    { side: 'skyward', spot: S, fly: { ...FLY, n: 2, name: 'Upbound Two' },
+    { ...BK.sides[0],
       hold: (k, b) => { for (const sx of [-1, 1]) for (const dz of [1.3, 2.9]) k.cyl('white', b.x + sx * b.w * 0.24, b.y0 + 0.8, b.z0 + dz, 0.5, 1.6, 10, { col: WHITE }); },
       // eight canisters on the rack, two rows of four: the courier's stay fills it, the mount uses it up
-      stock: { max: 8, mode: 'bring', low: 0.25, build: (j, h) => canister(h, S.x - 4.5 + (j % 4) * 3, 0.3, S.z + 22.5 + Math.floor(j / 4) * 2.3) } },
-    { side: 'homeguard', spot: H, fly: { ...FLY, V: 78, n: 1, name: 'Tide Table' },
+      stock: { ...BK.sides[0].stock, build: (j, h) => canister(h, S.x - 4.5 + (j % 4) * 3, 0.3, S.z + 22.5 + Math.floor(j / 4) * 2.3) } },
+    { ...BK.sides[1],
       hold: (k, b) => { for (const sx of [-1, 1]) k.box('paint', b.x + sx * b.w * 0.24, b.y0 + 0.55, b.z0 + 2, b.w * 0.36, 1.1, 1.7, { col: WALLC }); },
       // twelve blocks on timber, six to a layer: the yard casts them, the courier's stay carries them off to the wall
-      stock: { max: 12, mode: 'take', build: (j, h) => { const i = j % 6; block(h, H.x - 5.2 + (i % 3) * 1.95, 0.2 + Math.floor(j / 6) * 1.12, H.z + 22.6 + Math.floor(i / 3) * 1.95); } } },
+      stock: { ...BK.sides[1].stock, build: (j, h) => { const i = j % 6; block(h, H.x - 5.2 + (i % 3) * 1.95, 0.2 + Math.floor(j / 6) * 1.12, H.z + 22.6 + Math.floor(i / 3) * 1.95); } } },
   ],
   hands: [
     { side: 'skyward', id: 'canister-hand', cloth: 0xe8591e, push: { a: [S.x - 6, S.z + 28], b: [S.x + 8, S.z + 28], speed: 0.8, gap: 1.3, side: 1.0, rest: [12, 10] },

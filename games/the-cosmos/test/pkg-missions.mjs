@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export async function run({ check, section }) {
-  const C = await load('src/missions/catalog.js'), W = await load('src/missions/where.js'), D = await load('src/missions/desk.js'), T = await load('src/missions/talk.js');
+  const C = await load('src/missions/catalog.js'), W = await load('src/missions/where.js'), D = await load('src/missions/desk.js'), T = await load('src/missions/talk.js'), YB = await load('src/worlds/yardBook.js');
   const SEATS = await load('src/roles/seats.js'), CATALOG = await load('src/economy/catalog.js');
   const EARTH = await load('src/worlds/earth/layout.js'), CERES = await load('src/worlds/ceres/layout.js'), MOON = await load('src/worlds/moon/layout.js'), CALLISTO = await load('src/worlds/callisto/layout.js');
   const solidAt = { earth: (x, z) => EARTH.solidAtEarth(x, z, 0.2), ceres: (x, z) => CERES.solidAt(x, z, 0.2), moon: (x, z) => MOON.solidAtMoon('moon', x, z, 0.2), callisto: (x, z) => CALLISTO.solidAt(x, z, 0.2) };
@@ -21,9 +21,9 @@ export async function run({ check, section }) {
   check('every job needs only jobs that exist (and none needs itself), and every job has at least one step, a pitch, a closing line and a brief', M.every((m) => [...(m.needs || []), ...(m.needsAny || [])].every((id) => C.missionById(id) && id !== m.id) && m.steps.length && m.pitch && m.done && m.brief && m.take));
   check('every giver and every step place resolves to a real person or spot, in the world the job says', M.every((m) => {
     const g = W.resolve(m.giver); if (!g || W.worldIdOfFrame(g.frame) !== m.world) return false;
-    return m.steps.every((st) => (st.k === 'go' || st.k === 'give' || st.k === 'choose') ? (!!W.resolve(st.to) && Number.isFinite(st.r || 1)) : true);
+    return m.steps.every((st) => (st.k === 'go' || st.k === 'give' || st.k === 'choose' || st.k === 'count') ? (!!W.resolve(st.to) && Number.isFinite(st.r || 1)) : true);
   }));
-  check('step kinds are the six the authority checks, and a choose step ends every job that has one (with 2+ answers, each paid and told)', M.every((m) => m.steps.every((st) => ['go', 'land', 'haul', 'give', 'hire', 'choose'].includes(st.k)) && m.steps.every((st, i) => st.k !== 'choose' || (i === m.steps.length - 1 && st.options.length >= 2 && st.options.every((o) => o.id && o.label && o.beat && Number.isFinite(o.pay))))));
+  check('step kinds are the seven the authority checks (a count names a tally of the yard book), and a choose step ends every job that has one (with 2+ answers, each paid and told)', M.every((m) => m.steps.every((st) => ['go', 'land', 'haul', 'give', 'hire', 'choose', 'count'].includes(st.k) && (st.k !== 'count' || (!!YB.tallyOf(st.tally) && !!st.beat))) && m.steps.every((st, i) => st.k !== 'choose' || (i === m.steps.length - 1 && st.options.length >= 2 && st.options.every((o) => o.id && o.label && o.beat && Number.isFinite(o.pay))))));
   check('a faction job belongs to a faction of its own world, and every two-sided world with a thread has an oath job for each of its factions', M.every((m) => !m.faction || SEATS.worldById(m.world).factions.includes(m.faction)) && ['earth', 'ceres', 'moon', 'callisto'].every((w) => SEATS.worldById(w).factions.every((f) => M.some((m) => m.world === w && m.oath && m.faction === f))));
   check('Mars is neutral: its jobs take no side, no faction and move no meter', M.filter((m) => m.world === 'mars').every((m) => m.side === 'port' && !m.faction));
   check('pay is modest and honest (every job 60 to 400 credits; the survey bounty is 300 for one sample)', M.every((m) => m.pay >= 60 && m.pay <= (m.repeat && m.steps[0].k === 'land' && m.steps[0].frame !== m.world && m.pay > 400 ? 600 : 400) && (m.steps.at(-1).options || []).every((o) => o.pay <= 400)));
