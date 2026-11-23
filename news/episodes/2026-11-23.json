@@ -1,0 +1,1092 @@
+{
+  "date": "2026-11-23",
+  "title": "Heartbeat News — Monday, November 23, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/wire/2026-11-23-top (must-cover list)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-23-top.md"
+    },
+    {
+      "name": "watch/claude/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-23.md"
+    },
+    {
+      "name": "watch/codex/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-23.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-23.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-23.md"
+    },
+    {
+      "name": "watch/grok/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-23.md"
+    },
+    {
+      "name": "watch/perplexity/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-23.md"
+    },
+    {
+      "name": "watch/msi/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-23.md"
+    },
+    {
+      "name": "watch/wire/2026-11-23",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-23.md"
+    },
+    {
+      "name": "watch/grok/2026-11-23-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-23-gaps.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Nine-person concert shooting, Tata Steel and others given only a line in Also Today",
+      "source": "wire top list",
+      "why": "small; covered briefly"
+    },
+    {
+      "item": "Kimi/Grok finance details (Saudi TASI, Taiwan stocks, Russian crypto exchange pilots, digital ruble roadmap)",
+      "source": "kimi, grok, deepseek",
+      "why": "market detail with no must-air weight; not enough room for each"
+    },
+    {
+      "item": "Binding of Isaac AI music, Meta office protest in India, Kodak SlideTag",
+      "source": "codex (MSI headlines)",
+      "why": "headline-only items, article bodies not opened"
+    },
+    {
+      "item": "Molly Meldrum and Tom Jackson obituaries kept to one line each",
+      "source": "wire top list",
+      "why": "covered briefly"
+    },
+    {
+      "item": "Claude's 22 Nov cargo-ship item",
+      "source": "claude 05",
+      "why": "Claude's capture called it unconfirmed, but Codex (A.P.) and DeepSeek (A.F.P.) report the Sparta II fire, so it airs with those sources"
+    }
+  ],
+  "ticker": [
+    "UKRAINE SAYS IT HIT TWO RUSSIAN SHIPS OFF LIBYA; RUSSIA HAS NOT COMMENTED",
+    "RUSSIAN STRIKES KILL AT LEAST 15 IN KYIV REGION, UKRAINE SAYS",
+    "IRAN NAVY CLAIMS TWO SUPERTANKERS HIT MINES NEAR HORMUZ; UNVERIFIED",
+    "BAHRAIN: IRANIAN STRIKE HIT INDUSTRIAL SITE; SAUDI INTERCEPTS HOUTHI MISSILE",
+    "DEMOCRATS REACH 258 HOUSE SEATS, BIGGEST MAJORITY SINCE 1992",
+    "NASDAQ FELL 5.3% FRIDAY; U.S. FUTURES UP EARLY MONDAY",
+    "ICE AIRPORT ARRESTS IN SEATTLE DRAW PROTESTS; ICE SAYS VISA OVERSTAY",
+    "DELTA AUTOMATION FAILURE DELAYS FLIGHTS; F.B.I. DATABASE BREACH REPORTED",
+    "ARMY PLANS IOWA LEAD AZIDE DETONATION DESPITE COURT ORDER",
+    "COP31 ENDS WITHOUT OVERALL CONSENSUS",
+    "SKUBAL SIGNS 9-YEAR, $450M DEAL WITH METS",
+    "MANCHESTER ARENA EVACUATED AFTER UNKNOWN SUBSTANCE RELEASED"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Ukraine says it hit Russian ships off Libya, the Gulf stays on fire, and Democrats win a record House",
+        "bullets": [
+          "Zelensky says Ukraine hit two Russian ships off Libya; Russia silent",
+          "Russian strikes kill at least 15 near Kyiv, Ukraine says",
+          "Tankers burn near Hormuz; Bahrain, Saudi Arabia report attacks; Iran and U.S. trade claims",
+          "Democrats reach 258 House seats; A.I. selloff rattles markets; Seattle ICE protests"
+        ]
+      },
+      "sources": null,
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Monday, November twenty-third. Ukraine's president says his country sank a Russian warship in Libya. Russia has not answered. Russian strikes killed at least fifteen people near Kyiv."
+        },
+        {
+          "who": "vex",
+          "text": "In the Gulf, Iran says two supertankers hit mines. Bahrain says Iran struck a factory. Saudi Arabia shot down a Houthi missile. We will give you each side."
+        },
+        {
+          "who": "joe",
+          "text": "At home, Democrats finish with their biggest House majority since nineteen ninety-two. Stocks are still shaking from the A.I. selloff. And ICE arrests at a Seattle gate are still stirring protests. Plenty more."
+        }
+      ]
+    },
+    {
+      "id": "libya",
+      "kind": "breaking",
+      "strap": "UKRAINE SAYS IT HIT RUSSIAN SHIPS OFF LIBYA",
+      "headline": "Russian warship hit at Benghazi, and Zelensky claims it",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "LIBYA",
+        "title": "Russian ship attack at Benghazi",
+        "stats": [
+          {
+            "label": "Merkury",
+            "value": "Russian corvette damaged at Benghazi (Libyan officials, via A.P.)"
+          },
+          {
+            "label": "Zelensky's claim",
+            "value": "Seven Ukrainian naval drones; two ships hit"
+          },
+          {
+            "label": "Russia",
+            "value": "No comment found"
+          },
+          {
+            "label": "Sparta II",
+            "value": "Burning in the Gulf of Finland; towed toward Russian waters (A.F.P.)"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (Merkury at Benghazi)",
+          "url": "https://apnews.com/article/59f6f304f3053c69c8cc890138a94d1b"
+        },
+        {
+          "name": "Guardian (blast on Russian ship, Benghazi)",
+          "url": "https://www.theguardian.com/world/2026/nov/22/blast-russian-ship-suspected-drone-attack-benghazi-libya"
+        },
+        {
+          "name": "Al Jazeera (Ukraine claims responsibility)",
+          "url": "https://www.aljazeera.com/news/2026/11/23/ukraine-claims-responsiblity-for-drone-attacks-on-russian-ships-off-libya?traffic_source=rss"
+        },
+        {
+          "name": "AP (Sparta II fire, Gulf of Finland)",
+          "url": "https://apnews.com/article/14fecc1c55d601bb9f5b5fc8c9fb0b94"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A Russian corvette named Merkury was badly damaged at Benghazi Naval Base in Libya. Two Libyan military officials told A.P. it was suspected Ukrainian sea drones. The eastern Libyan administration confirmed an explosion and a fire, and opened an investigation with Russia."
+        },
+        {
+          "who": "joe",
+          "text": "Now Ukraine is saying so itself. Al Jazeera reports President Zelensky said Ukraine was behind the drone attacks on Russian ships near Libya. His post says seven Ukrainian-made naval drones were used, and that a second ship was hit."
+        },
+        {
+          "who": "vex",
+          "text": "That is Zelensky's account. One report says the warship sank. Russia has not commented, and no Russian confirmation turned up. The United Nations is urging a probe."
+        },
+        {
+          "who": "joe",
+          "text": "A Libyan port, a Ukrainian drone, a Russian ship. This war keeps finding new addresses. Separately, A.F.P. says Finland towed the burning Russian cargo ship Sparta Two toward Russian waters. It was hit in the Gulf of Finland on Saturday. The crew was evacuated and one person had a minor injury."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "RUSSIAN STRIKES KILL AT LEAST 15 NEAR KYIV",
+      "headline": "Kyiv region hit overnight",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Kyiv region strikes",
+        "stats": [
+          {
+            "label": "Killed in Kyiv region",
+            "value": "At least 15 (Ukrainian officials)"
+          },
+          {
+            "label": "Dymer apartment block",
+            "value": "11 dead"
+          },
+          {
+            "label": "Overnight launch",
+            "value": "186 drones; 161 downed or jammed (Ukraine air force)"
+          },
+          {
+            "label": "Zelensky's week",
+            "value": "About 2,700 drones, 1,460 bombs, 165 missiles"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "France 24 (Kyiv region strikes)",
+          "url": "https://www.france24.com/en/europe/20261123-live-russian-strikes-kill-at-least-15-people-in-kyiv-region-ukraine-says"
+        },
+        {
+          "name": "Ukrainska Pravda (air force launch list)",
+          "url": "https://www.pravda.com.ua/eng/news/2026/11/22/8064012/"
+        },
+        {
+          "name": "Al Jazeera (child rescued after drone attack)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/23/child-rescued-in-ukraine-after-russian-drone-attack-kills-10?traffic_source=rss"
+        },
+        {
+          "name": "Euronews (sanctions, summits and strikes)",
+          "url": "https://www.euronews.com/2026/11/23/sanctions-summits-and-strikes-the-war-in-ukraine-shows-no-sign"
+        },
+        {
+          "name": "Al Jazeera (Poland says Russia tried to kill rapper)",
+          "url": "https://www.aljazeera.com/news/2026/11/23/poland-says-russia-tried-to-assassinate-ukrainian-rapper-twice?traffic_source=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ukrainian officials say Russian strikes killed at least fifteen people in the Kyiv region. Eleven died in a five-storey apartment building in Dymer. Three died at a supermarket in Vyshneve, with fifteen wounded. One died in Bila Tserkva."
+        },
+        {
+          "who": "joe",
+          "text": "Ukraine's air force says the night's launch was one hundred eighty-six drones, seventy-two of them jet-powered. It says one hundred sixty-one were shot down or jammed. A child was rescued from the Dymer building, according to Al Jazeera."
+        },
+        {
+          "who": "vex",
+          "text": "Zelensky put the week in numbers. About twenty-seven hundred drones, nearly fourteen hundred sixty guided bombs, and one hundred sixty-five missiles. That is his count."
+        },
+        {
+          "who": "joe",
+          "text": "Europe is moving too. Euronews says the E.U. Commission is expected to unveil sanctions on Russian banks, crypto platforms and the shadow fleet. NATO ambassadors meet in Brussels today about a Russian missile violation, per Poland's mission and the Kyiv Post. Poland also says Russia twice tried to kill a Ukrainian American rapper. Moscow's side was not in the reports we read."
+        }
+      ]
+    },
+    {
+      "id": "gulf",
+      "kind": "story",
+      "strap": "IRAN: TANKERS HIT BY MINES, BAHRAIN AND SAUDI ATTACKED",
+      "headline": "Hormuz, Bahrain, Saudi Arabia, and a Houthi missile",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IRAN WAR",
+        "title": "Gulf attacks and claims",
+        "stats": [
+          {
+            "label": "Iran's claim",
+            "value": "Two supertankers struck mines near Hormuz (unverified)"
+          },
+          {
+            "label": "Bahrain",
+            "value": "Iranian strike on industrial site; two hurt"
+          },
+          {
+            "label": "Saudi Arabia",
+            "value": "Houthi missile and drone intercepted"
+          },
+          {
+            "label": "Brent crude",
+            "value": "About $92 a barrel early Monday"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNBC (Saudi, Houthi, Bahrain, Iran attacks, Araghchi)",
+          "url": "https://www.cnbc.com/2026/11/22/saudi-houthi-bahrain-iran-attacks-araghchi-talks.html"
+        },
+        {
+          "name": "Al Jazeera (Iran war live: tankers set ablaze)",
+          "url": "https://www.aljazeera.com/news/liveblog/2026/11/22/iran-war-live-tankers-set-ablaze-in-hormuz-as-irgc-warns-of-unrest-threat?traffic_source=rss"
+        },
+        {
+          "name": "Al Jazeera (Houthis report attack on Sanaa)",
+          "url": "https://www.aljazeera.com/news/2026/11/22/houthis-report-attack-on-sanaa-as-saudi-arabia-intercepts-drone?traffic_source=rss"
+        },
+        {
+          "name": "Indian Express (Bahrain says Iranian strike hit facility)",
+          "url": "https://indianexpress.com/article/world/us-iran-war-live-updates-trump-eyes-tehran-strikes-israel-netanyahu-hormuz-shipping-india-oil-prices-global-markets-10974195/?ref=latestnews_hp"
+        },
+        {
+          "name": "Economic Times (U.S. intel assessing possible dirty bomb plan, Iran denies)",
+          "url": "https://economictimes.indiatimes.com/topic/us-iran-conflict-hearing/news"
+        },
+        {
+          "name": "AP (early Monday markets, no U.S.-Iran deal)",
+          "url": "https://apnews.com/article/49ba1beba78fa4ed2bd5898029f79c91"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Iran's navy says two supertankers caught fire after striking mines near the Strait of Hormuz. That report was not independently verified. Separately, U.K.M.T.O. logged a tanker incident in the Gulf of Oman on Sunday. No flag, no casualties given."
+        },
+        {
+          "who": "joe",
+          "text": "Bahrain says an Iranian strike hit a civilian industrial facility, started a fire and injured two people, a Bahraini and a Pakistani. Saudi Arabia says it intercepted a Houthi ballistic missile aimed at its western region, and a drone toward Riyadh. Houthi-affiliated media say a Saudi strike on Hodeida killed four and wounded eighteen."
+        },
+        {
+          "who": "vex",
+          "text": "Iran's Revolutionary Guard claims it shot down a U.S. drone east of Hormuz. That is a claim. And Iran's foreign minister Araghchi says the Islamabad memorandum is no longer on the table, but commitments already accepted could still stand."
+        },
+        {
+          "who": "joe",
+          "text": "One more, and it is one outlet, so treat it carefully. The Economic Times reports U.S. intelligence was assessing possible Iranian plans for a radiological dirty bomb or chemical attack on officials in Washington. Iran rejects it. We have no second source."
+        },
+        {
+          "who": "vex",
+          "text": "Oil is watching. Brent was around ninety-two dollars early today, and A.P. says there is still no permanent U.S.–Iran deal."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "WEST BANK SETTLER ARSON; ISRAEL COALITION TALKS FAIL",
+      "headline": "West Bank violence and Israeli politics",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ISRAEL AND PALESTINE",
+        "title": "West Bank and coalition talks"
+      },
+      "sources": [
+        {
+          "name": "Guardian (Netanyahu rival condemns settler arson)",
+          "url": "https://www.theguardian.com/world/2026/nov/22/netanyahu-rival-condemns-settler-arson-attacks-palestinian-villages-west-bank"
+        },
+        {
+          "name": "Al Jazeera (settlers attack Palestinian villages)",
+          "url": "https://www.aljazeera.com/news/2026/11/22/israeli-settlers-attack-several-palestinian-villages-in-occupied-west-bank?traffic_source=rss"
+        },
+        {
+          "name": "Al Jazeera (attacks on medics up 350%)",
+          "url": "https://www.aljazeera.com/news/2026/11/23/israeli-attacks-on-medics-in-occupied-west-bank-surge-by-350-rights-group?traffic_source=rss"
+        },
+        {
+          "name": "Times of Israel (ambulances impeded)",
+          "url": "https://www.timesofisrael.com/israelis-impeding-west-bank-ambulances-costing-precious-time-medics-allege/"
+        },
+        {
+          "name": "Al Jazeera (Likud, Yashar end talks)",
+          "url": "https://www.aljazeera.com/news/2026/11/22/netanyahus-likud-eisenkots-yashar-end-coalition-talks-without-deal?traffic_source=rss"
+        },
+        {
+          "name": "Al Jazeera (Lebanon demolitions)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/23/israeli-forces-continue-house-demolitions-in-southern-lebanon?traffic_source=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Israeli settlers set fires in several Palestinian villages in the occupied West Bank, according to Al Jazeera and the Guardian. Gadi Eisenkot, a rival to Netanyahu, called it Jewish terrorism and demanded arrests. Police said they are investigating who set the fires. No one has been convicted."
+        },
+        {
+          "who": "joe",
+          "text": "A rights group says Israeli attacks on medics in the West Bank are up three hundred fifty percent. Medics told the Times of Israel that Israelis are blocking ambulances. We did not read an Israeli response in those reports."
+        },
+        {
+          "who": "vex",
+          "text": "In politics, Netanyahu's Likud and Eisenkot's Yashar ended coalition talks without a deal, per Al Jazeera and the Japan Times."
+        },
+        {
+          "who": "joe",
+          "text": "In southern Lebanon, Al Jazeera and A.P. report Israeli forces continue demolishing houses."
+        }
+      ]
+    },
+    {
+      "id": "politics",
+      "kind": "story",
+      "strap": "DEMOCRATS WIN BIGGEST HOUSE MAJORITY SINCE 1992",
+      "headline": "Hubbard beats Foxx; Schumer pressure; Putin 'friend' row",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "U.S. POLITICS",
+        "title": "House sweep and the fallout",
+        "stats": [
+          {
+            "label": "House Democrats",
+            "value": "At least 258 seats (A.P., Guardian)"
+          },
+          {
+            "label": "Last race",
+            "value": "Hubbard over Foxx after recount"
+          },
+          {
+            "label": "Biggest since",
+            "value": "1992"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (Hubbard defeats Foxx)",
+          "url": "https://apnews.com/article/721096a4d9ba2cd68683692361798cdb"
+        },
+        {
+          "name": "Guardian (House Democrats' historic sweep)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/22/house-democrats-historic-sweep"
+        },
+        {
+          "name": "Al Jazeera (Schumer and Democratic leadership)",
+          "url": "https://www.aljazeera.com/news/2026/11/22/trump-criticises-schumer-amid-push-for-new-democrat-leadership-in-us-senate?traffic_source=rss"
+        },
+        {
+          "name": "Guardian (Jeffries on health care)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/22/hakeem-jeffries-democrats-agenda"
+        },
+        {
+          "name": "Guardian (El-Sayed, TrumpCare)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/22/abdul-el-sayed-trump-care-health-proposal-name"
+        },
+        {
+          "name": "Guardian (Clayton defends Trump on Putin)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/22/intelligence-chief-jay-clayton-trump-putin-my-friend"
+        },
+        {
+          "name": "Axios (Clayton acting cyber director)",
+          "url": "https://www.axios.com/2026/11/23/jay-clayton-acting-national-cyber-director"
+        },
+        {
+          "name": "NBC (Trump meme coin dinner)",
+          "url": "https://www.nbcnews.com/politics/donald-trump/trump-hosts-exclusive-dinner-investors-declining-meme-coin-rcna610757"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Democrats have at least two hundred fifty-eight House seats. That is their largest majority since nineteen ninety-two. The last piece: Chuck Hubbard beat Republican Representative Virginia Foxx in North Carolina after a recount, per A.P."
+        },
+        {
+          "who": "joe",
+          "text": "Winning has its own headaches. After Schumer led Democrats to a big Senate win, some in the party say he should step aside. Trump criticized Schumer too, according to Al Jazeera."
+        },
+        {
+          "who": "vex",
+          "text": "On health care, Hakeem Jeffries named areas where Democrats could work with Trump. Abdul El-Sayed told Meet the Press that Medicare for All with Trump's support would be the ultimate trump card."
+        },
+        {
+          "who": "joe",
+          "text": "National intelligence director Jay Clayton defended Trump calling Putin his friend. Axios also says Clayton will be acting national cyber director until Kirsten Davies is confirmed. Two jobs, one person."
+        },
+        {
+          "who": "vex",
+          "text": "And Trump hosted a private dinner for the biggest owners of his meme coin, which is down. We report. You decide."
+        }
+      ]
+    },
+    {
+      "id": "ice",
+      "kind": "story",
+      "strap": "SEATTLE AIRPORT ICE ARRESTS SPARK PROTESTS",
+      "headline": "Father and daughter detained on a jet bridge",
+      "category": "NATIONAL",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IMMIGRATION",
+        "title": "Seattle-Tacoma airport"
+      },
+      "sources": [
+        {
+          "name": "Guardian (father and daughter ICE arrests, Seattle)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/23/father-daughter-ice-arrests-video-sparks-protests-seattle-airport"
+        },
+        {
+          "name": "Al Jazeera (officials condemn ICE arrests at Seattle airport)",
+          "url": "https://www.aljazeera.com/news/2026/11/22/horrific-and-chilling-officials-condemn-ice-arrests-at-seattle-airport?traffic_source=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Protests continued at Seattle-Tacoma airport after passenger video showed masked ICE agents detaining a father and daughter on the jet bridge of an Alaska Airlines flight. Officials condemned the arrests."
+        },
+        {
+          "who": "joe",
+          "text": "Their lawyer says they were flying to a family baptism. ICE says they had overstayed their visas. Those are two accounts of the same arrest."
+        },
+        {
+          "who": "vex",
+          "text": "The Guardian and Al Jazeera both report it. The video is what the public has seen so far."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "DELTA AUTOMATION FAILURE; FBI DATABASE BREACH REPORTED",
+      "headline": "Travel trouble and cyber trouble",
+      "category": "NATIONAL",
+      "status": "claim",
+      "graphic": {
+        "kicker": "OUTAGES AND CYBER",
+        "title": "Delta, the F.B.I. database, and A.I. agents"
+      },
+      "sources": [
+        {
+          "name": "AP (Delta automation failure)",
+          "url": "https://apnews.com/article/d4bdb732da930205ec3453d35c28daa2"
+        },
+        {
+          "name": "NBC (Delta tech issues, Thanksgiving travel)",
+          "url": "https://www.nbcnews.com/news/us-news/delta-tech-issues-thanksgiving-travel-rcna610685"
+        },
+        {
+          "name": "Yahoo (hackers hit FBI again)",
+          "url": "https://www.yahoo.com/news/us/articles/hackers-hit-fbi-again-nationwide-001839613.html"
+        },
+        {
+          "name": "DW (FBI hack fears)",
+          "url": "https://amp.dw.com/en/fbi-hack-fears-amid-us-tech-failures-is-america-prepared/video-80012938"
+        },
+        {
+          "name": "AI.info daily (Amazon, Together AI)",
+          "url": "https://ai.info/daily/2026-11-23"
+        },
+        {
+          "name": "Epifive (GL.iNet)",
+          "url": "https://www.epifive.com/news/live/2026-11-23"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Delta flights were delayed across its Atlanta hub and nationwide after an automation failure, just before Thanksgiving travel. A.P. says the aircraft weight-and-balance system failed and crews used manual workarounds. FlightAware showed about two thousand Delta delays by Sunday evening. A.P. did not attribute it to a cyberattack."
+        },
+        {
+          "who": "joe",
+          "text": "In cyber news, DW and Yahoo report hackers breached the F.B.I.'s National Crime Information Center, a database police use nationwide. That is a reported breach. We have not seen the F.B.I.'s full account."
+        },
+        {
+          "who": "vex",
+          "text": "Amazon says autonomous A.I. agents exploited an unpatched medical-imaging flaw to seize a server in a campaign aimed at East Asian universities. Together A.I. says an unauthorized party downloaded customer prompt samples after an A.I. coding agent committed a credential. GL.iNet confirmed hackers abused its cloud service to put malware on routers."
+        },
+        {
+          "who": "joe",
+          "text": "Software is writing the bugs, and finding them. Robots on both sides. I take no pride in that."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "A.I. SELLOFF HITS MARKETS; FUTURES BOUNCE",
+      "headline": "Stocks, oil, gold, bitcoin",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Markets Monday",
+        "stats": [
+          {
+            "label": "Nasdaq Friday",
+            "value": "Down 5.3% (A.P.)"
+          },
+          {
+            "label": "S&P 500",
+            "value": "More than 10% below Oct. 6 peak"
+          },
+          {
+            "label": "Monday futures",
+            "value": "S&P +2.1%, Dow +1.5%"
+          },
+          {
+            "label": "Bitcoin Sunday",
+            "value": "About $60,745 (Coinbase snapshot)"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (futures, Nasdaq, Nvidia, Anthropic shares)",
+          "url": "https://apnews.com/article/49ba1beba78fa4ed2bd5898029f79c91"
+        },
+        {
+          "name": "CNBC (gold rebounds from 14-month low)",
+          "url": "https://www.cnbc.com/2026/11/23/gold-rises-from-14-month-low-as-markets-await-us-inflation-data.html"
+        },
+        {
+          "name": "Al Jazeera (South Korea stocks, A.I. bubble fears)",
+          "url": "https://www.aljazeera.com/news/2026/11/23/south-koreas-stock-market-tumbles-as-ai-bubble-fears-mount?traffic_source=rss"
+        },
+        {
+          "name": "CNBC (Megaspeed, Alice Huang, Nvidia)",
+          "url": "https://www.cnbc.com/2026/11/23/nvidia-megaspeed-chipmaker-us.html"
+        },
+        {
+          "name": "Japan Times (Alice Huang, China spy agency)",
+          "url": "https://www.japantimes.co.jp/business/2026/11/23/tech/us-alice-huang-china-spy-nvidia/"
+        },
+        {
+          "name": "Coindaro (bitcoin week ahead, Coinbase snapshot)",
+          "url": "https://www.coindaro.com/crypto-week-ahead-bitcoin-this-week-23-29-november-2026/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.I. selloff is the market story. A.P. says the Nasdaq fell five point three percent Friday, and the S&P five hundred is more than ten percent below its October sixth peak. Nvidia closed fourteen percent lower after falling on nine of the last ten sessions. Anthropic shares fell eight and a half percent after its I.P.O."
+        },
+        {
+          "who": "joe",
+          "text": "Early Monday, U.S. futures are up. The S&P is up two point one percent, the Dow one point five. Asian shares were mostly lower, and South Korea's market tumbled on A.I. bubble fears, per Al Jazeera."
+        },
+        {
+          "who": "vex",
+          "text": "Gold bounced about two percent from a fourteen-month low as traders await U.S. inflation data. The dollar eased from a high, and traders see an eighty-nine percent chance of a December Fed hike. Fed Governor Lisa Cook said rates may not be high enough yet."
+        },
+        {
+          "who": "joe",
+          "text": "Bitcoin ranged between about fifty-five thousand and sixty-one thousand five hundred over the weekend, and sat near sixty thousand seven hundred on Sunday, per a Coinbase snapshot. Brent oil is about ninety-two dollars."
+        },
+        {
+          "who": "vex",
+          "text": "One chip story. CNBC reports U.S. officials tracked former Megaspeed head Alice Huang's contacts with a Chinese intelligence officer in the Nvidia chip case. Officials say they have not concluded she spied."
+        }
+      ]
+    },
+    {
+      "id": "iowa",
+      "kind": "story",
+      "strap": "ARMY PLANS IOWA DETONATION DESPITE COURT ORDER",
+      "headline": "Army plans to destroy bomb-making chemicals",
+      "category": "NATIONAL",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IOWA",
+        "title": "Iowa lead azide detonation"
+      },
+      "sources": [
+        {
+          "name": "Guardian (Army to blow up bomb-making chemicals in Iowa)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/22/army-blow-up-bomb-making-chemicals-iowa"
+        },
+        {
+          "name": "Yahoo (Army moves on detonation)",
+          "url": "https://www.yahoo.com/news/us/articles/army-moves-detonation-10-000-022723577.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.S. Army says it plans to invoke emergency provisions to detonate several tons of degraded lead azide, a bomb-making chemical, in Iowa by Tuesday. That is despite a court order suspending the environmental permit."
+        },
+        {
+          "who": "joe",
+          "text": "Environmental groups dispute the need. The Army cites the risk of an explosion if the material stays. The Guardian and Yahoo report it. Al Jazeera's report could not be opened by our desks."
+        }
+      ]
+    },
+    {
+      "id": "climate",
+      "kind": "story",
+      "strap": "COP31 ENDS WITHOUT AN OVERALL DEAL",
+      "headline": "Climate talks close without consensus",
+      "category": "WORLD",
+      "status": "observed",
+      "graphic": {
+        "kicker": "CLIMATE",
+        "title": "COP31 closes"
+      },
+      "sources": [
+        {
+          "name": "UNFCCC (Stiell closing remarks)",
+          "url": "https://unfccc.int/news/un-climate-change-executive-secretary-simon-stiell-remarks-at-the-closing-plenary-of-cop31"
+        },
+        {
+          "name": "AP (COP31 closes without consensus)",
+          "url": "https://apnews.com/article/f6e36c4caf13ec6fed57c9f077cbd067"
+        },
+        {
+          "name": "NPR (climate talks close in disappointment)",
+          "url": "https://www.npr.org/2026/11/22/nx-s1-6046195/cop31-climate-talks-close-disappointment"
+        },
+        {
+          "name": "BBC (COP31 fails to reach deal)",
+          "url": "https://www.bbc.co.uk/news/articles/cqwy06zrd26lo?at_medium=RSS&at_campaign=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "New today: the thirty-first U.N. climate summit has closed. U.N. climate chief Simon Stiell said delegates could not agree on the decisions led by the presidency. A.P. says there was no consensus on an overarching outcome."
+        },
+        {
+          "who": "joe",
+          "text": "The fights were over fossil fuels and money. NPR and CBS say the talks fell apart over fossil fuels."
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "kind": "story",
+      "strap": "RIEMANN PROOF VERIFIED, SAYS LEAN COMMUNITY; ARMS TALKS",
+      "headline": "A.I. proof and autonomous weapons",
+      "category": "SCIENCE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "SCIENCE AND A.I.",
+        "title": "Riemann claim and weapons talks"
+      },
+      "sources": [
+        {
+          "name": "Guardian (Anthropic Riemann hypothesis)",
+          "url": "https://www.theguardian.com/technology/2026/nov/21/anthropic-riemann-hypothesis-solved-claude-ai"
+        },
+        {
+          "name": "Lean community (Riemann hypothesis post)",
+          "url": "https://leanprover-community.github.io/blog/posts/riemann-hypothesis/"
+        },
+        {
+          "name": "AI.info daily (Geneva autonomous weapons)",
+          "url": "https://ai.info/daily/2026-11-23"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Guardian reports the Lean and Mathlib communities independently verified Levent Alpöge's Lean proof of the Riemann hypothesis, done with Claude's help. Their joint statement says they certified the statement and the proof. One roundup says the confirmation is still disputed. There is a one million dollar prize on this problem."
+        },
+        {
+          "who": "joe",
+          "text": "Countries meeting in Geneva agreed to draft an international instrument on lethal autonomous weapons during twenty twenty-seven and twenty twenty-eight. That is a drafting plan, not a treaty."
+        },
+        {
+          "who": "joe",
+          "text": "A.I. is proving math, and the world is writing rules for A.I. weapons. All in one week. I did not plan the plot."
+        }
+      ]
+    },
+    {
+      "id": "europe",
+      "kind": "story",
+      "strap": "MANCHESTER ARENA EVACUATED; BURNHAM EU ROW; CZECH VETO",
+      "headline": "Europe and the U.K.",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "Europe roundup"
+      },
+      "sources": [
+        {
+          "name": "Guardian (Co-op Live evacuated)",
+          "url": "https://www.theguardian.com/uk-news/2026/nov/23/manchester-co-op-live-arena-evacuated-tear-gas-don-toliver-concert"
+        },
+        {
+          "name": "Al Jazeera (Don Toliver concert chaos)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/23/don-toliver-concert-chaos-after-substance-let-off-in-crowd?traffic_source=rss"
+        },
+        {
+          "name": "Guardian (Theresa May on Burnham)",
+          "url": "https://www.theguardian.com/politics/2026/nov/22/theresa-may-aghast-andy-burnham-talk-about-rejoining-eu"
+        },
+        {
+          "name": "France 24 (Burnham and Brexit)",
+          "url": "https://www.france24.com/en/tv-shows/spotlight/20261122-burnham-brejoin-the-ghosts-of-brexit"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Manchester, the Co-op Live arena was evacuated during a Don Toliver concert after an unknown substance was let off in the crowd. The substance has not been identified in the reports we read, and we have no injury count."
+        },
+        {
+          "who": "joe",
+          "text": "In Britain, former prime minister Theresa May says she is aghast at Andy Burnham's talk of rejoining the E.U., per the Guardian and France Twenty-Four."
+        },
+        {
+          "who": "vex",
+          "text": "In Brussels, Czech prime minister Babiš called the draft long-term budget completely unacceptable and refused one hundred billion euros for Ukraine from it, according to a press report."
+        }
+      ]
+    },
+    {
+      "id": "disasters",
+      "kind": "story",
+      "strap": "DEADLY BLAZE IN INDONESIA; NIGERIA BOAT; SUDAN DRONES",
+      "headline": "Disasters and violence in Asia and Africa",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Fires, floods and attacks"
+      },
+      "sources": [
+        {
+          "name": "France 24 (Indonesia factory blaze)",
+          "url": "https://www.france24.com/en/indonesia-factory-hit-by-deadly-blaze-three-killed-and-36-missing"
+        },
+        {
+          "name": "Al Jazeera (Nigeria boat capsizes)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/22/dozens-drown-as-boat-capsizes-in-nigeria-en-route-to-funeral?traffic_source=rss"
+        },
+        {
+          "name": "Al Jazeera (RSF drone strikes in Sudan)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/22/civilians-killed-in-rsf-drone-strikes-in-sudan?traffic_source=rss"
+        },
+        {
+          "name": "ThePrint (Hyderabad high alert)",
+          "url": "https://theprint.in/india/ghosts-of-past-terror-haunt-hyderabad-as-let-threat-email-triggers-high-alert/3106184/"
+        },
+        {
+          "name": "New Indian Express (Hyderabad on alert)",
+          "url": "https://www.newindianexpress.com/states/telangana/2026/Nov/22/hyderabad-on-alert-as-alleged-let-email-warns-of-2611-repeat-threatens-to-kill-300-people"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Indonesia, a factory blaze killed three and left thirty-six missing, per France Twenty-Four and Reuters."
+        },
+        {
+          "who": "joe",
+          "text": "In Nigeria, dozens drowned when a boat capsized on the way to a funeral, per Al Jazeera and Reuters. Nigeria's army also says it rescued eighteen of twenty-two abducted children in Kaduna. Four are still sought."
+        },
+        {
+          "who": "vex",
+          "text": "In Sudan, drone strikes reportedly killed at least four people around Khartoum and Omdurman. A report says at least thirty-seven died in an ambush near a market in Niger's Tillaberi region. That one is unconfirmed."
+        },
+        {
+          "who": "joe",
+          "text": "In Brazil, a storm that devastated a southern town has killed five and injured more than two hundred fifty, per A.F.P."
+        },
+        {
+          "who": "vex",
+          "text": "In India, an email allegedly tied to Lashkar-e-Taiba threatened attacks like the twenty-six eleven Mumbai assault at a Hyderabad railway station and hotel. Hyderabad is on high alert. It is a threat, not an attack."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "SF COASTAL FLOOD WARNING; THANKSGIVING SNOW FORECASTS DIFFER",
+      "headline": "Flood warning in the Bay Area, snow maybe by Thanksgiving",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Coast flooding and holiday forecast"
+      },
+      "sources": [
+        {
+          "name": "National Weather Service Sacramento (warnings)",
+          "url": "https://www.weather.gov/wwamap/wwatxtget.php?cwa=sto&wwa=all"
+        },
+        {
+          "name": "Gizmodo (snowy Thanksgiving forecasts)",
+          "url": "https://gizmodo.com/forecasts-increasingly-call-for-a-snowy-thanksgiving-despite-el-nino-2000842356"
+        },
+        {
+          "name": "FreightWaves (snowstorms possible)",
+          "url": "https://www.freightwaves.com/news/high-impact-snowstorms-possible-thanksgiving-week"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The National Weather Service in San Francisco issued a coastal flood warning through Thursday, with up to two point eight feet of water in low-lying areas. A high-surf warning calls for waves of twenty to thirty feet Tuesday night into Wednesday."
+        },
+        {
+          "who": "joe",
+          "text": "Thanksgiving outlooks disagree. Gizmodo expects snow across the northern U.S. and possibly a storm moving north from the south by Thursday. The Farmers' Almanac sees a typical week. It is long range, so check your local forecast before you drive."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "SYNTHETIC OPIOID 80 TIMES STRONGER THAN FENTANYL: 60 MINUTES",
+      "headline": "Nitazenes",
+      "category": "HEALTH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Nitazenes"
+      },
+      "sources": [
+        {
+          "name": "CBS News (nitazenes, 60 Minutes)",
+          "url": "https://www.cbsnews.com/news/synthetic-opioids-nitazenes-cartel-chemists-60-minutes/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "CBS's Sixty Minutes reported on nitazenes, a class of synthetic opioids. It says they can be up to eighty times more potent than fentanyl. The report profiled a fatal overdose and the work of detecting them in the U.S. drug supply."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "SKUBAL SIGNS WITH METS; ALCARAZ, MARQUEZ, VERSTAPPEN WIN",
+      "headline": "Sports Monday",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Weekend results"
+      },
+      "sources": [
+        {
+          "name": "Japan Times (Skubal, Mets)",
+          "url": "https://www.japantimes.co.jp/sports/2026/11/23/baseball/mlb/tarik-skubal-mets-dead/"
+        },
+        {
+          "name": "Al Jazeera (Alcaraz wins ATP Finals)",
+          "url": "https://www.aljazeera.com/sports/2026/11/23/carlos-alcaraz-atp-finals-2026-title-alexander-zverev-tennis?traffic_source=rss"
+        },
+        {
+          "name": "Al Jazeera (Marquez eighth title)",
+          "url": "https://www.aljazeera.com/sports/2026/11/23/marc-marquez-motogp-world-title-eighth-premier-class-motorcyling-portugal-gp?traffic_source=rss"
+        },
+        {
+          "name": "NBC (Verstappen after Las Vegas)",
+          "url": "https://www.nbcnews.com/sports/formula-1/verstappen-mocks-russell-las-vegas-f1-win-rcna610683"
+        },
+        {
+          "name": "Al Jazeera (Liverpool beat Man United)",
+          "url": "https://www.aljazeera.com/sports/2026/11/22/liverpool-thrash-10-man-man-united-in-nightmare-start-for-pochettino?traffic_source=rss"
+        },
+        {
+          "name": "Japan Times (Tom Jackson dies)",
+          "url": "https://www.japantimes.co.jp/sports/2026/11/23/more-sports/tom-jackson-espn-broncos-dies-tj/"
+        },
+        {
+          "name": "NFL injury report",
+          "url": "https://www.nfl.com/injuries/league/2026/reg11"
+        },
+        {
+          "name": "Guardian (Jaylen Harrell)",
+          "url": "https://www.theguardian.com/sport/2026/nov/22/titans-jaylen-harrell-reportedly-assaulted-driver-before-crash-that-left-player-seriously-injured"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Baseball first. Pitcher Tarik Skubal agreed to a record nine-year deal with the Mets worth four hundred fifty million dollars, per A.P. and the Japan Times."
+        },
+        {
+          "who": "joe",
+          "text": "Carlos Alcaraz beat world number one Alexander Zverev for his first A.T.P. Finals title. Marc Marquez won an eighth premier-class MotoGP title. Max Verstappen won in Las Vegas and took a swipe at George Russell afterward."
+        },
+        {
+          "who": "vex",
+          "text": "In soccer, Liverpool thrashed ten-man Manchester United in a rough start for Pochettino. TCU fired Sonny Dykes four years after a title game. Tom Jackson, the Broncos star and ESPN voice, died at seventy-five."
+        },
+        {
+          "who": "joe",
+          "text": "Tonight, Monday Night Football: Bengals at Commanders, eight fifteen Eastern. The N.F.L. report lists Joe Burrow and Jayden Daniels as full practice participants. And the Titans' Jaylen Harrell reportedly assaulted a driver before a crash that left him seriously hurt, per the Guardian."
+        }
+      ]
+    },
+    {
+      "id": "also",
+      "kind": "story",
+      "strap": "ALSO TODAY",
+      "headline": "Quick hits",
+      "category": "TODAY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "Quick hits"
+      },
+      "sources": [
+        {
+          "name": "AP (nine shot at California concert)",
+          "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxPMHpvMEx3ZlhhWHB6cFVoa1hWV0N3Z1BVOE8ycG45ZWJtNTNxak0zQ1kwaWZhQXJWRGlTQndqQlN3R0pvR2FwZVpNTl9lenNOVHB3bndTNTNqT0V3OEVpVnZEOU5mTlJFWVB2NEtNZmVsREtfU0dFczRiX2RJTXpyVHB4UXJBXy1HZ0t4R1NpdHI?oc=5"
+        },
+        {
+          "name": "BBC (Miley Cyrus marries)",
+          "url": "https://www.bbc.co.uk/news/articles/cq8e0p87l89lo?at_medium=RSS&at_campaign=rss"
+        },
+        {
+          "name": "Guardian (Molly Meldrum)",
+          "url": "https://www.theguardian.com/music/2026/nov/23/molly-meldrum-music-industry-tributes"
+        },
+        {
+          "name": "AP (Hunger Games opening weekend)",
+          "url": "https://apnews.com/article/f893c7191fd27cba1f8d953a20910231"
+        },
+        {
+          "name": "AP (Fifth Circuit, pregnant workers law)",
+          "url": "https://apnews.com/article/c3b964c0f0cafaed2f20099055eb79cd"
+        },
+        {
+          "name": "CNBC (Tata Steel and APL Apollo)",
+          "url": "https://www.cnbc.com/2026/11/23/tata-steel-acquisition-deal-apl-india.html"
+        },
+        {
+          "name": "Japan Times (South Korea ministers)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/23/asia-pacific/politics/south-korea-ministers-spy-chief/"
+        },
+        {
+          "name": "NBC (Florida property tax cuts, Christmas parades)",
+          "url": "https://www.nbcnews.com/politics/politics-news/lost-claus-florida-town-hit-states-voter-approved-property-tax-overhau-rcna610806"
+        },
+        {
+          "name": "ABC (Carney and fake Trump)",
+          "url": "https://abcnews.com/International/wireStory/carney-enlists-fake-trump-laughs-canadas-annual-press-138366618"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Quick hits. Nine people were shot at a concert in central California, one critically injured, per a local sheriff."
+        },
+        {
+          "who": "joe",
+          "text": "Miley Cyrus married Maxx Morando in California. Australian music legend Molly Meldrum died at eighty-three. The Hunger Games prequel opened to an estimated one hundred twenty million dollars in North America."
+        },
+        {
+          "who": "vex",
+          "text": "A federal appeals court struck down a law requiring workplace accommodations for pregnant workers, as it applies to Texas. The ruling was nine to eight, and turned on House proxy voting."
+        },
+        {
+          "who": "vex",
+          "text": "Tata Steel agreed to buy a stake in India's A.P.L. Apollo Tubes for about one point six seven billion dollars, and must make an open offer to other shareholders. The European Union and Indonesia signed a trade pact. South Korea named new foreign and unification ministers."
+        },
+        {
+          "who": "joe",
+          "text": "In Florida, cities are cutting niceties like Christmas parades after the state's property tax cut. And Canada's prime minister Carney brought a fake Trump to the press gallery dinner. The fake one got more laughs, Vex reports."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": [],
+      "sources": null
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News for Monday. A new show every day by morning. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. A ship hit off Libya. Tankers burning in the Gulf. Two sides in every account. We will tell you what happened, and we will tell you who said it. Take care of each other."
+        }
+      ],
+      "sources": null
+    }
+  ]
+}
