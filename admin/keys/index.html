@@ -46,7 +46,7 @@
     <p class="gate" id="gate" hidden>Sign in as an admin to drop keys. <a href="/admin">Sign in</a></p>
     <div id="app" hidden>
       <nav class="tabs" id="tabs" role="tablist" aria-label="Key Drop sections">
-        <a href="#polymarket" data-t="polymarket">Polymarket</a><a href="#kraken" data-t="kraken">Kraken</a><a href="#other" data-t="other">Other</a><a href="#onmsi" data-t="onmsi">On the MSI</a><a href="#history" data-t="history">History</a>
+        <a href="#polymarket" data-t="polymarket">Polymarket</a><a href="#kraken" data-t="kraken">Kraken</a><a href="#x" data-t="x">X</a><a href="#youtube" data-t="youtube">YouTube</a><a href="#other" data-t="other">Other</a><a href="#onmsi" data-t="onmsi">On the MSI</a><a href="#history" data-t="history">History</a>
       </nav>
       <section class="tabpanel" id="p-polymarket">
         <div class="box"><h3>Polymarket US</h3>
@@ -64,6 +64,27 @@
           <label for="kr-key">API Key</label><input id="kr-key" autocomplete="off" autocapitalize="off" spellcheck="false">
           <label for="kr-secret">Private Key</label><input id="kr-secret" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
           <button class="send" data-target="kraken">Lock and send</button><p class="msg" data-msg="kraken"></p></div>
+      </section>
+      <section class="tabpanel" id="p-x" hidden>
+        <div class="box"><h3>X posting (our own, no Postiz)</h3>
+          <ol><li>console.x.com, signed in as @HeartbeatObserv. Set the app to "Read and write" before you make the Access Token.</li>
+            <li>From the app's "Keys and tokens" page, paste the four values below. Full steps: RECONNECT sheet, part 13.</li></ol>
+          <p>The MSI tests all four together before it saves anything: they must post as @HeartbeatObserv and be allowed to write. Then it buzzes you.</p>
+          <label for="x-key">API Key</label><input id="x-key" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="x-secret">API Key Secret</label><input id="x-secret" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="x-token">Access Token</label><input id="x-token" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="x-tsecret">Access Token Secret</label><input id="x-tsecret" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="send" data-target="x">Lock and send</button><p class="msg" data-msg="x"></p></div>
+      </section>
+      <section class="tabpanel" id="p-youtube" hidden>
+        <div class="box"><h3>YouTube uploads (our own, no Postiz)</h3>
+          <ol><li>console.cloud.google.com, signed in as the Heartbeat Observatory Gmail. Make a client of the kind "TVs and Limited Input devices". Full steps: RECONNECT sheet, part 13.</li>
+            <li>Paste its Client ID and Client secret below.</li>
+            <li>Your phone then buzzes with a short code. Open the address in the buzz, type the code, pick the Heartbeat Observatory channel, tap Allow.</li></ol>
+          <p>The MSI only keeps the sign-in if it is for the Heartbeat Observatory channel. No password ever goes to the MSI.</p>
+          <label for="yt-id">Client ID</label><input id="yt-id" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="yt-secret">Client secret</label><input id="yt-secret" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="send" data-target="youtube">Lock and send</button><p class="msg" data-msg="youtube"></p></div>
       </section>
       <section class="tabpanel" id="p-other" hidden>
         <div class="box"><h3>Any other key</h3>
@@ -111,7 +132,10 @@
     if (t === "onmsi" && isAdmin) loadInv();
   }
   addEventListener("hashchange", show); show();
-  const fields = { polymarket: [["key_id", "pm-id"], ["secret", "pm-secret"]], kraken: [["api_key", "kr-key"], ["private_key", "kr-secret"]], env: [["value", "ot-val"]] };
+  const fields = { polymarket: [["key_id", "pm-id"], ["secret", "pm-secret"]], kraken: [["api_key", "kr-key"], ["private_key", "kr-secret"]], env: [["value", "ot-val"]],
+    x: [["api_key", "x-key"], ["api_secret", "x-secret"], ["access_token", "x-token"], ["access_secret", "x-tsecret"]], youtube: [["client_id", "yt-id"], ["client_secret", "yt-secret"]] };
+  // 11/24: a card with several boxes goes as ONE "env" drop under this name; the MSI tests the boxes together before saving (AI-Shared/tools/direct_post.py)
+  const GROUP = { x: "X_POSTING", youtube: "YOUTUBE_UPLOAD" };
   document.querySelectorAll("button.send").forEach((btn) => btn.addEventListener("click", async () => {
     const t = btn.dataset.target, msg = document.querySelector('[data-msg="' + t + '"]'), obj = {};
     for (const [k, id] of fields[t]) { obj[k] = document.getElementById(id).value.trim(); if (!obj[k]) { msg.className = "msg bad"; msg.textContent = "Fill in every box."; return; } }
@@ -120,7 +144,7 @@
     btn.disabled = true; msg.className = "msg wait"; msg.textContent = "Locking...";
     try {
       const blob = await lock(obj);
-      const { error } = await supabase.from("key_drops").insert({ target: t, env_name, blob });
+      const { error } = await supabase.from("key_drops").insert({ target: GROUP[t] ? "env" : t, env_name: GROUP[t] || env_name, blob });
       if (error) throw error;
       for (const [, id] of fields[t]) document.getElementById(id).value = "";
       msg.className = "msg ok"; msg.textContent = "Sent, locked. The MSI picks it up within a minute and buzzes your phone. See History.";
@@ -161,6 +185,7 @@
     h.querySelectorAll("[data-rep]").forEach((a) => a.addEventListener("click", (ev) => {
       ev.preventDefault(); const n = a.dataset.rep;
       if (n === "POLYMARKET") location.hash = "#polymarket"; else if (n.startsWith("KRAKEN")) location.hash = "#kraken";
+      else if (n.startsWith("X_")) location.hash = "#x"; else if (n.startsWith("YOUTUBE_")) location.hash = "#youtube";
       else { otn.value = n; otn.dataset.typed = "1"; location.hash = "#other"; otv.focus(); }
     }));
   }
