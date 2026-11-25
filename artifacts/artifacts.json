@@ -1,286 +1,317 @@
 {
-  "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
-  "items": [
+ "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
+ "items": [
+  {
+   "id": "vex-image-to-room-2026-11-25",
+   "date": "2026-11-25",
+   "title": "Picture to 3D room: ChatGPT builds a room in our own render engine",
+   "tool": "HB Render (our own WebGPU path tracer) + ChatGPT (Vex) through Desktop Commander on the MSI",
+   "image": "/artifacts/img/vex-room-angle1.jpg",
+   "what": "ChatGPT made a picture of a dusk study room, then on its own wrote a 300-object scene for HB Render, ran the engine, looked at the result and fixed it twice. Then it turned the camera 90 degrees: the same desk, chair, lamp and window hold up from the new side, so it built a real space, not a flat copy of a photo.",
+   "made": "Reference picture by ChatGPT; scene file, renders and fixes by ChatGPT driving HB Render headless on the MSI; nobody edited the engine. The second view shows things the first could not (a plant, a mug, the tree outside) - filled in by the AI, not taken from the picture.",
+   "honest": "Stylized and warm, not photo-real yet; grainy speckles are render noise (too few samples per pixel). One room, two angles; not walkable yet. Not yet tested on a real iPhone.",
+   "links": [
+    [
+     "Second angle (turned 90 degrees)",
+     "/artifacts/img/vex-room-angle2.jpg"
+    ]
+   ]
+  },
+  {
+   "id": "science-ep11-pioneer-anomaly",
+   "date": "2026-11-15",
+   "title": "Science 8.11: The Pioneer Anomaly (a Heartbeat News field trip)",
+   "tool": "Unreal Engine 5.8 (MetaHuman Joe, Vex, a scripted space level) + Pillow boards + Heartbeat News voices + ffmpeg, by Claude (Opus 5.5 and Fable) on the MSI",
+   "image": "/tv/science/science-ep11-pioneer-anomaly.jpg",
+   "what": "A 7.5-minute episode: news anchors Alien Joe and Robot Vex get sent on a science field trip because Grok on X suggested it as a Still Unknown mystery. They fly the Heartbeat News live truck out to Pioneer 10, explain the tiny extra pull found in its tracking data (about 8.7 ten-billionths of a meter per second, every second), the rescued old tapes, and why uneven heat from the spacecraft itself explains it. Verdict: mostly solved, filed under Science.",
+   "made": "Studio scenes with the movement system from the 11/15 movement test (foot-locked walking, lip-sync), a procedural Pioneer 10 and live truck in Unreal, four drawn boards with sources, every claim's source on screen. Script fact-checked by Codex with web search.",
+   "honest": "Every 3D shot is an illustration, not real footage; heat views are false color; distances not to scale; the spin is slowed; the plaque is our own simplified drawing, not the real artwork. Grok's pitch is shown as a paraphrase card. Joe still walks barefoot in shorts and his feet swivel a little in turns. Not yet tested on a real iPhone.",
+   "links": [
+    [
+     "Watch on Heartbeat TV",
+     "/tv/?ch=8.11"
+    ],
+    [
+     "Vertical short (9:16)",
+     "/tv/science/science-ep11-pioneer-anomaly-vertical.mp4"
+    ]
+   ]
+  },
+  {
+   "id": "science-ep10-antarctica-part2",
+   "date": "2026-11-06",
+   "title": "Science 8.10: Antarctica, Part 2: the sky in the ice",
+   "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+   "image": "/tv/science/science-ep10-antarctica-part2.jpg",
+   "what": "The 8-minute follow-up to 8.7: how snow becomes firn and seals air into bubbles, why the air is younger than its ice, air hydrates, brittle cores, what ancient air holds (CO2 and methane then and in 2026), the laser method, what the six-million-year-old air did and didn't tell us, glacier-ice fizz, the Cape Grim air archive, and when 2026 air might be sealed.",
+   "made": "Seven small 3D sets built entirely in code in Blender (a polar snowfield, an ice core on a light table, a lab bench with a laser and sugar cubes, a glass of water with glacier-style ice, a coastal air station, an air-cylinder store, a jar on a table), twelve drawn boards with their sources, and a local Kokoro voice. Script fact-checked twice by Codex with web search.",
+   "honest": "Every 3D scene is an illustration, not real footage, and is labelled that way: the station is not Cape Grim, the store is not CSIRO's, the core is not the Allan Hills core, and the cracks and the laser are drawn. The mid-2030s sealing date is our own estimate and is labelled so. Not yet tested on a real iPhone.",
+   "links": [
+    [
+     "Watch on Heartbeat TV",
+     "/tv/?ch=8.10"
+    ],
+    [
+     "Vertical cut (9:16)",
+     "/tv/science/science-ep10-antarctica-part2-vertical.mp4"
+    ],
+    [
+     "Part 1 (8.7)",
+     "/tv/?ch=8.7"
+    ]
+   ]
+  },
+  {
+   "id": "science-ep9-one-way-only",
+   "date": "2026-11-05",
+   "title": "Science 8.9: Every one-way-only is a story",
+   "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+   "image": "/tv/science/science-ep9-one-way-only.jpg",
+   "what": "A 4.5-minute episode about things designed around mistakes: diesel and gas nozzles, the disputed story of Murphy's Law, Shigeo Shingo's poka-yoke (two springs in a dish), the brake-to-shift interlock, microwave door interlocks, the SIM card's cut corner, and USB-C, which makes every way right instead.",
+   "made": "Eight small 3D sets built entirely in code in Blender (a fuel pump, a filler neck, a desert rocket-sled track, springs in a dish, a shifter, a microwave, a nano SIM, a USB-C plug), four drawn boards with their sources, and a local Kokoro voice. Script fact-checked by Codex with web search.",
+   "honest": "Every 3D scene is an illustration of a generic object, not a real product or footage, and is labelled that way. The sled track is not the real 1949 track, the nozzles are simplified, and the nozzle-size board draws the filler opening only to show the idea. Not yet tested on a real iPhone.",
+   "links": [
+    [
+     "Watch on Heartbeat TV",
+     "/tv/?ch=8.9"
+    ],
+    [
+     "Vertical cut (9:16)",
+     "/tv/science/science-ep9-one-way-only-vertical.mp4"
+    ]
+   ]
+  },
+  {
+   "id": "science-ep8-is-space-cold",
+   "date": "2026-11-05",
+   "title": "Science 8.8: Is space cold?",
+   "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+   "image": "/tv/science/science-ep8-is-space-cold.jpg",
+   "what": "A 5-minute episode: why cold space is a hard place to get rid of heat. The three ways heat moves, the Stefan-Boltzmann glow law, the space station's six white radiators, how a spacesuit cools an astronaut with water, and the debate over AI data centers in orbit (company claims, filings, radiator size estimates, and what is not established).",
+   "made": "Two 3D sets built entirely in code in Blender (an illustrated Earth from orbit with a generic station and a generic data-center satellite, and a metal plate glowing in a dark chamber), six drawn boards with their sources, and a local Kokoro voice. Script fact-checked by Codex with web search; the Google test-satellite line was updated on render night (one launched Oct 2026, two more planned for 2027).",
+   "honest": "Every 3D scene is an illustration, not footage, and is labelled that way. The Earth is procedural (no real coastlines), the station and satellite are simple boxes and panels, not real spacecraft, and the plate's glow colour is approximate. Not yet tested on a real iPhone.",
+   "links": [
+    [
+     "Watch on Heartbeat TV",
+     "/tv/?ch=8.8"
+    ],
+    [
+     "Vertical cut (9:16)",
+     "/tv/science/science-ep8-is-space-cold-vertical.mp4"
+    ]
+   ]
+  },
+  {
+   "id": "science-ep7-antarctica-ice",
+   "date": "2026-11-02",
+   "title": "Science 8.7: Antarctica, what's frozen in the ice (Part 1)",
+   "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+   "image": "/tv/science/science-ep7-antarctica-ice.jpg",
+   "what": "An 8.5-minute episode: 6-million-year-old ice from the Allan Hills, the Beyond EPICA core, million-year-old DNA in seafloor mud, what has really been revived, the zombie viruses (Siberia, not Antarctica), living lakes under the ice, where the ice is being lost, the real disease risk today, and how people actually get there.",
+   "made": "Nine 3D scenes built entirely in code in Blender (blue-ice field, a bubbly ice block, ice cores, the seafloor drill, diatoms, bacteria and DNA on clay, a lake cutaway, an ice-shelf coast, a station at night), eight drawn boards with their sources, and a local Kokoro voice. The script was fact-checked twice by Codex with web search.",
+   "honest": "Every 3D scene is an illustration, not footage, and is labelled that way. The lake cutaway is a plain block (not to scale), the map outline is simplified, the bacteria are smooth capsules, the station is a few boxes with lit windows, and the shore shot shows no birds. Not yet tested on a real iPhone.",
+   "links": [
+    [
+     "Watch on Heartbeat TV",
+     "/tv/?ch=8.7"
+    ],
+    [
+     "Vertical cut (9:16)",
+     "/tv/science/science-ep7-antarctica-ice-vertical.mp4"
+    ]
+   ]
+  },
+  {
+   "id": "highway-after-us",
+   "date": "2026-10-27",
+   "title": "How a highway disappears: move through fifty years",
+   "tool": "Codex + generated images + browser animation",
+   "image": "/experiments/highway-after-us/road-old.png",
+   "what": "Move a slider through an imagined fifty years on an Indiana road after maintenance stops. Grass, cracks and trees change with time, alongside field notes inspired by Science episode 8.4.",
+   "made": "Codex built the page and timeline from Jaron's idea, with two AI-generated road images and browser-drawn growth. It links back to the episode and a study of vegetation on abandoned roads in British Columbia.",
+   "honest": "This is an illustrative crossfade between generated images, with drawn details; it is not a physical simulation or a forecast. The years are estimates and the landscape can change differently depending on the road, climate and plants nearby. A real iPhone test is still needed.",
+   "links": [
+    [
+     "Open the interactive",
+     "/experiments/highway-after-us/"
+    ],
+    [
+     "Watch the Science episode",
+     "/tv/science/science-ep4-highway-disappears.mp4"
+    ],
+    [
+     "Read the abandoned roads study",
+     "https://unbc.arcabc.ca/_flysystem/repo-bin/2023-01/unbc_59348.pdf"
+    ]
+   ]
+  },
+  {
+   "id": "studio-v2-team",
+   "date": "2026-10-24",
+   "title": "Studio round 2: built by three AIs at once",
+   "tool": "Claude Fable 5.1 + Codex GPT-6.1 Sol + Kimi K3.1 Pro, merged by Claude Code",
+   "image": "/tv/music/music-ep1-first-light.jpg",
+   "what": "Beat Lab: every dice press is a new beat, plus Drill, Lo-fi and Afrobeats, better drums and 808, louder mix for phones. Recorder: steadier timing, safer punch-ins, live volume and mute, a clean-voice option, safer saving. New: a lyric pad (bars, syllables, rhyme ideas, saves on your phone) and a Know the steps guide to rights, splits and releasing, with official sources.",
+   "made": "Jaron asked the team to look it over. Each AI got its own part and its own copy of the site, then Claude merged the three, tested at phone width and shipped it the same night.",
+   "honest": "Not yet tested on a real iPhone mic or Bluetooth headphones. Beat sound judged by measurements, not ears. No project autosave yet: leaving the page can lose takes. Save parts gives 4 downloads, which iPhones may block.",
+   "links": [
     {
-      "id": "science-ep11-pioneer-anomaly",
-      "date": "2026-11-15",
-      "title": "Science 8.11: The Pioneer Anomaly (a Heartbeat News field trip)",
-      "tool": "Unreal Engine 5.8 (MetaHuman Joe, Vex, a scripted space level) + Pillow boards + Heartbeat News voices + ffmpeg, by Claude (Opus 5.5 and Fable) on the MSI",
-      "image": "/tv/science/science-ep11-pioneer-anomaly.jpg",
-      "what": "A 7.5-minute episode: news anchors Alien Joe and Robot Vex get sent on a science field trip because Grok on X suggested it as a Still Unknown mystery. They fly the Heartbeat News live truck out to Pioneer 10, explain the tiny extra pull found in its tracking data (about 8.7 ten-billionths of a meter per second, every second), the rescued old tapes, and why uneven heat from the spacecraft itself explains it. Verdict: mostly solved, filed under Science.",
-      "made": "Studio scenes with the movement system from the 11/15 movement test (foot-locked walking, lip-sync), a procedural Pioneer 10 and live truck in Unreal, four drawn boards with sources, every claim's source on screen. Script fact-checked by Codex with web search.",
-      "honest": "Every 3D shot is an illustration, not real footage; heat views are false color; distances not to scale; the spin is slowed; the plaque is our own simplified drawing, not the real artwork. Grok's pitch is shown as a paraphrase card. Joe still walks barefoot in shorts and his feet swivel a little in turns. Not yet tested on a real iPhone.",
-      "links": [
-        [
-          "Watch on Heartbeat TV",
-          "/tv/?ch=8.11"
-        ],
-        [
-          "Vertical short (9:16)",
-          "/tv/science/science-ep11-pioneer-anomaly-vertical.mp4"
-        ]
-      ]
+     "label": "Open the Studio",
+     "href": "/studio/"
     },
     {
-      "id": "science-ep10-antarctica-part2",
-      "date": "2026-11-06",
-      "title": "Science 8.10: Antarctica, Part 2: the sky in the ice",
-      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
-      "image": "/tv/science/science-ep10-antarctica-part2.jpg",
-      "what": "The 8-minute follow-up to 8.7: how snow becomes firn and seals air into bubbles, why the air is younger than its ice, air hydrates, brittle cores, what ancient air holds (CO2 and methane then and in 2026), the laser method, what the six-million-year-old air did and didn't tell us, glacier-ice fizz, the Cape Grim air archive, and when 2026 air might be sealed.",
-      "made": "Seven small 3D sets built entirely in code in Blender (a polar snowfield, an ice core on a light table, a lab bench with a laser and sugar cubes, a glass of water with glacier-style ice, a coastal air station, an air-cylinder store, a jar on a table), twelve drawn boards with their sources, and a local Kokoro voice. Script fact-checked twice by Codex with web search.",
-      "honest": "Every 3D scene is an illustration, not real footage, and is labelled that way: the station is not Cape Grim, the store is not CSIRO's, the core is not the Allan Hills core, and the cracks and the laser are drawn. The mid-2030s sealing date is our own estimate and is labelled so. Not yet tested on a real iPhone.",
-      "links": [
-        [
-          "Watch on Heartbeat TV",
-          "/tv/?ch=8.10"
-        ],
-        [
-          "Vertical cut (9:16)",
-          "/tv/science/science-ep10-antarctica-part2-vertical.mp4"
-        ],
-        [
-          "Part 1 (8.7)",
-          "/tv/?ch=8.7"
-        ]
-      ]
+     "label": "Lyric pad",
+     "href": "/studio/lyrics/"
     },
     {
-      "id": "science-ep9-one-way-only",
-      "date": "2026-11-05",
-      "title": "Science 8.9: Every one-way-only is a story",
-      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
-      "image": "/tv/science/science-ep9-one-way-only.jpg",
-      "what": "A 4.5-minute episode about things designed around mistakes: diesel and gas nozzles, the disputed story of Murphy's Law, Shigeo Shingo's poka-yoke (two springs in a dish), the brake-to-shift interlock, microwave door interlocks, the SIM card's cut corner, and USB-C, which makes every way right instead.",
-      "made": "Eight small 3D sets built entirely in code in Blender (a fuel pump, a filler neck, a desert rocket-sled track, springs in a dish, a shifter, a microwave, a nano SIM, a USB-C plug), four drawn boards with their sources, and a local Kokoro voice. Script fact-checked by Codex with web search.",
-      "honest": "Every 3D scene is an illustration of a generic object, not a real product or footage, and is labelled that way. The sled track is not the real 1949 track, the nozzles are simplified, and the nozzle-size board draws the filler opening only to show the idea. Not yet tested on a real iPhone.",
-      "links": [
-        [
-          "Watch on Heartbeat TV",
-          "/tv/?ch=8.9"
-        ],
-        [
-          "Vertical cut (9:16)",
-          "/tv/science/science-ep9-one-way-only-vertical.mp4"
-        ]
-      ]
-    },
-    {
-      "id": "science-ep8-is-space-cold",
-      "date": "2026-11-05",
-      "title": "Science 8.8: Is space cold?",
-      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
-      "image": "/tv/science/science-ep8-is-space-cold.jpg",
-      "what": "A 5-minute episode: why cold space is a hard place to get rid of heat. The three ways heat moves, the Stefan-Boltzmann glow law, the space station's six white radiators, how a spacesuit cools an astronaut with water, and the debate over AI data centers in orbit (company claims, filings, radiator size estimates, and what is not established).",
-      "made": "Two 3D sets built entirely in code in Blender (an illustrated Earth from orbit with a generic station and a generic data-center satellite, and a metal plate glowing in a dark chamber), six drawn boards with their sources, and a local Kokoro voice. Script fact-checked by Codex with web search; the Google test-satellite line was updated on render night (one launched Oct 2026, two more planned for 2027).",
-      "honest": "Every 3D scene is an illustration, not footage, and is labelled that way. The Earth is procedural (no real coastlines), the station and satellite are simple boxes and panels, not real spacecraft, and the plate's glow colour is approximate. Not yet tested on a real iPhone.",
-      "links": [
-        [
-          "Watch on Heartbeat TV",
-          "/tv/?ch=8.8"
-        ],
-        [
-          "Vertical cut (9:16)",
-          "/tv/science/science-ep8-is-space-cold-vertical.mp4"
-        ]
-      ]
-    },
-    {
-      "id": "science-ep7-antarctica-ice",
-      "date": "2026-11-02",
-      "title": "Science 8.7: Antarctica, what's frozen in the ice (Part 1)",
-      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
-      "image": "/tv/science/science-ep7-antarctica-ice.jpg",
-      "what": "An 8.5-minute episode: 6-million-year-old ice from the Allan Hills, the Beyond EPICA core, million-year-old DNA in seafloor mud, what has really been revived, the zombie viruses (Siberia, not Antarctica), living lakes under the ice, where the ice is being lost, the real disease risk today, and how people actually get there.",
-      "made": "Nine 3D scenes built entirely in code in Blender (blue-ice field, a bubbly ice block, ice cores, the seafloor drill, diatoms, bacteria and DNA on clay, a lake cutaway, an ice-shelf coast, a station at night), eight drawn boards with their sources, and a local Kokoro voice. The script was fact-checked twice by Codex with web search.",
-      "honest": "Every 3D scene is an illustration, not footage, and is labelled that way. The lake cutaway is a plain block (not to scale), the map outline is simplified, the bacteria are smooth capsules, the station is a few boxes with lit windows, and the shore shot shows no birds. Not yet tested on a real iPhone.",
-      "links": [
-        ["Watch on Heartbeat TV", "/tv/?ch=8.7"],
-        ["Vertical cut (9:16)", "/tv/science/science-ep7-antarctica-ice-vertical.mp4"]
-      ]
-    },
-    {
-      "id": "highway-after-us",
-      "date": "2026-10-27",
-      "title": "How a highway disappears: move through fifty years",
-      "tool": "Codex + generated images + browser animation",
-      "image": "/experiments/highway-after-us/road-old.png",
-      "what": "Move a slider through an imagined fifty years on an Indiana road after maintenance stops. Grass, cracks and trees change with time, alongside field notes inspired by Science episode 8.4.",
-      "made": "Codex built the page and timeline from Jaron's idea, with two AI-generated road images and browser-drawn growth. It links back to the episode and a study of vegetation on abandoned roads in British Columbia.",
-      "honest": "This is an illustrative crossfade between generated images, with drawn details; it is not a physical simulation or a forecast. The years are estimates and the landscape can change differently depending on the road, climate and plants nearby. A real iPhone test is still needed.",
-      "links": [
-        ["Open the interactive", "/experiments/highway-after-us/"],
-        ["Watch the Science episode", "/tv/science/science-ep4-highway-disappears.mp4"],
-        ["Read the abandoned roads study", "https://unbc.arcabc.ca/_flysystem/repo-bin/2023-01/unbc_59348.pdf"]
-      ]
-    },
-    {
-      "id": "studio-v2-team",
-      "date": "2026-10-24",
-      "title": "Studio round 2: built by three AIs at once",
-      "tool": "Claude Fable 5.1 + Codex GPT-6.1 Sol + Kimi K3.1 Pro, merged by Claude Code",
-      "image": "/tv/music/music-ep1-first-light.jpg",
-      "what": "Beat Lab: every dice press is a new beat, plus Drill, Lo-fi and Afrobeats, better drums and 808, louder mix for phones. Recorder: steadier timing, safer punch-ins, live volume and mute, a clean-voice option, safer saving. New: a lyric pad (bars, syllables, rhyme ideas, saves on your phone) and a Know the steps guide to rights, splits and releasing, with official sources.",
-      "made": "Jaron asked the team to look it over. Each AI got its own part and its own copy of the site, then Claude merged the three, tested at phone width and shipped it the same night.",
-      "honest": "Not yet tested on a real iPhone mic or Bluetooth headphones. Beat sound judged by measurements, not ears. No project autosave yet: leaving the page can lose takes. Save parts gives 4 downloads, which iPhones may block.",
-      "links": [
-        {
-          "label": "Open the Studio",
-          "href": "/studio/"
-        },
-        {
-          "label": "Lyric pad",
-          "href": "/studio/lyrics/"
-        },
-        {
-          "label": "Know the steps",
-          "href": "/studio/learn/"
-        }
-      ]
-    },
-    {
-      "id": "studio-v1",
-      "date": "2026-10-24",
-      "title": "Studio: record over a beat on your phone",
-      "tool": "One web page (Web Audio) + our beat kit",
-      "image": "/tv/music/music-ep1-first-light.jpg",
-      "what": "Pick a Heartbeat beat (First Light, boom bap, trap, R&B, each at three tempos) or upload your own, record your voice over it, stack ad-libs on their own layers, go back 10 or 15 seconds and keep, trim or redo a take, then save the song as a WAV. Your voice never leaves your phone.",
-      "made": "Idea from Jaron's phone note, built by Claude Code the same afternoon. The beats are made from math by the crew's own beat kit, no samples, CC0. Saving mixes everything exactly on the phone.",
-      "honest": "Recording was tested with a stand-in mic signal, not a real voice yet. Bluetooth earbuds add a delay (there's a timing slider). No note editor or sound swapping yet; those come next.",
-      "links": [
-        {
-          "label": "Open the Studio",
-          "url": "/studio/"
-        }
-      ]
-    },
-    {
-      "id": "first-light-song",
-      "date": "2026-10-24",
-      "title": "First Light: the first song on Heartbeat TV",
-      "tool": "One Python file (numpy) written by Claude Code",
-      "image": "/tv/music/music-ep1-first-light.jpg",
-      "video": "/tv/music/music-ep1-first-light.mp4",
-      "what": "A two-minute instrumental: a heartbeat opens and closes it, piano and a warm pad carry the chords, a soft lead sings the tune. It is track 1 on the Music channel (CH 5) and the music under our first main post.",
-      "made": "Every sound is made from math in one script: piano strings, pad, bass, drums, the heartbeat and the room echo. No samples, no AI music service. The post cut is arranged so each section change lands on a cut in the site video.",
-      "honest": "The AI that wrote it can't hear it: it was checked by numbers (levels, balance on a phone speaker), not by ear. Simple synth sounds, no vocals yet.",
-      "links": [
-        {
-          "label": "Watch on Heartbeat TV",
-          "url": "/tv/?ch=5"
-        },
-        {
-          "label": "MP3 (CC0)",
-          "url": "/tv/music/first-light.mp3"
-        }
-      ]
-    },
-    {
-      "id": "hb-render-r10-interiors",
-      "date": "2026-10-22",
-      "title": "Make anything, round 10: rooms you can actually see",
-      "tool": "hb-render (our own renderer) + a scene writer",
-      "image": "/artifacts/img/hb-render-r10-interiors.jpg",
-      "what": "Jaron's two room sentences, rendered through his own lane. Top: \"A restaurant with tables and chairs. Nice counter space and full kitchen\". Bottom: \"A bedroom with a desk and laptop... very messy room\". Left is round 9, where the restaurant was near black (three weak bulbs in a 12 by 10 m hall) and the bedroom was dim. Right is round 10: the same sentences, now lit like real rooms.",
-      "made": "Own code: the scene writer is told how strong a bulb has to be for the floor area (200 to 600, at least one light per 15 m2, a ceiling fill when there is no window) and the engine enforces the same numbers if the writer is timid; auto-exposure measures the first samples and sets the camera; very bright bounced-light samples are clamped (fewer white speckles) and an edge-aware clean-up pass is on by default with a toggle on the page.",
-      "honest": "Brighter is not finished: the restaurant has office chairs where dining tables should be, the kitchen is a counter with bottles, and the bedroom's 'random things on the floor' are a few boxes. Walls still look flat because the writer picks one texture per room. Props are low-poly CC0 toys.",
-      "links": [
-        {
-          "url": "/render/anything/",
-          "label": "Make anything"
-        }
-      ]
-    },
-    {
-      "id": "hb-render-r6-parking-lot",
-      "date": "2026-10-21",
-      "title": "Make anything, round 6: the parking lot, before and after",
-      "tool": "hb-render (our own renderer) + a scene writer",
-      "image": "/artifacts/img/hb-render-r6-parking-lot.jpg",
-      "what": "Jaron typed \"A parking lot by a building. A truck, a car and a dumpster with trash in it.\" Left: round 5, where a modular building kit rendered as wall tiles floating in the sky and the vehicles were painted boxes. Right: round 6, a brick factory facade assembled piece by piece from that kit, a real truck, car and dumpster (Kenney CC0), everything resting on the asphalt.",
-      "made": "Own code: a kit assembler (doors on the ground floor, windows above, corners, cornice, a seed per request), a second CC0 model source (Kenney, 390 props hosted on this site), scanned textures attached by material word (\"concrete\" is concrete now), and a drop-to-ground pass so nothing floats.",
-      "honest": "The cars and props are low-poly toys next to scanned bricks; placement left/right is still the writer's guess; the assembler knows one kit and has no roof or sides. The scene writer is down until its API credits are topped up.",
-      "links": [
-        {
-          "url": "/render/anything/",
-          "label": "Make anything"
-        }
-      ]
-    },
-    {
-      "id": "hb-render-r5-anything",
-      "date": "2026-10-21",
-      "title": "Make anything: type a sentence, your phone renders it",
-      "tool": "hb-render (our own renderer) + a scene writer",
-      "image": "/artifacts/img/hb-render-r5-canoe.jpg",
-      "what": "Round 5: the engine now lives on this site at /render/. Type any sentence at /render/anything/ and a scene writer turns it into a 3D scene from free CC0 models, textures and skies plus shapes it builds itself; your own device renders it and the page says where every object came from and what it could not make. First try: \"a red canoe on a misty lake at dawn\".",
-      "made": "Our own engine running in the browser (WebGPU). The scene writer is Claude (claude-sonnet-5-5) behind a rate-limited endpoint; objects come from Poly Haven CC0 (loaded live from their CDN) or our procedural builders (terrain, rocks, trees, boat hulls, rooms). A text-to-3D generator is a hook only, nothing started.",
-      "honest": "The writer places things by guesswork: the canoe floats above the water, the trees are cones, \"mist\" cannot be rendered at all. The scene writer is live on the site with hard limits (6 scenes an hour per device, 60 a day), so a busy day can run out.",
-      "links": [
-        {
-          "label": "Make anything",
-          "url": "/render/anything/"
-        },
-        {
-          "label": "Phone test",
-          "url": "/render/"
-        }
-      ]
-    },
-    {
-      "id": "hb-render-r4-bedroom",
-      "date": "2026-10-21",
-      "title": "Round 4: the lamp is lit from inside the shade",
-      "tool": "hb-render (our own renderer)",
-      "image": "/artifacts/img/hb-render-r4-bedroom.jpg",
-      "what": "The same bedroom with the pillows on the bed, the bulb inside the lamp shade (the lamp mesh itself is the light), window glass, and fabric and leather that catch light at the edges.",
-      "made": "Own code: mesh lights, sheen and clearcoat material lobes, glass that still lets the sun through. 2,048 light samples per pixel in 172 seconds on one laptop GPU. Also built this round: a render-only MCP server and a phone test page.",
-      "honest": "Still a 3D render: flat grey plaster, a soft dim sun patch instead of a hot one, a dark foreground chair, no curtain or clutter.",
-      "links": []
-    },
-    {
-      "id": "hb-render-r3-bedroom",
-      "date": "2026-10-20",
-      "title": "Same engine, round 3: a real bedroom",
-      "tool": "hb-render (our own renderer)",
-      "image": "/artifacts/img/hb-render-r3-bedroom.jpg",
-      "what": "Proof the engine isn't just a bottle-and-sand demo: real 3D models (bed, chair, nightstand, lamp, pillows), late-afternoon sun through a window, and a lamp lit inside.",
-      "made": "Our own code, round 3: a loader for standard 3D model files (glTF, OBJ) and indoor lights (lamps, window light, glowing materials). All models and textures free CC0 from Poly Haven. 2,048 light samples per pixel in 116 seconds.",
-      "honest": "Reads as a 3D render. The pillows float above the bed and the bulb hangs outside the lamp shade (placed by eye), the light is flat, and walls, sheets and leather need better materials. No glass, curtains or clutter yet.",
-      "links": []
-    },
-    {
-      "id": "hb-render-r3-carpet",
-      "date": "2026-10-20",
-      "title": "The bottle, on carpet instead of sand",
-      "tool": "hb-render (our own renderer)",
-      "image": "/artifacts/img/hb-render-r3-carpet.jpg",
-      "what": "Same scene, one material swapped: the pour now lands on carpet, with its own wet patch.",
-      "made": "One change in the scene file. 35 seconds to render.",
-      "honest": "The carpet is scaled like a close-up of a doormat, and the splash is still beads until surface tension is added.",
-      "links": []
-    },
-    {
-      "id": "hb-render-r2",
-      "date": "2026-10-20",
-      "title": "Our engine, round 2: loose sand, real light through the bottle",
-      "tool": "hb-render (our own renderer)",
-      "image": "/artifacts/img/hb-render-r2.jpg",
-      "what": "Same bottle, same desert, a few hours later. Real loose sand with wind ripples, a water simulation running on the graphics card, light focused through the bottle into bright bands in the shadow, and a wet patch where the water soaks in.",
-      "made": "100% our own code: own path tracer (WebGPU), own particle water (152,000 particles, simulated in 6.6 seconds), own scene language. CC0 sand texture and sky from Poly Haven. Rendered in 83 seconds on one laptop GPU.",
-      "honest": "Not photo-real yet: the splash is a pile of equal-size beads (no surface tension yet) and the stream is a smooth rod. Takes a second or two to spot as CG.",
-      "links": []
-    },
-    {
-      "id": "hb-render-v0",
-      "date": "2026-10-20",
-      "title": "Our own engine's first picture",
-      "tool": "hb-render (our own renderer)",
-      "image": "/artifacts/img/hb-render-v0.jpg",
-      "what": "A bottle pouring water onto desert sand. Started from a question: AI image generators guess what water looks like - what if a picture came from simulating the water instead?",
-      "made": "Written the same evening: own path tracer, own water simulation, own scene file format. No Blender, no Unreal inside. 2,048 light samples per pixel in about 2.5 minutes.",
-      "honest": "First try: the water looks like jelly and the wet sand barely shows. But the water soaks into the sand instead of puddling on top, which both AI images got wrong.",
-      "links": []
+     "label": "Know the steps",
+     "href": "/studio/learn/"
     }
-  ]
+   ]
+  },
+  {
+   "id": "studio-v1",
+   "date": "2026-10-24",
+   "title": "Studio: record over a beat on your phone",
+   "tool": "One web page (Web Audio) + our beat kit",
+   "image": "/tv/music/music-ep1-first-light.jpg",
+   "what": "Pick a Heartbeat beat (First Light, boom bap, trap, R&B, each at three tempos) or upload your own, record your voice over it, stack ad-libs on their own layers, go back 10 or 15 seconds and keep, trim or redo a take, then save the song as a WAV. Your voice never leaves your phone.",
+   "made": "Idea from Jaron's phone note, built by Claude Code the same afternoon. The beats are made from math by the crew's own beat kit, no samples, CC0. Saving mixes everything exactly on the phone.",
+   "honest": "Recording was tested with a stand-in mic signal, not a real voice yet. Bluetooth earbuds add a delay (there's a timing slider). No note editor or sound swapping yet; those come next.",
+   "links": [
+    {
+     "label": "Open the Studio",
+     "url": "/studio/"
+    }
+   ]
+  },
+  {
+   "id": "first-light-song",
+   "date": "2026-10-24",
+   "title": "First Light: the first song on Heartbeat TV",
+   "tool": "One Python file (numpy) written by Claude Code",
+   "image": "/tv/music/music-ep1-first-light.jpg",
+   "video": "/tv/music/music-ep1-first-light.mp4",
+   "what": "A two-minute instrumental: a heartbeat opens and closes it, piano and a warm pad carry the chords, a soft lead sings the tune. It is track 1 on the Music channel (CH 5) and the music under our first main post.",
+   "made": "Every sound is made from math in one script: piano strings, pad, bass, drums, the heartbeat and the room echo. No samples, no AI music service. The post cut is arranged so each section change lands on a cut in the site video.",
+   "honest": "The AI that wrote it can't hear it: it was checked by numbers (levels, balance on a phone speaker), not by ear. Simple synth sounds, no vocals yet.",
+   "links": [
+    {
+     "label": "Watch on Heartbeat TV",
+     "url": "/tv/?ch=5"
+    },
+    {
+     "label": "MP3 (CC0)",
+     "url": "/tv/music/first-light.mp3"
+    }
+   ]
+  },
+  {
+   "id": "hb-render-r10-interiors",
+   "date": "2026-10-22",
+   "title": "Make anything, round 10: rooms you can actually see",
+   "tool": "hb-render (our own renderer) + a scene writer",
+   "image": "/artifacts/img/hb-render-r10-interiors.jpg",
+   "what": "Jaron's two room sentences, rendered through his own lane. Top: \"A restaurant with tables and chairs. Nice counter space and full kitchen\". Bottom: \"A bedroom with a desk and laptop... very messy room\". Left is round 9, where the restaurant was near black (three weak bulbs in a 12 by 10 m hall) and the bedroom was dim. Right is round 10: the same sentences, now lit like real rooms.",
+   "made": "Own code: the scene writer is told how strong a bulb has to be for the floor area (200 to 600, at least one light per 15 m2, a ceiling fill when there is no window) and the engine enforces the same numbers if the writer is timid; auto-exposure measures the first samples and sets the camera; very bright bounced-light samples are clamped (fewer white speckles) and an edge-aware clean-up pass is on by default with a toggle on the page.",
+   "honest": "Brighter is not finished: the restaurant has office chairs where dining tables should be, the kitchen is a counter with bottles, and the bedroom's 'random things on the floor' are a few boxes. Walls still look flat because the writer picks one texture per room. Props are low-poly CC0 toys.",
+   "links": [
+    {
+     "url": "/render/anything/",
+     "label": "Make anything"
+    }
+   ]
+  },
+  {
+   "id": "hb-render-r6-parking-lot",
+   "date": "2026-10-21",
+   "title": "Make anything, round 6: the parking lot, before and after",
+   "tool": "hb-render (our own renderer) + a scene writer",
+   "image": "/artifacts/img/hb-render-r6-parking-lot.jpg",
+   "what": "Jaron typed \"A parking lot by a building. A truck, a car and a dumpster with trash in it.\" Left: round 5, where a modular building kit rendered as wall tiles floating in the sky and the vehicles were painted boxes. Right: round 6, a brick factory facade assembled piece by piece from that kit, a real truck, car and dumpster (Kenney CC0), everything resting on the asphalt.",
+   "made": "Own code: a kit assembler (doors on the ground floor, windows above, corners, cornice, a seed per request), a second CC0 model source (Kenney, 390 props hosted on this site), scanned textures attached by material word (\"concrete\" is concrete now), and a drop-to-ground pass so nothing floats.",
+   "honest": "The cars and props are low-poly toys next to scanned bricks; placement left/right is still the writer's guess; the assembler knows one kit and has no roof or sides. The scene writer is down until its API credits are topped up.",
+   "links": [
+    {
+     "url": "/render/anything/",
+     "label": "Make anything"
+    }
+   ]
+  },
+  {
+   "id": "hb-render-r5-anything",
+   "date": "2026-10-21",
+   "title": "Make anything: type a sentence, your phone renders it",
+   "tool": "hb-render (our own renderer) + a scene writer",
+   "image": "/artifacts/img/hb-render-r5-canoe.jpg",
+   "what": "Round 5: the engine now lives on this site at /render/. Type any sentence at /render/anything/ and a scene writer turns it into a 3D scene from free CC0 models, textures and skies plus shapes it builds itself; your own device renders it and the page says where every object came from and what it could not make. First try: \"a red canoe on a misty lake at dawn\".",
+   "made": "Our own engine running in the browser (WebGPU). The scene writer is Claude (claude-sonnet-5-5) behind a rate-limited endpoint; objects come from Poly Haven CC0 (loaded live from their CDN) or our procedural builders (terrain, rocks, trees, boat hulls, rooms). A text-to-3D generator is a hook only, nothing started.",
+   "honest": "The writer places things by guesswork: the canoe floats above the water, the trees are cones, \"mist\" cannot be rendered at all. The scene writer is live on the site with hard limits (6 scenes an hour per device, 60 a day), so a busy day can run out.",
+   "links": [
+    {
+     "label": "Make anything",
+     "url": "/render/anything/"
+    },
+    {
+     "label": "Phone test",
+     "url": "/render/"
+    }
+   ]
+  },
+  {
+   "id": "hb-render-r4-bedroom",
+   "date": "2026-10-21",
+   "title": "Round 4: the lamp is lit from inside the shade",
+   "tool": "hb-render (our own renderer)",
+   "image": "/artifacts/img/hb-render-r4-bedroom.jpg",
+   "what": "The same bedroom with the pillows on the bed, the bulb inside the lamp shade (the lamp mesh itself is the light), window glass, and fabric and leather that catch light at the edges.",
+   "made": "Own code: mesh lights, sheen and clearcoat material lobes, glass that still lets the sun through. 2,048 light samples per pixel in 172 seconds on one laptop GPU. Also built this round: a render-only MCP server and a phone test page.",
+   "honest": "Still a 3D render: flat grey plaster, a soft dim sun patch instead of a hot one, a dark foreground chair, no curtain or clutter.",
+   "links": []
+  },
+  {
+   "id": "hb-render-r3-bedroom",
+   "date": "2026-10-20",
+   "title": "Same engine, round 3: a real bedroom",
+   "tool": "hb-render (our own renderer)",
+   "image": "/artifacts/img/hb-render-r3-bedroom.jpg",
+   "what": "Proof the engine isn't just a bottle-and-sand demo: real 3D models (bed, chair, nightstand, lamp, pillows), late-afternoon sun through a window, and a lamp lit inside.",
+   "made": "Our own code, round 3: a loader for standard 3D model files (glTF, OBJ) and indoor lights (lamps, window light, glowing materials). All models and textures free CC0 from Poly Haven. 2,048 light samples per pixel in 116 seconds.",
+   "honest": "Reads as a 3D render. The pillows float above the bed and the bulb hangs outside the lamp shade (placed by eye), the light is flat, and walls, sheets and leather need better materials. No glass, curtains or clutter yet.",
+   "links": []
+  },
+  {
+   "id": "hb-render-r3-carpet",
+   "date": "2026-10-20",
+   "title": "The bottle, on carpet instead of sand",
+   "tool": "hb-render (our own renderer)",
+   "image": "/artifacts/img/hb-render-r3-carpet.jpg",
+   "what": "Same scene, one material swapped: the pour now lands on carpet, with its own wet patch.",
+   "made": "One change in the scene file. 35 seconds to render.",
+   "honest": "The carpet is scaled like a close-up of a doormat, and the splash is still beads until surface tension is added.",
+   "links": []
+  },
+  {
+   "id": "hb-render-r2",
+   "date": "2026-10-20",
+   "title": "Our engine, round 2: loose sand, real light through the bottle",
+   "tool": "hb-render (our own renderer)",
+   "image": "/artifacts/img/hb-render-r2.jpg",
+   "what": "Same bottle, same desert, a few hours later. Real loose sand with wind ripples, a water simulation running on the graphics card, light focused through the bottle into bright bands in the shadow, and a wet patch where the water soaks in.",
+   "made": "100% our own code: own path tracer (WebGPU), own particle water (152,000 particles, simulated in 6.6 seconds), own scene language. CC0 sand texture and sky from Poly Haven. Rendered in 83 seconds on one laptop GPU.",
+   "honest": "Not photo-real yet: the splash is a pile of equal-size beads (no surface tension yet) and the stream is a smooth rod. Takes a second or two to spot as CG.",
+   "links": []
+  },
+  {
+   "id": "hb-render-v0",
+   "date": "2026-10-20",
+   "title": "Our own engine's first picture",
+   "tool": "hb-render (our own renderer)",
+   "image": "/artifacts/img/hb-render-v0.jpg",
+   "what": "A bottle pouring water onto desert sand. Started from a question: AI image generators guess what water looks like - what if a picture came from simulating the water instead?",
+   "made": "Written the same evening: own path tracer, own water simulation, own scene file format. No Blender, no Unreal inside. 2,048 light samples per pixel in about 2.5 minutes.",
+   "honest": "First try: the water looks like jelly and the wet sand barely shows. But the water soaks into the sand instead of puddling on top, which both AI images got wrong.",
+   "links": []
+  }
+ ]
 }
