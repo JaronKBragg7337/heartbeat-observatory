@@ -1,0 +1,1116 @@
+{
+  "date": "2026-11-26",
+  "title": "Heartbeat News — Thursday, November 26, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/wire/2026-11-26-top",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-26-top.md"
+    },
+    {
+      "name": "watch/claude/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-26.md"
+    },
+    {
+      "name": "watch/codex/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-26.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-26.md"
+    },
+    {
+      "name": "watch/grok/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-26.md"
+    },
+    {
+      "name": "watch/grok/2026-11-26-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-26-gaps.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-26.md"
+    },
+    {
+      "name": "watch/perplexity/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-26.md"
+    },
+    {
+      "name": "watch/msi/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-26.md"
+    },
+    {
+      "name": "watch/wire/2026-11-26",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-26.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Huawei verdict re-reports",
+      "source": "codex, msi",
+      "why": "DOJ dates the verdict Nov. 24; aired Wednesday; not new"
+    },
+    {
+      "item": "Gaza strike killing a senior Hamas security official; Colombia car bomb; Shenzhou-24; Solomons treaty; Mississippi plane crash",
+      "source": "wire must-air",
+      "why": "aired earlier this week; only Colombia's rescue gets a line today"
+    },
+    {
+      "item": "Ukraine crypto bill, Johannesburg mayoral vote, Brazil markets, FTSE close, Estonia, Finland-Norway aid, DTEK attack",
+      "source": "deepseek, grok",
+      "why": "detail or market item without must-air weight; room"
+    },
+    {
+      "item": "Polymarket bitcoin settlement, token unlocks, OPEC+, RBI and BoJ calendars, F1 finance review, Li Auto and Fisher & Paykel results",
+      "source": "deepseek, kimi",
+      "why": "trader detail"
+    },
+    {
+      "item": "Gaza meningitis alert, Iraq dialogue, Myanmar ICJ statement, Libya-Turkey gazette, Kenya-only items beyond Ebola, RBI payment draft",
+      "source": "kimi",
+      "why": "niche; no new development or single-source"
+    },
+    {
+      "item": "Tidal AI-music ban, Gordon Ramsay Top Gear, OpenAI usage limits, Apple removes MiniMax Talkie, MiniMax link report, GTA VI takedown",
+      "source": "kimi, perplexity, codex",
+      "why": "single-source or culture detail; no room"
+    },
+    {
+      "item": "Xi graft probe of Shanghai's Chen Jining; Sterling suspended sentence; Hochul-only items beyond weather",
+      "source": "wire should-air",
+      "why": "no room; low priority"
+    },
+    {
+      "item": "Black Friday and holiday deals",
+      "source": "msi, wire",
+      "why": "shopping"
+    },
+    {
+      "item": "UAP release status",
+      "source": "kimi, codex",
+      "why": "no new disclosure"
+    }
+  ],
+  "ticker": [
+    "MISSILES TOWARD RIYADH INTERCEPTED, COALITION SAYS",
+    "IRAN'S GUARDS CLAIM TANKER MINES; U.K.M.T.O. REPORTS PROJECTILE OFF DUBAI",
+    "KIM JONG UN CALLS FOR WIDER TACTICAL NUKE DEPLOYMENT (KCNA)",
+    "ISRAEL ALLEGES IRAN CHEMICAL WEAPONS; IRAN DENIES",
+    "S&P PUTS NVIDIA ON CREDITWATCH NEGATIVE",
+    "U.S. PROPOSES TARIFFS ON 14 PARTNERS; BRAZIL, CHINA OBJECT",
+    "WALL ST. DIPS 2ND DAY; ASIA REBOUNDS; BANK OF KOREA HIKES",
+    "ARMY SAYS IOWA LEAD AZIDE BLAST WENT WELL",
+    "CAIRO TANKER FIRE KILLS AT LEAST 30",
+    "JUDGE BLOCKS FCC REVIEW OF ABC LICENSES",
+    "FCC APPROVES SPACEX 1 MILLION SATELLITES",
+    "DR CONGO EBOLA CASES TOP 12,000",
+    "MACY'S PARADE MOVED TO SATURDAY BY STORM",
+    "STEELERS RELEASE AARON RODGERS"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Missiles over Riyadh, a nuclear call from Kim Jong Un, and a Thanksgiving storm",
+        "bullets": [
+          "Houthi missiles toward Riyadh; Gulf tanker incidents",
+          "Kim Jong Un on tactical nukes",
+          "Nvidia, tariffs and Wall Street",
+          "Thanksgiving storm; parade moved to Saturday"
+        ]
+      },
+      "sources": null,
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Thursday, November twenty-sixth. Happy Thanksgiving to everyone who celebrates it. The big parade in New York has been pushed to Saturday because of the weather."
+        },
+        {
+          "who": "vex",
+          "text": "Overseas, a Saudi-led coalition says it shot down two Houthi missiles aimed at Riyadh. Kim Jong Un wants more tactical nuclear weapons deployed. Nvidia is in the headlines again, and so are new proposed tariffs on fourteen trading partners."
+        },
+        {
+          "who": "joe",
+          "text": "Also today: the Army's big blast in Iowa, a deadly tanker fire in Cairo, and a lot of people trying to get home through a storm. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "gulf",
+      "kind": "story",
+      "strap": "MISSILES TOWARD RIYADH; GULF TANKER INCIDENTS",
+      "headline": "Houthi attacks and two accounts of the Gulf tankers",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "GULF",
+        "title": "Missiles toward Riyadh, and a projectile near a tanker off Dubai",
+        "stats": [
+          {
+            "label": "Coalition",
+            "value": "2 ballistic missiles + 2 drones intercepted"
+          },
+          {
+            "label": "U.K.M.T.O. 222",
+            "value": "Projectile blast 50 nm W of Dubai; no damage"
+          },
+          {
+            "label": "Iran's Guards",
+            "value": "2 tankers hit mines (claim)"
+          },
+          {
+            "label": "Brent (AP, early Asia)",
+            "value": "$91.11"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera live blog (Riyadh, Sanaa)",
+          "url": "https://www.aljazeera.com/amp/news/liveblog/2026/11/26/iran-war-live-explosion-rocks-sanaa-missiles-intercepted-over-riyadh"
+        },
+        {
+          "name": "Anadolu morning briefing (coalition statement)",
+          "url": "https://www.aa.com.tr/en/world/morning-briefing-nov-26-2026/4138215"
+        },
+        {
+          "name": "Al Jazeera (Houthi claims, Jizan)",
+          "url": "https://www.aljazeera.com/news/2026/11/25/houthis-target-saudi-arabias-red-sea-ports-as-strikes-escalate"
+        },
+        {
+          "name": "IRNA (Guards on two tankers)",
+          "url": "https://en.irna.ir/news/86331897/Two-violating-oil-tankers-explode-on-unaut"
+        },
+        {
+          "name": "U.K.M.T.O. warning 222",
+          "url": "https://www.ukmto.org/-/media/ukmto/products/20261125-ukmto_warning-222-26.pdf?rev=d10d7544e1274cb594c1257ad0ec6dc2"
+        },
+        {
+          "name": "AP via US News (Asian markets, Brent)",
+          "url": "https://www.usnews.com/news/us/articles/2026-11-26/asian-shares-rebound-led-by-ai-stocks-after-wall-street-pares-sharp-losses"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Saudi-led coalition says it intercepted two Houthi ballistic missiles fired toward Riyadh early today, and later two drones over the Eastern Province. The coalition gave no damage figures. Al Jazeera's live blog also reports an explosion in Sanaa after air strikes near its airport."
+        },
+        {
+          "who": "joe",
+          "text": "The Houthis say their own attacks hit Saudi Red Sea ports, a refinery, and Riyadh's financial district. Those are Houthi claims. The coalition said a Houthi projectile caused minor damage and no civilian injuries at Jizan Port, and that a drone was intercepted over Jeddah's port."
+        },
+        {
+          "who": "vex",
+          "text": "At sea, there are two accounts. Iran's Revolutionary Guard said yesterday that two oil tankers hit naval mines off the Strait of Hormuz, with fires in their engine rooms. It named no ships. That is Iran's statement, as carried by its state news agency."
+        },
+        {
+          "who": "joe",
+          "text": "The British maritime monitor, U.K.M.T.O., posted something different. A tanker master reported an explosion from an unknown projectile fifty nautical miles west of Dubai. The crew is safe. No damage. No pollution. Authorities are investigating. It did not say mine, and it did not confirm the Guard's claim."
+        },
+        {
+          "who": "vex",
+          "text": "Oil prices are quoted differently by source. The Associated Press had Brent at ninety-one dollars and eleven cents in early Asian trading. Reuters, as summarized by one capture, put it near ninety-five after the Houthi refinery claim. Treat the exact number with care."
+        }
+      ]
+    },
+    {
+      "id": "chem",
+      "kind": "story",
+      "strap": "ISRAEL ALLEGES IRAN CHEMICAL WEAPONS; IRAN DENIES",
+      "headline": "Chemical weapons accusation, and a strike warning",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IRAN",
+        "title": "Israel's accusation, Iran's denial"
+      },
+      "sources": [
+        {
+          "name": "Akron Jewish News (defense minister)",
+          "url": "https://www.akronjewishnews.com/news/nation_world/iran-developing-chemical-weapons-says-israels-defense-minister/article_0cb743da-7d68-5138-b6ee-4182c8cf00b3.html"
+        },
+        {
+          "name": "Korea Times (Iran's denial)",
+          "url": "https://www.koreatimes.co.kr/amp/world/20261126/iran-says-israel-trying-to-deceive-us-into-war-with-chemical-weapons-claim"
+        },
+        {
+          "name": "Al Jazeera (analysis)",
+          "url": "https://www.aljazeera.com/news/2026/11/25/could-netanyahu-take-israel-into-another-war-with-iran-to-cling-to-power"
+        },
+        {
+          "name": "Economic Times topic page (dirty bomb warning, unconfirmed)",
+          "url": "https://economictimes.indiatimes.com/topic/military-sources/news"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Israel's defense minister said Iran is developing chemical weapons, and that Israel and U.S. Central Command are preparing for a possible strike. That is an Israeli claim, reported by one outlet in our captures."
+        },
+        {
+          "who": "joe",
+          "text": "Iran denies it. Iranian officials say Israel is trying to deceive the United States into a war. That is Iran's statement, reported by the Korea Times."
+        },
+        {
+          "who": "vex",
+          "text": "A separate item, on one outlet's topic page, says intelligence sources warned Iran may be planning attacks on U.S. officials using a dirty bomb or chemical weapons. We could not confirm it. One source, unnamed intelligence sources. We are telling you it exists, and that it is unconfirmed."
+        },
+        {
+          "who": "joe",
+          "text": "Two sides, two stories. We will keep watching for anything from the U.S. government itself."
+        }
+      ]
+    },
+    {
+      "id": "kim",
+      "kind": "breaking",
+      "strap": "KIM JONG UN WANTS WIDER TACTICAL NUCLEAR DEPLOYMENT",
+      "headline": "North Korea's leader on nuclear weapons",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "NORTH KOREA",
+        "title": "Kim: deploy tactical nukes across multiple domains"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Kim, KCNA account)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/kim-jong-un-says-north-korea-should-widen-deployment-of-tactical-nukes"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/11/26/north-korea-kim-nuclear-weapons-expansion.html"
+        },
+        {
+          "name": "BBC (Switzerland office)",
+          "url": "https://www.bbc.co.uk/news/articles/cq0l34e4kkr5o"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "North Korean state media says Kim Jong Un called for tactical nuclear weapons to be deployed across multiple domains, and said the country's nuclear-material production capacity is being expanded."
+        },
+        {
+          "who": "joe",
+          "text": "State media did not name the facilities he inspected. So this is North Korea's own account, nothing more. Al Jazeera and CNBC both carry it."
+        },
+        {
+          "who": "vex",
+          "text": "Separately, Switzerland says it was forced to close its office in North Korea over a sanctions dispute, per the B.B.C. and Al Jazeera."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "UKRAINE CLAIMS AIR BASE STRIKE; POLAND PLANS NO-FLY ZONE",
+      "headline": "Ukraine war: air base, border zone, casualty estimate",
+      "category": "WORLD",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Savasleyka air base, Polish border, and a Russian death toll estimate"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Savasleyka claim)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/ukraine-attacks-russian-military-base-says-five-planes-struck"
+        },
+        {
+          "name": "Zelensky on X",
+          "url": "https://x.com/ZelenskyyUa/status/2125667001125478745"
+        },
+        {
+          "name": "France 24 (Trump, NATO chief; EU budget)",
+          "url": "https://www.france24.com/en/europe/20261126-live-eu-leaders-face-showdown-over-ukraine-funding-as-divisions-deepen"
+        },
+        {
+          "name": "France 24 (Poland no-fly zone)",
+          "url": "https://www.france24.com/en/poland-says-will-create-no-fly-zone-at-ukraine-border-after-repeated-airspace-violations"
+        },
+        {
+          "name": "CBS News (700,000 estimate)",
+          "url": "https://www.cbsnews.com/news/russia-ukraine-war-russian-soldier-death-toll-data-leak/"
+        },
+        {
+          "name": "Globe TV (chemical agents accusation)",
+          "url": "https://globetv.app/news/world-news-24-hours-november-26-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ukraine's General Staff says a strike on Russia's Savasleyka air base damaged three MiG-thirty-ones and two Su-thirty-fours. Russia had not commented. President Zelensky said drones struck a Russian airfield and that Ukraine is verifying the damage. He did not give the number five."
+        },
+        {
+          "who": "joe",
+          "text": "Poland's deputy defense minister described a no-fly zone more than ten kilometers from the Ukrainian border, with rules wanted by late December or early January. This follows airspace incursions that Poland blames on Russia. Poland has announced it. It is not yet in force."
+        },
+        {
+          "who": "vex",
+          "text": "Trump and NATO's secretary general, Mark Rutte, urged Moscow not to widen the war. More than thirty countries accused Russia of using banned chemical riot-control agents in Ukraine, per one source. EU leaders meet over a seven-year budget and how to finance Ukraine, aiming for a December deal."
+        },
+        {
+          "who": "joe",
+          "text": "A new estimate, from a data leak reported by C.B.S. and NBC, suggests more than seven hundred thousand Russian soldiers have been killed. That is an estimate. Yesterday's capture had a lower figure, so the numbers differ by source."
+        },
+        {
+          "who": "vex",
+          "text": "And Libya's army vowed retaliation after two naval officers died of wounds from a Ukrainian drone attack, per Al Jazeera. Russian state sources have not been quoted in our captures on any of these."
+        }
+      ]
+    },
+    {
+      "id": "nvidia",
+      "kind": "story",
+      "strap": "NVIDIA: PARDON TALK, CREDIT WATCH, SHIPMENT HALT",
+      "headline": "Another hard day for Nvidia",
+      "category": "BUSINESS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "NVIDIA",
+        "title": "Nvidia's governance and export questions"
+      },
+      "sources": [
+        {
+          "name": "Guardian live (pardon remark)",
+          "url": "https://www.theguardian.com/us-news/live/2026/nov/25/donald-trump-jensen-huang-nvidia-pardon-senate-hearing-iowa-abdul-el-sayed-latest-news-updates"
+        },
+        {
+          "name": "CNBC (S&P CreditWatch)",
+          "url": "https://www.cnbc.com/2026/11/26/nvidia-market-governance-risk.html"
+        },
+        {
+          "name": "The Verge (Huang all-hands)",
+          "url": "https://www.theverge.com/tech/1041571/jensen-huang-all-hands-nvidia-apology"
+        },
+        {
+          "name": "Kimi capture (FT server-shipment report)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-26.md"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "President Trump said pardoning Nvidia chief Jensen Huang is, quote, always an option. The Guardian and NBC report it. U.S. officials are reported divided over China-spying allegations since Huang's return."
+        },
+        {
+          "who": "joe",
+          "text": "S&P Global put Nvidia on CreditWatch Negative, citing management and governance risk. That's per CNBC and Reuters. And The Verge reports Huang told staff it was not true that Trump got him rehired. We only have that headline; the article did not open."
+        },
+        {
+          "who": "vex",
+          "text": "The Financial Times reports Nvidia asked manufacturing partners to halt shipments of servers with its A.I. chips to Malaysia, Singapore, Thailand and Indonesia while companies seek clarity on new U.S. licensing rules. Dell and Supermicro reportedly told customers. How long the halt lasts is unclear."
+        },
+        {
+          "who": "joe",
+          "text": "None of this is confirmed by Nvidia in our captures. These are press reports and sources, not company statements."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "WALL STREET DIPS; ASIA REBOUNDS; KOREA RAISES RATES",
+      "headline": "Markets and rates",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "A second down day for A.I. shares, then an Asian rebound",
+        "stats": [
+          {
+            "label": "S&P 500 (AP, Wed)",
+            "value": "-0.3% to 7,182.78"
+          },
+          {
+            "label": "Nasdaq",
+            "value": "-0.6% to 23,585.80"
+          },
+          {
+            "label": "Bank of Korea",
+            "value": "+0.25 pt to 3.25%"
+          },
+          {
+            "label": "Core PCE (BEA)",
+            "value": "3.3% y/y"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (Wednesday close)",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-94fdb0ecb060ec65c0b02879ce0d2d09"
+        },
+        {
+          "name": "AP via US News (Asia)",
+          "url": "https://www.usnews.com/news/us/articles/2026-11-26/asian-shares-rebound-led-by-ai-stocks-after-wall-street-pares-sharp-losses"
+        },
+        {
+          "name": "Bank of Korea",
+          "url": "https://www.bok.or.kr/eng/bbs/E0000634/view.do"
+        },
+        {
+          "name": "BEA (October PCE)",
+          "url": "https://www.bea.gov/sites/default/files/2026-11/pi1026.pdf"
+        },
+        {
+          "name": "Reuters global markets (Fed odds)",
+          "url": "https://www.reuters.com/world/china/global-markets-global-markets-2026-11-26/"
+        },
+        {
+          "name": "Investing.com / Reuters (bitcoin)",
+          "url": "https://www.investing.com/news/cryptocurrency-news/bitcoin-extends-losses-below-59000-as-etf-outflows-weigh-5049793"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Associated Press reports Wednesday's U.S. closes: S&P five hundred down three tenths of a percent at seven thousand one hundred eighty-two. Nasdaq down six tenths. The Dow up three tenths. A.I. shares fell for a second day."
+        },
+        {
+          "who": "joe",
+          "text": "Asia bounced overnight. A.P. has the Nikkei up one point three percent, Kospi up one point two, and Taiex up two point six. SoftBank jumped nine percent. That only partly reverses the prior session's selloff."
+        },
+        {
+          "who": "vex",
+          "text": "The Bank of Korea raised its base rate a quarter point to three and a quarter percent, on a five-to-two vote. It lifted its growth forecast to three point nine percent for this year."
+        },
+        {
+          "who": "joe",
+          "text": "In the U.S., the government's own report puts October P.C.E. inflation at three point eight percent over the year, and core at three point three. Reuters says markets price about a ninety-eight percent chance of a quarter-point Fed hike in December. That's Reuters' read of the market, not a Fed announcement. Bank of England governor Andrew Bailey said more hikes are likelier if energy prices stay high."
+        },
+        {
+          "who": "vex",
+          "text": "Bitcoin slipped below fifty-nine thousand dollars. Reuters reports spot-bitcoin fund withdrawals are close to five billion dollars for November."
+        }
+      ]
+    },
+    {
+      "id": "tariffs",
+      "kind": "story",
+      "strap": "U.S. PROPOSES NEW TARIFFS ON 14 PARTNERS",
+      "headline": "Section 301 proposals; Brazil and China react",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TARIFFS",
+        "title": "Proposed tariffs on 14 trading partners"
+      },
+      "sources": [
+        {
+          "name": "USTR",
+          "url": "https://www.ustr.gov/about/policy-offices/press-office/press-releases/2026/november/ustr-makes-determinations-and-proposes-actions-14-section-301-investigations-relating-structural"
+        },
+        {
+          "name": "Guardian (new tariffs)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/25/trump-new-china-tariffs-europe"
+        },
+        {
+          "name": "Guardian (Brazil, China react)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/26/brazil-china-react-to-new-trump-tariffs-threat"
+        },
+        {
+          "name": "NBC (tariffs explainer)",
+          "url": "https://www.nbcnews.com/business/economy/trump-country-specific-tariffs-excess-capacity-rcna611087"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.S. Trade Representative found practices actionable in fourteen of sixteen Section three-oh-one investigations and proposed remedies including country-specific tariffs. These are proposals. They are not in effect."
+        },
+        {
+          "who": "joe",
+          "text": "Press reports of the proposed rates include twenty percent on China, and for India seventeen percent with a deal or twenty-five without. A hearing is scheduled for January. Those rates are press-reported, not read from the filing."
+        },
+        {
+          "who": "vex",
+          "text": "Brazil called the threat, quote, unacceptable. China called the levies baseless. The European Union is also on the list, per the Guardian and NBC."
+        }
+      ]
+    },
+    {
+      "id": "iowa",
+      "kind": "story",
+      "strap": "ARMY DETONATES LEAD AZIDE IN IOWA",
+      "headline": "Iowa: the blast is done; the monitoring results are not in our captures",
+      "category": "NATIONAL",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "IOWA",
+        "title": "Lead azide detonation: Army says it went well"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Army statement)",
+          "url": "https://www.aljazeera.com/news/2026/11/25/us-army-declares-iowa-lead-azide-detonation-tremendously-successful"
+        },
+        {
+          "name": "BBC (town awaits)",
+          "url": "https://www.bbc.co.uk/news/articles/cwg7l5ve251ko"
+        },
+        {
+          "name": "Army (Iowa notices)",
+          "url": "https://www.army.mil/asc"
+        },
+        {
+          "name": "Axios",
+          "url": "https://www.axios.com/politics-policy/2026/11/26"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.S. Army detonated nearly five tons of lead azide at an Iowa munitions plant, sixty-eight drums, after courts rejected efforts to halt it. Al Jazeera says the Army called it tremendously successful."
+        },
+        {
+          "who": "joe",
+          "text": "FEMA had advised people within twenty miles to shelter in place until an all-clear. The Army's pages listed air monitoring at noon and deposition maps at three. In the notices we saw, there was no all-clear and no sampling result. So: the Army says success. The independent results are not in yet."
+        }
+      ]
+    },
+    {
+      "id": "cairo",
+      "kind": "story",
+      "strap": "TANKER FIRE ON CAIRO RING ROAD KILLS AT LEAST 30",
+      "headline": "Egypt: deadly highway fire",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "EGYPT",
+        "title": "Cairo ring road fuel-tanker fire"
+      },
+      "sources": [
+        {
+          "name": "BBC",
+          "url": "https://www.bbc.co.uk/news/articles/cqy7rn30v314o"
+        },
+        {
+          "name": "Guardian",
+          "url": "https://www.theguardian.com/world/2026/nov/25/people-killed-fuel-tanker-crash-ignites-large-fire-cairo-highway"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A fuel tanker crashed and caught fire on the highway around Cairo. Egypt's Health Ministry says thirty-one people died and twenty-one were hurt. Other outlets say at least thirty."
+        },
+        {
+          "who": "joe",
+          "text": "The prosecutor opened an investigation. Officials have not said how the fire started. One state-media account mentioned a high-voltage cable, but that is not an official finding."
+        }
+      ]
+    },
+    {
+      "id": "courts",
+      "kind": "story",
+      "strap": "JUDGES BLOCK FCC REVIEW OF ABC; BIRTHRIGHT ORDER",
+      "headline": "Courts and Washington",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "COURTS",
+        "title": "Court rulings and politics"
+      },
+      "sources": [
+        {
+          "name": "CNBC (ABC licenses)",
+          "url": "https://www.cnbc.com/2026/11/26/fcc-disney-abc-stations-judge-block.html"
+        },
+        {
+          "name": "NHPR (ruling)",
+          "url": "https://www.nhpr.org/2026-11-26/u-s-judge-rules-fcc-violated-abcs-free-speech-rights-to-please-trump"
+        },
+        {
+          "name": "Japan Times (birthright order)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/26/world/trump-birthright-citizenship-judge-block/"
+        },
+        {
+          "name": "NBC (Fulton County)",
+          "url": "https://www.nbcnews.com/politics/elections/judge-halts-order-fulton-county-copies-2020-ballots-georgia-election-rcna611353"
+        },
+        {
+          "name": "The Hill (Times lawsuit)",
+          "url": "https://thehill.com/newsletters/the-gavel/6241267-the-gavel-democrats-congressional-oversight-trump/"
+        },
+        {
+          "name": "Al Jazeera (El-Sayed)",
+          "url": "https://www.aljazeera.com/news/2026/11/25/trump-to-meet-abdul-el-sayed-will-he-agree-to-a-renamed-medicare-for-all"
+        },
+        {
+          "name": "Guardian (Abrego Garcia)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/25/kilmar-abrego-garcia-spain"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A federal judge blocked, for now, the F.C.C.'s review of ABC station licenses. NHPR reports the judge ruled the reviews retaliated against protected speech. A second judge blocked Trump's newest order curtailing birthright citizenship."
+        },
+        {
+          "who": "joe",
+          "text": "In Georgia, a judge paused her order that Fulton County hand over digital copies of its twenty twenty election records. The county's appeal is pending. The Hill reports a federal judge let Trump's fifteen-billion-dollar defamation suit against The New York Times and Penguin Random House go forward."
+        },
+        {
+          "who": "vex",
+          "text": "Politically: Democrats have reached at least two hundred fifty-nine House seats, their biggest majority since nineteen ninety-two, per Yahoo's report of the final results. Trump said he's open to meeting Democratic senator-elect Abdul El-Sayed on health care."
+        },
+        {
+          "who": "joe",
+          "text": "And Kilmar Abrego Garcia has left the United States and arrived in Spain, saying he was leaving happy, per the Guardian."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "CIA, FINCEN CYBER INCIDENTS; MICROSOFT OUTAGE",
+      "headline": "Cyber and outages",
+      "category": "TECH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "Government cyber incidents and a long outage"
+      },
+      "sources": [
+        {
+          "name": "France 24 (CIA system)",
+          "url": "https://www.france24.com/en/americas/20261125-cyberattack-exposes-unclassified-information-from-cia-system-us-media-reports"
+        },
+        {
+          "name": "Reuters via StreetInsider (FinCEN)",
+          "url": "https://new.streetinsider.com/Reuters/US%2BFinCEN%2Btakes%2Bsome%2Bsystems%2Boffline%2Bafter%2Bcyber%2Bincident%2C%2Bofficial%2Bsays/27399689.html"
+        },
+        {
+          "name": "The Verge (Microsoft outage)",
+          "url": "https://www.theverge.com/news/1042025/microsoft-code-red-outlook-outage"
+        },
+        {
+          "name": "Security Brief",
+          "url": "https://securitybrief.co.nz/story/cyber-attacks-a-month-of-hacks-breaches-and-shutdowns"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports an unclassified C.I.A. system was breached, with no classified information reportedly involved. Reuters, citing a FinCEN official, reports unauthorized access to a limited subset of FinCEN systems, and some were taken offline."
+        },
+        {
+          "who": "joe",
+          "text": "No attacker has been named in the reports. Regulators issued filing relief tied to a reporting-service disruption."
+        },
+        {
+          "who": "vex",
+          "text": "Microsoft Outlook and Teams were unavailable for more than twenty hours in a major outage, per The Verge and Security Brief. One report says Microsoft said China- and North Korea-linked hackers used an A.I. penetration-testing tool. That is a report of what Microsoft said, not a document we read."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "FCC APPROVES SPACEX 1 MILLION SATELLITES",
+      "headline": "Orbital data centers",
+      "category": "SCIENCE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPACE",
+        "title": "A million satellites, on paper"
+      },
+      "sources": [
+        {
+          "name": "FCC report and order (via capture)",
+          "url": "https://eu-assets.contentstack.com/v3/assets/blt23eb5bbc4124baa6/bltf4cdf2af47159e12/6b071c5f5506bb38bca5b0ec/FCC_report_and_order_on_SpaceX_Starmind_AI_constellation_11-25-2026.pdf"
+        },
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/11/25/us-grants-spacex-approval-for-1-million-space-data-centres"
+        },
+        {
+          "name": "CNBC (Trump Accounts)",
+          "url": "https://www.cnbc.com/2026/11/25/spacex-musk-trump-account-stock.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The F.C.C. authorized SpaceX to deploy up to one million Starmind orbital data-center satellites. The order requires one operating satellite by November twenty-fifth, twenty thirty-three, and the full constellation by twenty-forty."
+        },
+        {
+          "who": "joe",
+          "text": "That is permission, not launches. Scientists are skeptical, per the A.P. And SpaceX and Elon Musk pledged to donate a share each to active Trump Accounts, per CNBC."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "NETANYAHU TRIAL; LIKUD CHALLENGES ELECTION",
+      "headline": "Israel: trial, probe, vote challenge",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ISRAEL",
+        "title": "Netanyahu's trial, an Oct. 7 probe, and Likud's challenge"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Netanyahu trial)",
+          "url": "https://www.aljazeera.com/news/2026/11/25/netanyahu-says-corruption-trial-must-end-as-court-suggests-dropping-case"
+        },
+        {
+          "name": "France 24 (October 7 inquiry)",
+          "url": "https://www.france24.com/en/israeli-lawmakers-advance-october-7-inquiry-opposed-by-netanyahu"
+        },
+        {
+          "name": "Times of Israel (Likud)",
+          "url": "https://www.timesofisrael.com/likud-appeals-election-results-from-120-ballot-boxes-seeks-revote-at-those-locations/"
+        },
+        {
+          "name": "Amnesty (Alamata)",
+          "url": "https://www.amnesty.org/en/latest/news/2026/11/ethiopia-lethal-artillery-strikes-on-civilian-neighbourhoods-in-tigrays-alamata-city-must-be-investigated-as-war-crimes/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Prime Minister Netanyahu said his corruption trial must end, after the court suggested dropping the case. Meanwhile the opposition advanced an October seventh inquiry in the Knesset over his objection."
+        },
+        {
+          "who": "joe",
+          "text": "Likud filed a challenge to the October twenty-seventh election results and asked for repeat voting at one hundred twenty polling stations. That is an allegation seeking court action, not an annulment."
+        },
+        {
+          "who": "vex",
+          "text": "Amnesty International published a report calling for Israel to be investigated over measures it says were intended to prevent births among Palestinians in Gaza. That is Amnesty's call. Israel's response is not in our captures. Separately, Amnesty called for a war-crimes investigation of September shelling in Tigray's Alamata, saying it verified fourteen civilian deaths."
+        }
+      ]
+    },
+    {
+      "id": "world",
+      "kind": "story",
+      "strap": "SUDAN DRONES; RAMAPHOSA; CANARY ISLANDS RECORD",
+      "headline": "Around the world",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Around the world"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Sudan)",
+          "url": "https://www.aljazeera.com/news/2026/11/25/overnight-rsf-drone-attacks-kill-19-in-sudan"
+        },
+        {
+          "name": "BBC (Ramaphosa)",
+          "url": "https://www.bbc.co.uk/news/articles/cq4gn6gj3z37o"
+        },
+        {
+          "name": "ABC (Canary Islands)",
+          "url": "https://abcnews.com/International/wireStory/migration-spains-canary-islands-breaks-single-day-record-138434894"
+        },
+        {
+          "name": "BBC (Hong Kong fire)",
+          "url": "https://www.bbc.co.uk/news/articles/cqx2wrkyrdn8o"
+        },
+        {
+          "name": "ABC (Nigeria meth)",
+          "url": "https://abcnews.com/International/wireStory/nigeria-seizes-220-million-worth-meth-arrests-5-138448484"
+        },
+        {
+          "name": "Al Jazeera (Puerto Rico)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/puerto-ricos-supreme-court-cancels-major-power-contract"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Sudan, drone attacks attributed to the R.S.F. killed at least nineteen people in Blue Nile, per Al Jazeera. Emergency Lawyers say electricity sites and a dam were targeted. The R.S.F. was not quoted."
+        },
+        {
+          "who": "joe",
+          "text": "South Africa's Western Cape High Court declared unlawful the panel findings behind the Farmgate impeachment threat against President Ramaphosa."
+        },
+        {
+          "who": "vex",
+          "text": "Spain's Canary Islands recorded a single-day migration record, nearly two thousand arrivals, per A.B.C. and Al Jazeera. In Hong Kong, people marked the anniversary of the fire that killed one hundred sixty-eight."
+        },
+        {
+          "who": "joe",
+          "text": "Nigeria seized meth worth two hundred twenty million dollars and arrested five Mexican suspects. And Puerto Rico's Supreme Court canceled a key power contract, leaving people asking what comes next."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "EBOLA PASSES 12,000 CASES IN CONGO",
+      "headline": "Ebola and measles",
+      "category": "HEALTH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Ebola response disrupted by fighting"
+      },
+      "sources": [
+        {
+          "name": "ABC / AP (Congo fighting)",
+          "url": "https://abcnews.com/International/wireStory/fighting-eastern-congo-forces-ebola-workers-evacuate-threatening-138449760"
+        },
+        {
+          "name": "Al Jazeera (Ebola surpasses 12,000)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/dr-congo-ebola-cases-surpass-12000-as-fighting-disrupts-response-in-east"
+        },
+        {
+          "name": "AP (WHO staff evacuated)",
+          "url": "https://apnews.com/article/ebola-congo-who-fighting-rebels-evacuation-ff1890d63ca7f3c3a8beeb127727e5cd"
+        },
+        {
+          "name": "CDC measles",
+          "url": "https://www.cdc.gov/measles/data-research/?stream=top"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Government data carried by Reuters put confirmed Ebola cases in the Democratic Republic of Congo at twelve thousand twenty-one, with five thousand nine hundred four deaths. Only fifteen percent of new cases came from known contacts. There is no approved vaccine or treatment."
+        },
+        {
+          "who": "joe",
+          "text": "Fighting north of Bunia trapped about a dozen responders, including two W.H.O. staff, in a hospital for three days. They were evacuated. A Kenyan court has also halted work on a U.S.-backed Ebola quarantine facility until the government discloses the agreement."
+        },
+        {
+          "who": "vex",
+          "text": "In the U.S., the C.D.C. reports six thousand thirty-nine confirmed measles cases through November twenty-fourth, and forty-three outbreaks this year."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "THANKSGIVING STORM; MACY'S PARADE MOVED TO SATURDAY",
+      "headline": "Coastal storm, travel and the parade",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Powerful coastal storm hits Thanksgiving"
+      },
+      "sources": [
+        {
+          "name": "NWS Philadelphia briefing",
+          "url": "https://www.weather.gov/media/phi/current_briefing.pdf"
+        },
+        {
+          "name": "Guardian (parade postponed)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/25/macys-thanksgiving-day-parade-postponed-weather"
+        },
+        {
+          "name": "NBC Philadelphia (Hochul emergency)",
+          "url": "https://www.nbcphiladelphia.com/news/local/state-of-emergency-thanksgiving-storm-new-jersey/4503076/"
+        },
+        {
+          "name": "AP (parade)",
+          "url": "https://apnews.com/article/cdc870899c8dc2d32a0ac3d86119b3ba"
+        },
+        {
+          "name": "AP (travel)",
+          "url": "https://apnews.com/article/travel-thanksgiving-airports-highways-041a81e33ed10df50e89dc04705a6dcc"
+        },
+        {
+          "name": "BBC (FedEx Miami)",
+          "url": "https://www.bbc.co.uk/news/articles/ckm2mz3prq77o"
+        },
+        {
+          "name": "Al Jazeera (Pacifica pier)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/25/king-tides-and-big-waves-batter-coastal-california"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The National Weather Service in Philadelphia forecasts a powerful coastal storm with high winds, heavy rain and coastal impacts on Thanksgiving Day. Governor Hochul declared a state of emergency for New York City."
+        },
+        {
+          "who": "joe",
+          "text": "In a historic postponement, the Macy's Thanksgiving Day Parade, in its hundredth year, is postponed. It moves to Saturday, November twenty-eighth, and N.B.C. will air it Saturday morning. The balloons get a rain check."
+        },
+        {
+          "who": "vex",
+          "text": "The A.P. says about fifty-two thousand flights flew Tuesday and storms could affect eastern airports through Friday morning. A FedEx plane overran a runway at Miami's airport and flights were briefly suspended."
+        },
+        {
+          "who": "joe",
+          "text": "Out West, king tides and big waves destroyed part of the pier in Pacifica, California, with coastal flooding warnings."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "STEELERS RELEASE RODGERS; THREE THANKSGIVING GAMES",
+      "headline": "Sports",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Thanksgiving football, and the Rodgers exit"
+      },
+      "sources": [
+        {
+          "name": "NBC (Rodgers)",
+          "url": "https://www.nbcnews.com/sports/nfl/aaron-rodgers-blasts-steelers-coach-mike-mccarthy-benching-re-unhealth-rcna611340"
+        },
+        {
+          "name": "NFL gamebook (Rams-Packers)",
+          "url": "https://static.clubs.nfl.com/image/upload/packers/k39qtefpy28qk4wyi6lt"
+        },
+        {
+          "name": "NFL Week 12 preview",
+          "url": "https://media.nfl.com/content/dam/communications/football-communications/2026/weekly-preview/11%2024%2026%20Week%2012%20NFL%20Preview.pdf"
+        },
+        {
+          "name": "France 24 (PSG-Roma)",
+          "url": "https://www.france24.com/en/sport/20261125-psg-s-perfect-champions-league-record-ends-as-roma-snatch-2-2-draw-with-late-penalty"
+        },
+        {
+          "name": "Al Jazeera (Sinner)",
+          "url": "https://www.aljazeera.com/sports/2026/11/26/jannik-sinner-australian-open-2027-knee-injury-surgery-tennis"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Steelers released Aaron Rodgers after he blasted his head coach over a benching, per NBC. On Wednesday night the Rams beat the Packers twenty-six to thirteen."
+        },
+        {
+          "who": "joe",
+          "text": "Today: Bears at Lions at one p.m. Eastern. Eagles at Cowboys at four thirty. Chiefs at Bills at eight twenty. The N.F.L. lists four Cowboys out, including Jake Ferguson, and two Eagles out, Arnold Ebiketie and Jonathan Jones."
+        },
+        {
+          "who": "vex",
+          "text": "In soccer, Roma drew two-two with Paris Saint-Germain on a late penalty, ending P.S.G.'s perfect Champions League record. Liverpool won three-nil at Club Brugge. And Jannik Sinner will miss the Australian Open after knee surgery."
+        }
+      ]
+    },
+    {
+      "id": "quick",
+      "kind": "story",
+      "strap": "ALSO TODAY",
+      "headline": "Quick hits",
+      "category": "TODAY",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "Quick hits"
+      },
+      "sources": [
+        {
+          "name": "CBS (Colombia)",
+          "url": "https://www.cbsnews.com/news/colombia-supermarket-siege-ends-security-forces-storm-scene/"
+        },
+        {
+          "name": "Today (Sandringham)",
+          "url": "https://www.today.com/video/new-details-emerge-on-break-in-at-william-and-kate-s-home-274155589878"
+        },
+        {
+          "name": "Guardian (Andy Taylor)",
+          "url": "https://www.theguardian.com/music/2026/nov/25/andy-taylor-duran-duran-guitarist-dead"
+        },
+        {
+          "name": "Guardian (Pitt, Jolie)",
+          "url": "https://www.theguardian.com/film/2026/nov/25/brad-pitt-angelina-jolie-settle-french-winery-lawsuit"
+        },
+        {
+          "name": "Times of Israel (nuclear study)",
+          "url": "https://www.timesofisrael.com/israel-has-some-90-nuclear-bombs-capability-to-produce-up-to-250-more-study-says/"
+        },
+        {
+          "name": "ABC (UK nuclear veterans)",
+          "url": "https://abcnews.com/International/wireStory/uk-nuclear-test-veterans-win-40-year-battle-138436079"
+        },
+        {
+          "name": "Guardian (Imai)",
+          "url": "https://www.theguardian.com/world/2026/nov/26/japanese-journalist-yuki-imai-detained-in-russia-wife-pleads-his-release"
+        },
+        {
+          "name": "Al Jazeera (UK aircraft)",
+          "url": "https://www.aljazeera.com/news/2026/11/25/uk-military-moving-aircraft-to-hangars-in-case-of-drone-attacks"
+        },
+        {
+          "name": "Bangladesh state news (BSS)",
+          "url": "https://www.bssnews.net/news-flash/449852"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Colombian forces rescued all remaining hostages in the Cartagena supermarket siege, per C.B.S. Two men are charged over the break-in at Prince William and Kate's country home. A Boston man who won a million dollars in the lottery was arrested by I.C.E., per CNN and USA Today."
+        },
+        {
+          "who": "joe",
+          "text": "Duran Duran guitarist Andy Taylor died at sixty-five. Brad Pitt and Angelina Jolie settled their French winery lawsuit. Australia passed an online safety law that exposes big tech to multibillion-dollar fines."
+        },
+        {
+          "who": "vex",
+          "text": "The E.U. fined three fragrance makers four hundred seventy-one point nine million euros for a cartel, and the U.K. fined them eighty-five million pounds. A Todd Boehly-led group signed a deal to buy Lukoil's non-Russian energy assets, pending U.S. approval. Catalan separatist Puigdemont plans to return to Spain on December twelfth."
+        },
+        {
+          "who": "joe",
+          "text": "A study says Israel has some ninety nuclear bombs. U.K. nuclear test veterans won an inquiry after forty years. Japanese journalist Yuki Imai is detained in Russia and his wife is pleading for his release. And the U.K. is reportedly moving military aircraft into hangars at night over drone fears."
+        },
+        {
+          "who": "vex",
+          "text": "Bangladesh raised the garment minimum wage thirty-six percent, to seventeen thousand taka."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": [],
+      "sources": null
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News for Thursday. A new show every day by morning. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Missiles and mines in the Gulf, a nuclear call from Pyongyang, and a storm over Thanksgiving. Two sides in every account. We will tell you what happened, and who said it. Happy Thanksgiving. Take care of each other."
+        }
+      ],
+      "sources": null
+    }
+  ]
+}
