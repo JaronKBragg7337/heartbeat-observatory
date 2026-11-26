@@ -68,8 +68,41 @@ export function makeFollowCam(camera, world) {
     camera.lookAt(lkx, lky, lkz);
     c.x = px; c.y = py; c.z = pz;
   };
-  c.setShot = (shot) => { c.shot = shot; if (!shot) blend = 0; };
-  c.reset = () => { inited = false; c.lookIdle = 9; c.shot = null; blend = 0; c.distNow = c.dist; };
+  // The end of a round (found it, pecked, caught, got away): one side-on shot that holds the person AND the turkey.
+  // It tries 12 directions round the pair, keeps the one with the most open room (walls and roofs block), nearest the
+  // camera's own side, and remembers it, so the shot does not hunt about while the turkey moves.
+  let endDir = null;
+  c.endShot = (a, b, lift = 0) => {
+    const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, far = Math.hypot(a.x - b.x, a.z - b.z), span = Math.min(14, far);
+    const want = camera.aspect < 1 ? 4.2 + span * 0.5 : 3.6 + span * 0.75;
+    if (far > 9) {
+      // far apart (it got away through a gap): stand a few steps back from the turkey on the farm side and watch it go
+      const ux = (b.x - a.x) / far, uz = (b.z - a.z) / far;
+      const back = 4.6 * Math.max(0.4, world.raycast(b.x, b.z, b.x - ux * 4.6, b.z - uz * 4.6, 1.6, 0.3));
+      return { from: { x: b.x - ux * back + uz * 1.2, y: 1.9, z: b.z - uz * back - ux * 1.2 }, at: { x: b.x, y: 0.55 + lift * 0.9, z: b.z }, rate: 2.4 };
+    }
+    const inside = world.roofs && world.roofs.some((r) => mx > r.minX && mx < r.maxX && mz > r.minZ && mz < r.maxZ);
+    if (!endDir) {
+      let best = -1e9;
+      for (let i = 0; i < 12; i++) {
+        const ang = c.yaw + Math.PI + (i * Math.PI) / 6, dx = Math.sin(ang), dz = Math.cos(ang);
+        const ex = mx + dx * want, ez = mz + dz * want;
+        const room = Math.min(world.raycast(mx, mz, ex, ez, 1.6, 0.3), inside ? 1 : world.raycastRoofs(mx, mz, ex, ez));
+        let off = Math.abs(((i * Math.PI) / 6 + Math.PI) % (2 * Math.PI) - Math.PI);   // 0 = straight behind the camera's look
+        // a tall phone screen holds the pair one behind the other (looking along them, a little off so neither hides
+        // the other); a wide screen holds them side by side
+        const along = span > 1.5 ? Math.abs((dx * (b.x - a.x) + dz * (b.z - a.z)) / span) : 0.9;
+        const fit = camera.aspect < 1 ? Math.abs(along - 0.9) : along;
+        const score = room * 2.2 - off * 0.12 - fit * 1.4;
+        if (score > best) { best = score; endDir = { dx, dz, room }; }
+      }
+    }
+    const d = Math.max(1.6, want * endDir.room - 0.35);
+    const h = inside ? 2.0 : 2.2 + span * 0.12;
+    return { from: { x: mx + endDir.dx * d, y: h, z: mz + endDir.dz * d }, at: { x: mx, y: 0.6 + lift, z: mz }, rate: 2.4 };
+  };
+  c.setShot = (shot) => { c.shot = shot; if (!shot) { blend = 0; endDir = null; } };
+  c.reset = () => { inited = false; c.lookIdle = 9; c.shot = null; blend = 0; endDir = null; c.distNow = c.dist; };
   return c;
 }
 

@@ -517,7 +517,7 @@ def barn():
     m.box(M['greywood'], (0, S + inner + 0.12, F + (DH + 0.2) / 2), (W - 0.5, 0.24, DH + 0.2))
     for (bx_, by_, n) in ((-W / 2 + 1.3, S + inner - 0.9, 3), (W / 2 - 1.2, S + inner - 0.8, 2), (W / 2 - 1.2, S + 1.6, 1)):
         for k in range(n):
-            m.box(M['hay'], (bx_ + 0.05 * rnd.uniform(-1, 1), by_, F + 0.25 + 0.5 * k), (1.1, 0.55 + 0.9 * (k == 0), 0.48), rot=rot_z(rnd.uniform(-0.08, 0.08)))
+            m.box(M['hay'], (bx_ + 0.05 * rnd.uniform(-1, 1), by_, F + 0.23 + 0.46 * k), (1.1, 0.55 + 0.9 * (k == 0), 0.48), rot=rot_z(rnd.uniform(-0.08, 0.08)))
     for k in range(5):
         m.cyl(M['greywood'], (-W / 2 + 0.5, S + 0.8 + k * 1.1, F), (-W / 2 + 0.5, S + 0.8 + k * 1.1, F + DH), 0.08, segs=6)
     # cupola
@@ -948,7 +948,7 @@ def props():
             m.cyl(M['twine'], (p.x + dx * (f - 0.03), p.y + dy * (f - 0.03), 0.76), (p.x + dx * (f + 0.03), p.y + dy * (f + 0.03), 0.76), 0.784, segs=20)
     c = COL['bale_stack']
     p = B(c['x'], c['z'])
-    for k, (ox, oz) in enumerate(((-0.6, 0.24), (0.6, 0.24), (0, 0.72), (-0.62, 0.24 + 0.0), (0.05, 1.2))):
+    for k, (ox, oz) in enumerate(((-0.6, 0.22), (0.6, 0.22), (0, 0.66), (-0.62, 0.22), (0.05, 1.1))):
         if k == 3:
             continue
         m.box(M['hay'], (p.x + ox, p.y + rnd.uniform(-0.05, 0.05), oz), (1.15, 0.5, 0.46), rot=rot_z(rnd.uniform(-0.06, 0.06)))
@@ -981,8 +981,8 @@ def props():
         n = 13 - row
         for k in range(n):
             y_ = p.y - c['d'] / 2 + 0.16 + (c['d'] - 0.3) * (k + 0.5 * (row % 2)) / 13
-            r_ = rnd.uniform(0.1, 0.15)
-            m.cyl(M['bark'], (p.x - 0.5 + rnd.uniform(-0.05, 0.05), y_, 0.14 + row * 0.25), (p.x + 0.5 + rnd.uniform(-0.05, 0.05), y_, 0.14 + row * 0.25), r_, segs=7)
+            r_ = rnd.uniform(0.12, 0.15)
+            m.cyl(M['bark'], (p.x - 0.5 + rnd.uniform(-0.05, 0.05), y_, 0.12 + row * 0.21), (p.x + 0.5 + rnd.uniform(-0.05, 0.05), y_, 0.12 + row * 0.21), r_, segs=7)
     c = COL['trough']
     p = B(c['x'], c['z'])
     R = rot_z(c['rotY'])
@@ -1004,9 +1004,9 @@ def props():
         q = B(x, z)
         m.sphere(M['pumpkin'], (q.x, q.y, r_ * 0.78), r_, scale=(1, 1, 0.8), u=12, v=8)
         m.cyl(M['stem'], (q.x, q.y, r_ * 1.5), (q.x + 0.02, q.y, r_ * 1.5 + 0.07), 0.02, 0.014, segs=5)
-    for (x, z) in ((-17.6, -34.4), (-20.5, -34.5), (-0.9, 97.2), (1.0, 97.4), (1.3, 97.0)):       # pumpkins on the steps
+    for (x, z) in ((-17.6, -34.4), (-20.5, -34.5), (-0.9, 97.2), (1.0, 97.4), (1.3, 97.0)):       # pumpkins beside the steps, on the ground
         q = B(x, z)
-        m.sphere(M['pumpkin'], (q.x, q.y, 0.155 + (0.5 if z < 0 else 0.1)), 0.2, scale=(1, 1, 0.8), u=12, v=8)
+        m.sphere(M['pumpkin'], (q.x, q.y, 0.14), 0.2, scale=(1, 1, 0.8), u=12, v=8)      # on the ground beside them (half height 0.16: a touch sunk)
     STATIC['props'].append(m.finish())
     # south: the mailbox and the ford stones
     s = Mesh('south_props')
@@ -1111,7 +1111,7 @@ def far_woods():
     r = random.Random(9)
     bm = bmesh.new()
     bm.loops.layers.uv.new('UVMap')
-    for (rx, rz, lo, hi, n) in ((128.0, 150.0, 5.0, 9.0, 300), (160.0, 185.0, 8.0, 13.0, 260)):
+    for (rx, rz, lo, hi, n) in ((128.0, 150.0, 3.0, 5.5, 300), (160.0, 185.0, 4.5, 7.5, 260)):
         ring = []
         for k in range(n):
             a = 2 * math.pi * k / n

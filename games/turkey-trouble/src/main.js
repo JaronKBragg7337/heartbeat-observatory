@@ -123,7 +123,7 @@ async function start(mode, extra = {}) {
     const view = await createView(cast, game, { personId: app.person, debug: DEBUG });
     hud.toast('', 0.01);
     app.game = game; app.view = view; app.kind = mode; app.resultShown = false; app.endedAt = 0; app.endingT = -1; app.paused = false; acc = 0;
-    cam.reset(); cam.setMode(mode === 'escape' ? 'turkey' : 'person');
+    cam.reset(); endLift = 0; cam.setMode(mode === 'escape' ? 'turkey' : 'person');
     cam.snapBehind(mode === 'escape' ? 0 : game.player.heading);
     controls.clear();
     hud.setup(game); hud.show(!app.director);
@@ -265,7 +265,13 @@ function onEvent(e, g) {
 
 // ------------------------------------------------------------------------------------------ the frame
 let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0, fps = 0;
-let stepDist = 0, beatT = 0, creekLane = null;
+let stepDist = 0, beatT = 0, creekLane = null, endLift = 0;
+// where the spruce wall's south edge is (from the layout's own colliders): past it, the ending walk is in the clearing
+let clearZ = null;
+const ENDING_CLEAR_Z = (L) => {
+  if (clearZ === null) { clearZ = -1e9; for (const c of L.colliders) if (/^(spruce|windbreak)/.test(c.id || '') && c.type === 'box') clearZ = Math.max(clearZ, c.z + c.d / 2); clearZ += 0.3; }
+  return clearZ;
+};
 let passSign = new Int8Array(0);
 function frame(now) {
   requestAnimationFrame(frame);
@@ -311,13 +317,29 @@ function frame(now) {
       const fin = stage.layout.escape.finish, side = fin.signAt && fin.signAt.x > door.x ? -1 : 1;
       cam.setShot({ from: { x: door.x + side * 3.6, y: 1.25, z: door.z - 2.2 }, at: { x: P.x + side * 0.15, y: 0.75, z: P.z + 0.25 }, rate: 2.2 });
     }
+    else if (g.ending.path.i >= 1 && P.z > ENDING_CLEAR_Z(stage.layout)) {
+      // out of the trees: a low camera just inside the clearing, behind the sign's reading side. It follows the turkey and
+      // drifts over to the sign and the lit house as the turkey nears the door (the sign reads for a moment, then the knock)
+      const fin = stage.layout.escape.finish, s = fin.signAt || door;
+      const k0 = Math.max(0, Math.min(1, 1 - (Math.hypot(P.x - door.x, P.z - door.z) - 5) / 4.5)), k = k0 * k0 * (3 - 2 * k0);
+      const sn = Math.sin(s.rotY || 0), cs = Math.cos(s.rotY || 0);       // the sign reads toward -(sn, cs)
+      const ex = s.x - sn * 6.2 - cs * 2.3, ez = s.z - cs * 6.2 + sn * 2.3;  // 6 m out in front of it, a little to the west
+      const tx = s.x * 0.92 + door.x * 0.08, tz = s.z * 0.92 + door.z * 0.08, w = 0.15 + 0.85 * k;   // the turkey first, then the sign
+      const lx = P.x + (tx - P.x) * w, lz = P.z + (tz - P.z) * w;
+      cam.setShot({ from: { x: ex, y: 1.85, z: ez }, at: { x: lx, y: 0.7 + 0.5 * k, z: lz }, rate: 3 });
+    }
     else if (g.ending.path.i >= 1) {
       // on the path through the spruce: a high shot from behind and above (over the tree tops), so the camera
       // never sits inside the trees and the kinked way through reads from above
       cam.setShot({ from: { x: P.x, y: 11.5, z: P.z - 4.5 }, at: { x: P.x, y: 0.4, z: P.z + 1.2 }, rate: 1.8 });
     }
     else { cam.setShot(null); cam.yaw = 0; cam.pitch = 0.3; cam.lookIdle = 0; }
+  } else if (g.kind !== 'escape' && (g.phase === 'won' || g.phase === 'lost') && !app.director) {
+    // the moment it ends, and under the results card: both of them in view, never the camera inside a wall
+    endLift += ((app.resultShown ? 1.1 : 0) - endLift) * (1 - Math.exp(-3 * dt));
+    cam.setShot(cam.endShot(P, g.turkey, endLift));
   } else if (app.director) directorCam(dt, g);
+  else if (cam.shot && g.kind !== 'escape') { cam.setShot(null); endLift = 0; }
   cam.update(dt, focus, P.heading, P.speed);
   // world + sound
   stage.update(dt, focus);
