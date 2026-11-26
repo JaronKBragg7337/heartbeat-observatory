@@ -3,6 +3,7 @@ import { makeHull } from '../hullLoft.js';
 import { AVATAR } from '../../ship/shipSpec.js';
 import { PHYS as BASE_PHYS, GUNS as BASE_GUNS } from '../raider/spec.js';
 import { CREW_POSTS } from '../../crew/crewSpec.js';
+import { courierDress } from './dress.js';
 
 const deck={main:0,upper:3,clear:2.7,pitch:3,slab:.3};
 const K=layoutKit(deck),{room,door,prop,lamp}=K;
@@ -52,7 +53,7 @@ const hull=makeHull([[-11,.4,-.4,.8,.2,.2],[-9,2.6,-.4,1.05,.3,.3],[-5.2,3.6,-.4
 const guns={main:{...BASE_GUNS.main,damage:5,rate:2,muzzles:[{x:-1,y:.5,z:-10.5},{x:1,y:.5,z:-10.5}],pivot:{x:0,y:.5,z:-9},range:1000}};
 const panels=[{id:'panel_ramp',name:'Boarding ramp',x:-2,y:0,z:9.8,radius:2,action:'ramp_cargo'},
   {id:'panel_air',name:'Airlock',x:2,y:0,z:1.5,radius:1.6,action:'airlock'}];
-const layout=K.finish({ramps,gear,guns,seats,panels,stairs:{},ladders:[],extraZones:[],portals:[],windows:[],posters:[],observation:[],wallScreens:[],custom:{dress:()=>{}}});
+const layout=K.finish({ramps,gear,guns,seats,panels,stairs:{},ladders:[],extraZones:[],portals:[],windows:[],posters:[],observation:[],wallScreens:[],custom:{dress:courierDress}});
 export const COURIER={ order: 20, role: "courier", blurb: "A 24 metre courier: five seats, a 3.5 tonne hold and one chin gun.", description: "The Wayfarer is a 24 metre courier: a small flight deck, a berth, a mess, an airlock, a machinery space and a hold under a single chin gun. Five seats and 3.5 tonnes of cargo. It is the ship the passenger line puts on a new pilot's pad, and it is not sold at the yard.",type:'courier',class:'Wayfarer-class courier',name:'Wayfarer',registryId:'COS-MARS-VEH-0060',layout,
   gear,guns,ramps,seats,panels,avatar:AVATAR,phys:{...BASE_PHYS,massKg:18000,liftThrustN:95000,driveThrustN:70000,shieldBase:80,cruiseSpeed:38},
   hull:{z0:hull.z0,z1:hull.z1,underside:hull.underside,extraPoints:[],combat:{centre:{x:0,y:1,z:0},radius:8},
