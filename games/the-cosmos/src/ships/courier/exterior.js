@@ -25,7 +25,7 @@ export function buildCourierExterior(layout,mats,opts={}) {
     const flame=new THREE.Mesh(new THREE.ConeGeometry(.55,3,12,1,true),mats.engineGlow.clone());
     flame.rotation.x=-Math.PI/2;flame.position.set(s*2.7,1.4,14);flame.name='exhaust';root.add(flame);
     const core=flame.clone();core.material=mats.nozzleInner.clone();root.add(core);ext.engines.push({outer:flame,core,side:s});
-    k.box(s===1?'glowGreen':'glowRed',s*4.5,.5,6,.1,.08,.2);
+    k.bevelBox('gunmetal',s*4.25,.5,6,.3,.1,.4,.02);k.box(s===1?'glowGreen':'glowRed',s*4.25,.58,6,.18,.06,.26);   // nav light: a lens in a housing on the skirt (it floated 1 cm over the skirt's corner, a loose salmon chip by day)
     const gun=new THREE.Group();gun.position.set(s, .5,-9.5);const gk=new Kit();gk.cyl('gunmetal',0,0,-.5,.08,1,10,{axis:'z'});
     gun.add(gk.toGroup(mats));root.add(gun);ext.guns.main.push({group:gun,muzzle:new THREE.Vector3(0,0,-1)});
   }
