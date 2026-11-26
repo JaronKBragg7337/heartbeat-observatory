@@ -318,7 +318,13 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
       const vp = spec.device.viewport, sizes = [[vp.width, vp.height], [375, 667], [vp.height, vp.width], [667, 375]];
       for (const [w, h] of sizes) {
         await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(350); await step(1);
-        await noOverlap(`free flight ${w}x${h}`, 9); const ids = await noBlockOverlap(`free flight ${w}x${h}`); assert.ok(ids.includes('#hud') && ids.includes('#ship-panel'), `free flight ${w}x${h}: the status box and the pilot strip should both be showing (${ids})`);
+        // FREEFLIGHT VIEW: flying, the status box folds to the two pilot lines (#hud-ff) and the pilot strip folds into it; a tap on the box opens both
+        await noOverlap(`free flight ${w}x${h}`, 9); const folded = await noBlockOverlap(`free flight ${w}x${h}`); assert.ok(folded.includes('#hud') && !folded.includes('#ship-panel'), `free flight ${w}x${h}: the status box should be folded to the pilot lines, the strip inside it (${folded})`);
+        assert.ok(await page.evaluate(() => { const r = document.getElementById('hud').getBoundingClientRect(); return r.height < 90 && /SPD/.test(document.getElementById('hud-ff')?.textContent || ''); }), `free flight ${w}x${h}: the folded status box is not the short pilot read-out`);
+        await realTap('#hud-ff'); await page.waitForTimeout(300); await step(1);
+        const ids = await noBlockOverlap(`free flight ${w}x${h} with the status open`); assert.ok(ids.includes('#hud') && ids.includes('#ship-panel'), `free flight ${w}x${h}: a tap on the status box should open it and the pilot strip (${ids})`);
+        await noOverlap(`free flight ${w}x${h} with the status open`, 9);
+        await realTap('#hud-ff'); await page.waitForTimeout(300); await step(1);
         await page.evaluate(() => cosmos.space.ui.toggle('course')); await page.waitForTimeout(450); await step(1);
         const open = await noBlockOverlap(`free flight ${w}x${h} with the Course sheet open`); assert.ok(open.includes('#space-sheet'), `the Course sheet did not open (${open})`);
         await noOverlap(`free flight ${w}x${h} with the Course sheet open`, 0);

@@ -32,11 +32,35 @@ const CSS = `
 #ff-bar .fftip{font-size:11px;color:#ffe1bb;background:#3a2a14;border:1px solid #ba936a;border-radius:8px;padding:5px 8px;margin-bottom:5px;text-align:center}#ff-bar .fftip[hidden]{display:none!important}
 #ff-overlay{position:fixed;inset:0;width:100%;height:100%;z-index:64;pointer-events:none;display:none}
 @media (max-width:520px){#ff-bar{left:12px;right:12px;width:auto;transform:none;bottom:112px;font-size:10px}#ff-bar button{font-size:10px;padding:2px}}
+/* FREEFLIGHT VIEW (phone, html.ff-fly while she flies): the status box folds to the two lines a pilot reads (a tap opens everything, the pilot
+   strip and World / Controls with it), the flying buttons gather in the bottom-right corner where the right thumb is, the bar is two short rows,
+   and the left of the screen is the stick. The sky, the ship and the markers own the middle. */
+#hud-ff{display:none}
+html.ff-fly #hud-ff{display:block;pointer-events:auto;cursor:pointer;-webkit-user-select:none;user-select:none;font:600 11px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:#d8f6ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:33px}
+html.ff-fly #hud-ff .w{color:#ff8a73}html.ff-fly #hud-ff .d{color:#8fc8d8;font-weight:400}
+html.ff-fly #hud-ff .more{float:right;margin-left:10px;color:#5fd8ff}
+html.ff-fly.ff-open #hud-ff{border-bottom:1px solid rgba(95,216,255,.3);margin-bottom:6px;padding-bottom:4px}
+html.ff-fly:not(.ff-open) #hud{padding:5px 10px;background:rgba(4,20,27,.72);border-color:rgba(95,216,255,.35);max-width:calc(100vw - 106px)}
+html.ff-fly:not(.ff-open) #hud>:not(#hud-ff){display:none!important}
+html.ff-fly:not(.ff-open) #ship-panel{display:none!important}
+html.ff-fly:not(.ff-open) #phone-ui #dock-left{visibility:hidden}
+html.ff-fly #phone-ui #dock-right{flex-direction:row-reverse;flex-wrap:wrap-reverse;align-content:flex-start;justify-content:flex-start;width:180px}
+html.ff-fly #phone-ui #dock-right>.dk{min-width:86px!important;width:86px;max-width:86px;order:9!important}
+html.ff-fly #phone-ui #dock-right>#btn-lift{order:0!important}html.ff-fly #phone-ui #dock-right>#btn-sink{order:1!important}
+html.ff-fly #phone-ui #dock-right>#btn-boost{order:2!important}html.ff-fly #phone-ui #dock-right>#btn-fire{order:3!important}html.ff-fly #phone-ui #dock-right>#btn-action{order:4!important}
+@media (orientation:portrait){
+  html.ff-fly #ff-bar{display:flex;flex-wrap:wrap;gap:5px;padding:5px}html.ff-fly #ff-bar[hidden]{display:none!important}
+  html.ff-fly #ff-bar .ffrow:not([hidden]){display:contents}html.ff-fly #ff-bar .ffnote,html.ff-fly #ff-bar .warpc{display:none!important}
+  html.ff-fly #ff-bar button{flex:1 1 calc(25% - 5px);min-height:40px}
+  html.ff-fly #ff-bar [data-a=rcs],html.ff-fly #ff-bar [data-a=warp]{flex-basis:calc(16.6% - 5px)}
+  html.ff-fly #ff-bar.armed [data-a=toggle],html.ff-fly #ff-bar .fftip{flex-basis:100%;margin:0}
+}
+@media (max-height:520px) and (orientation:landscape){html.ff-fly #fly-bar{left:auto;right:calc(98px + env(safe-area-inset-right,0px));transform:none}}
 `;
 const fmtD = (m) => (!Number.isFinite(m) ? '—' : Math.abs(m) >= 1e7 ? `${(m / 1000).toFixed(0)} km` : Math.abs(m) >= 1e5 ? `${(m / 1000).toFixed(0)} km` : Math.abs(m) >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
 const fmtV = (v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(2)} km/s` : `${Math.round(v)} m/s`);
 export const fmtT = (s) => (!Number.isFinite(s) ? '—' : s >= 5400 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} m` : s >= 120 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
-const FFHINT = 'W/S pitch · A/D turn · Q/E roll · Space thrust · C brake · J L I K U O jets · P free flight off · X stand';
+const FFHINT = 'W/S pitch · A/D turn · Q/E roll · Space thrust · C brake · J L I K U O jets · V view · P free flight off · X stand';
 const ASSIST_LABEL = { off: 'OFF', prograde: 'PROGRADE', retro: 'RETRO', target: 'TARGET' };
 const THROTTLES = [0.25, 0.5, 1];
 
@@ -128,6 +152,11 @@ export class FreeFlightUI {
     if (lift && lift.textContent !== want[0]) { lift.textContent = want[0]; sink.textContent = want[1]; }
     const hint = document.getElementById('ship-hint');                  // the desktop key hint says what the keys do now
     if (hint) { if ((ff.active || ff.enabled) && seated) { if (this._hint0 === undefined) this._hint0 = hint.textContent; hint.textContent = ff.active ? FFHINT : this._hint0.replace('E stand', 'X stand · E rolls'); } else if (this._hint0 !== undefined) { hint.textContent = this._hint0; this._hint0 = undefined; } }
+    // FREEFLIGHT VIEW: on a phone, while she flies (armed, in free flight, or off the ground at the stick), the compact flight layout (CSS above)
+    const root = document.documentElement, fly = show && root.classList.contains('phone-ui') && this.eIsRoll();
+    if (fly !== this._fly) { this._fly = fly; root.classList.toggle('ff-fly', fly); if (!fly) root.classList.remove('ff-open'); this._miniSig = ''; }
+    this.bar.classList.toggle('armed', ff.enabled && !ff.active);
+    if (fly) { this.miniAcc = (this.miniAcc || 0) + dt; if (this.miniAcc >= 0.25 || !this._miniSig) { this.miniAcc = 0; this._mini(); } }
     if (!show) return;
     this.acc += dt;
     if (this.acc >= 0.25) { this.acc = 0; this._draw(); }
@@ -152,6 +181,38 @@ export class FreeFlightUI {
     e.note.hidden = !e.note.textContent;
   }
 
+  // ---- FREEFLIGHT VIEW: the folded status box on a phone -----------------------------------------------------------------------
+  /** The two lines that stand in for the status box while she flies: speed, height, climb or sink, and the target (or what the stick
+   *  flight is doing). A tap opens the whole box, the pilot strip and the free-flight read-outs; another tap folds them again. */
+  _mini() {
+    let el = document.getElementById('hud-ff');
+    const hud = document.getElementById('hud');
+    if (!el) {
+      if (!hud) return;
+      el = document.createElement('div'); el.id = 'hud-ff'; el.setAttribute('role', 'button'); el.setAttribute('aria-label', 'Flight read-out. Tap for the whole status.');
+      hud.prepend(el);
+      for (const ev of ['pointerdown', 'touchstart']) el.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });     // a press here is not a look-around drag
+      bindActivation(el, () => { document.documentElement.classList.toggle('ff-open'); this._miniSig = ''; this._mini(); });
+    } else if (el.parentElement !== hud && hud) hud.prepend(el);
+    const ff = this.ff, f = this.ship.flight, open = document.documentElement.classList.contains('ff-open');
+    const vert = (v) => (Math.abs(v) < 0.5 ? 'level' : (v > 0 ? '▲' : '▼') + fmtV(Math.abs(v)));
+    let l1, l2;
+    if (ff.active) {
+      const t = ff.telemetry(), tg = t.target;
+      l1 = `SPD ${fmtV(t.speed)} · ALT ${fmtD(t.alt)} · ${vert(t.vertical)}`;
+      l2 = t.inAir ? `<span class="w">In the air: the drive will not light</span>${t.eff > 1 ? ' · ×' + t.eff : ''}`
+        : `→ ${tg.name.toUpperCase()} ${fmtD(tg.surfaceM)}${tg.etaS < 1e7 ? ' · ETA ' + fmtT(tg.etaS) : tg.closing < 0 ? ' · leaving' : ''}${t.eff > 1 ? ' · ×' + t.eff : ''}` +
+          (t.fuel < 0.15 ? ` · <span class="w">FUEL ${Math.round(t.fuel * 100)}%</span>` : '');
+    } else {
+      const why = f.canLiftOff && !f.canLiftOff() ? (this.ship.liftBlockReason?.() || "Can't lift: route more power to the engines.") : '';
+      l1 = `SPD ${fmtV(f.speed || 0)} · ALT ${fmtD(Math.max(0, f.agl || 0))} · ${vert(f.verticalSpeed || 0)}`;
+      l2 = why ? `<span class="w">${why}</span>` : ff.enabled ? 'ARMED · free flight above the air'
+        : `<span class="d">${this.ship.flightMode === 'assist' ? 'ASSIST' : 'NEWTONIAN'}${this.ship.landAssist ? ' · LANDING' : ''} · gear ${f.gearPos > 0.99 ? 'down' : f.gearPos < 0.01 ? 'up' : 'moving'}</span>`;
+    }
+    const html = `${l1}<br><span class="more">${open ? '▴' : '▾'}</span>${l2}`;
+    if (html !== this._miniSig) { this._miniSig = html; el.innerHTML = html; }
+  }
+
   // ---- the sky overlay ------------------------------------------------------------------------------------------------------
   _overlay() {
     const ff = this.ff, cv = this.cv, eng = this.space.engine, cam = eng.camera;
@@ -167,17 +228,35 @@ export class FreeFlightUI {
     };
     // the sky the markers may use: under the read-outs, above the bar, inside the sides (a clamped marker stays where a thumb is not)
     const hudB = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--strip-bottom')) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hud-bottom')) || 64, phone = document.documentElement.classList.contains('phone-ui');
-    const barTop = this.bar.getBoundingClientRect().top || H, y0 = hudB + (phone ? 8 : 6), textH = 4 * 15 + 8;
+    // FREEFLIGHT VIEW: folded (a phone in flight), the read-outs are the status box's two lines and are not drawn here. The view chip and the
+    // flying buttons are kept clear: a marker that would sit under one becomes an edge arrow beside it, pointing at where it really is.
+    const root = document.documentElement, folded = root.classList.contains('ff-fly') && !root.classList.contains('ff-open');
+    const fbEl = document.getElementById('fly-bar'), fr = fbEl && getComputedStyle(fbEl).display !== 'none' ? fbEl.getBoundingClientRect() : null, chip = fr && fr.height > 0 ? fr : null;
+    const avoid = chip ? [chip] : [];
+    if (phone) { const dr = document.getElementById('dock-right'), r = dr && dr.getBoundingClientRect(); if (r && r.height > 0) avoid.push(r); }
+    const barTop = this.bar.getBoundingClientRect().top || H, textH = folded ? 0 : 4 * 15 + 8;
+    let y0 = hudB + (phone ? 8 : 6);
+    if (!folded && chip && chip.left < W / 2 && chip.top < H / 2) y0 = Math.max(y0, chip.bottom + 6);       // the read-outs start under the view chip
     const L = 22, Rr = W - 22, T = y0 + textH + 6, Bm = Math.max(T + 80, Math.min(H - 20, barTop - 14));
     const edge = (p) => {                         // clamp to that box; the arrow points the way
       const cx = (L + Rr) / 2, cyy = (T + Bm) / 2, ang = Math.atan2(-p.cy, p.cx);
       let x = p.front ? p.x : cx + Math.cos(ang) * 1e4, y = p.front ? p.y : cyy + Math.sin(ang) * 1e4, off = !p.front;
       if (x < L || x > Rr || y < T || y > Bm) { off = true; const s = Math.max(Math.abs(x - cx) / ((Rr - L) / 2), Math.abs(y - cyy) / ((Bm - T) / 2)); x = cx + (x - cx) / s; y = cyy + (y - cyy) / s; }
-      return { x, y, off, ang: Math.atan2(y - cyy, x - cx) };
+      let a = Math.atan2(y - cyy, x - cx), side = null;
+      for (const r of avoid) {
+        const m = 12; if (x < r.left - m || x > r.right + m || y < r.top - m || y > r.bottom + m) continue;
+        const tx = p.front ? p.x : x, ty = p.front ? p.y : y;
+        const c = [[r.left - m - 4, y], [r.right + m + 4, y], [x, r.top - m - 4], [x, r.bottom + m + 4]].filter(([qx, qy]) => qx >= L && qx <= Rr && qy >= T && qy <= Bm)
+          .sort((u, v) => Math.hypot(u[0] - x, u[1] - y) - Math.hypot(v[0] - x, v[1] - y))[0];
+        if (!c) continue;
+        x = c[0]; y = c[1]; off = true; a = Math.hypot(tx - x, ty - y) > 2 ? Math.atan2(ty - y, tx - x) : a;
+        side = x < r.left ? 'left' : x > r.right ? 'right' : null;            // its label goes on the side away from the button
+      }
+      return { x, y, off, ang: a, side };
     };
     // the read-outs
     g.font = '600 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace'; g.textAlign = 'left';
-    ffTextLines(ff).forEach((l, i) => { const x = 12, y = y0 + 12 + i * 15, w = g.measureText(l.text).width; g.fillStyle = 'rgba(2,12,16,.62)'; g.fillRect(x - 5, y - 11, Math.min(w, W - 24) + 10, 15); g.fillStyle = l.hot ? '#ffd78a' : '#cfeaf2'; g.fillText(l.text, x, y, W - 24); });
+    if (!folded) ffTextLines(ff).forEach((l, i) => { const x = 12, y = y0 + 12 + i * 15, w = g.measureText(l.text).width; g.fillStyle = 'rgba(2,12,16,.62)'; g.fillRect(x - 5, y - 11, Math.min(w, W - 24) + 10, 15); g.fillStyle = l.hot ? '#ffd78a' : '#cfeaf2'; g.fillText(l.text, x, y, W - 24); });
     const t = ff.telemetry();
     // the predicted path, re-flown a few times a second (it costs a hundred gravity evaluations)
     const now = performance.now();
@@ -216,7 +295,7 @@ export class FreeFlightUI {
     g.save(); g.translate(s.x, s.y); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2;
     if (s.off) {                                         // off screen: an arrow on the edge pointing the way
       g.rotate(s.ang); g.beginPath(); g.moveTo(10, 0); g.lineTo(-6, -7); g.lineTo(-6, 7); g.closePath(); g.fill(); g.rotate(-s.ang);
-      if (kind === 'target') { g.font = '600 10px ui-monospace,Menlo,Consolas,monospace'; g.fillStyle = col; g.textAlign = s.x > innerWidth / 2 ? 'right' : 'left'; g.fillText(label.split('  ')[0], s.x > innerWidth / 2 ? -14 : 14, 4); g.textAlign = 'left'; }
+      if (kind === 'target') { const lt = s.side ? s.side === 'left' : s.x > innerWidth / 2; g.font = '600 10px ui-monospace,Menlo,Consolas,monospace'; g.fillStyle = col; g.textAlign = lt ? 'right' : 'left'; g.fillText(label.split('  ')[0], lt ? -14 : 14, 4); g.textAlign = 'left'; }
       g.restore(); return;
     }
     if (kind === 'prograde') { g.beginPath(); g.arc(0, 0, 9, 0, 7); g.stroke(); g.beginPath(); g.arc(0, 0, 2, 0, 7); g.fill(); for (const a of [0, 1.5708, 3.1416]) { g.beginPath(); g.moveTo(Math.cos(a) * 9, Math.sin(a) * 9); g.lineTo(Math.cos(a) * 15, Math.sin(a) * 15); g.stroke(); } }

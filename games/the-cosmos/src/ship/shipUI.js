@@ -238,16 +238,19 @@ export class ShipUI {
     }
   }
 
-  /** The flight chips and the boost meter show the mode, the view, the landing assist and the boost charge. Hidden while free flight (its own bar) has the ship. */
+  /** The flight chips and the boost meter show the mode, the view, the landing assist and the boost charge. While free flight (its own bar)
+   *  has the ship only the view chip stays: CHASE (outside) or COCKPIT, the same choice V makes. */
   _flyChips() {
     const ship = this.ship, ff = ship.space && ship.space.ff && ship.space.ff.active;
     const flying = this.seatId === 'captain' || this.seatId === 'pilot';
-    this.flyBar.style.display = flying && !ff ? 'flex' : 'none';
+    this.flyBar.style.display = flying ? 'flex' : 'none';
     this.btnBoost.style.display = flying && !ff ? 'block' : 'none';
-    if (!flying || ff) return;
-    const A = ship.flightMode === 'assist';
+    if (!flying) return;
+    const A = ship.flightMode === 'assist', chase = ff ? ship.ffChaseOn() : ship.chaseView;
+    this.fbView.innerHTML = `${chase ? 'CHASE' : 'COCKPIT'}<small>view</small>`; this.fbView.classList.toggle('on', chase);
+    this.fbMode.style.display = ff ? 'none' : '';
+    if (ff) { this.fbLand.style.display = 'none'; return; }
     this.fbMode.innerHTML = `${A ? 'ASSIST' : 'NEWTON'}<small>${A ? 'point and go' : 'real physics'}</small>`; this.fbMode.classList.toggle('on', A);
-    this.fbView.innerHTML = `${ship.chaseView ? 'CHASE' : 'COCKPIT'}<small>view</small>`; this.fbView.classList.toggle('on', ship.chaseView);
     this.fbLand.innerHTML = `LAND<small>${ship.landAssist ? 'on' : 'assist'}</small>`; this.fbLand.classList.toggle('on', !!ship.landAssist); this.fbLand.style.display = A ? '' : 'none';
     this.btnBoost.style.setProperty('--boost', Math.round((ship.flight.boostCharge ?? 1) * 100) + '%');
     this.btnBoost.querySelector('span').textContent = ship.flight.boosting ? 'BOOST ●' : 'BOOST';

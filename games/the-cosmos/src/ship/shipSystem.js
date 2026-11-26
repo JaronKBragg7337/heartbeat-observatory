@@ -828,7 +828,15 @@ export class ShipSystem {
     this.flightMode = m; lsSet('cosmos.flightMode', m);
     this.note(m === 'assist' ? 'Flight assist ON: point and go; the computer kills drift and sets her down.' : 'Newtonian: the stick is thrust. She keeps what speed you give her.');
   }
-  toggleView() { this.chaseView = !this.chaseView; lsSet('cosmos.flightView', this.chaseView ? 'chase' : 'cockpit'); }
+  toggleView() {
+    if (this._ffFlying()) { lsSet('cosmos.ffView', this.ffChaseOn() ? 'cockpit' : 'chase'); return; }      // FREEFLIGHT VIEW: free flight keeps its own choice
+    this.chaseView = !this.chaseView; lsSet('cosmos.flightView', this.chaseView ? 'chase' : 'cockpit');
+  }
+  /** FREEFLIGHT VIEW: is she flown in free flight from the pilot's or captain's chair (no course has her)? */
+  _ffFlying() { const s = this.seat, sp = this.space; return !!(s && (s.id === 'captain' || s.id === 'pilot') && sp && sp.ff && sp.ff.active && !sp.driving); }
+  /** FREEFLIGHT VIEW: the outside view in free flight. The player's own choice is kept (cosmos.ffView). Until there is one, a phone held upright
+   *  starts outside (its cockpit window is a thin band between the roof and the console); a computer or a phone on its side starts in the cockpit. */
+  ffChaseOn() { const v = lsGet('cosmos.ffView'); if (v === 'chase' || v === 'cockpit') return v === 'chase'; return uprightPhone(); }
   toggleLand() { this.landAssist = !this.landAssist; if (this.landAssist) this.note('Landing assist: hands off, she comes down. Any stick input takes her back.'); }
 
   /** FLIGHTFEEL: an autopilot's, a crew pilot's or nobody's controls: the old three levers, no mode (so the old flight law). */
@@ -914,22 +922,65 @@ export class ShipSystem {
   }
 
   /** FLIGHTFEEL: chase view: by hand at the stick the camera rides behind and above the hull and trails further back the faster she goes. */
-  _chaseActive() { return this.chaseView && !this.zoomOn && this._handSteering(); }
+  _chaseActive() { return !this.zoomOn && ((this.chaseView && this._handSteering()) || (this._ffFlying() && this.ffChaseOn())); }
+
+  /** FREEFLIGHT VIEW: the middle and the size of her own hull (her frame), so the free-flight chase camera frames the whole ship, whatever ship it is. */
+  _hullAim() {
+    let c = { x: 0, y: 3, z: 4 }, diag = 55;
+    try {
+      const root = this.exterior.root, inv = new THREE.Matrix4(), m = new THREE.Matrix4(), box = new THREE.Box3(), b = new THREE.Box3();
+      root.updateMatrixWorld(true); inv.copy(root.matrixWorld).invert();
+      root.traverse((o) => {
+        if (!o.isMesh || !o.geometry || o === this.shield) return;
+        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+        box.union(b.copy(o.geometry.boundingBox).applyMatrix4(m.multiplyMatrices(inv, o.matrixWorld)));
+      });
+      if (!box.isEmpty()) { const s = box.getSize(new THREE.Vector3()), k = box.getCenter(new THREE.Vector3()); if (s.length() > 4 && s.length() < 600) { c = { x: k.x, y: k.y, z: k.z }; diag = s.length(); } }
+    } catch { /* the guess above */ }
+    return { c, diag };
+  }
 
   _placeCamera(dt = 1 / 60) {
     const f = this.flight;
-    let at = this.eyeLocal, pitchAdd = 0;
-    if (this._chaseActive()) {
+    let at = this.eyeLocal, pitchAdd = 0, camQ = f.quaternion, eye = null;
+    const ffChase = this._chaseActive() && this._ffFlying();
+    if (ffChase) {
+      // FREEFLIGHT VIEW: behind and a little above her, far enough that the whole hull fits even an upright phone's narrow picture. The camera
+      // follows her attitude a beat late, so a turn shows as her hull swinging across the real stars (her real rate, nothing added); the right
+      // thumb or the mouse swings the camera round her.
+      const A = this._ffAim || (this._ffAim = this._hullAim()), asp = clamp(this.engine.camera.aspect || 1, 0.4, 2);
+      const d = A.diag * (asp < 1 ? 1.5 : 0.9), h = d * 0.2;
+      const q = this._ffCamQ || (this._ffCamQ = f.quaternion.clone());
+      if (q.angleTo(f.quaternion) > 1.2) q.copy(f.quaternion); else q.slerp(f.quaternion, 1 - Math.exp(-Math.min(dt, 0.1) * 4));
+      const L = this._ffL || (this._ffL = new THREE.Quaternion());
+      L.setFromEuler((this._ffE || (this._ffE = new THREE.Euler())).set(this.camPitch, -this.camYaw, 0, 'YXZ'));
+      const off = (this._ffV || (this._ffV = new THREE.Vector3())).set(0, h, d).applyQuaternion(L).applyQuaternion(q);
+      const aim = (this._ffV2 || (this._ffV2 = new THREE.Vector3())).set(A.c.x, A.c.y, A.c.z).applyQuaternion(f.quaternion);
+      eye = this._eye; eye.x = f.pos.x + aim.x + off.x; eye.y = f.pos.y + aim.y + off.y; eye.z = f.pos.z + aim.z + off.z;
+      camQ = q; pitchAdd = -Math.atan2(h, d) - 0.035; at = null;
+    } else this._ffCamQ = null;
+    if (!ffChase && this._chaseActive()) {
       const agl = Number.isFinite(f.agl) ? f.agl : 1e6, sp = f.speed;
       const kk = clamp(sp / Math.max(120, vmaxAt(agl) * 0.8), 0, 1);
-      const T = { x: -f.yawRate * 4.5, y: 12 + 3 * kk, z: 54 + 16 * kk + (f.boosting ? 6 : 0) };
+      // FREEFLIGHT VIEW: on an upright phone the picture is narrow, so the camera stands further back and looks a little more down: the whole
+      // hull sits in the middle, clear of the flying buttons in the bottom corners
+      const pk = uprightPhone() ? 1.5 : 1;
+      const T = { x: -f.yawRate * 4.5, y: (12 + 3 * kk) * pk, z: (54 + 16 * kk + (f.boosting ? 6 : 0)) * pk };
       const a = 1 - Math.exp(-Math.min(dt, 0.1) * 3.2), c = this._chase;
       c.x += (T.x - c.x) * a; c.y += (T.y - c.y) * a; c.z += (T.z - c.z) * a;
-      at = c; pitchAdd = -0.11;
+      at = c; pitchAdd = pk > 1 ? -0.2 : -0.11;
     }
-    const eye = f.toWorld(at, this._eye);
+    // FREEFLIGHT VIEW: in the cockpit in free flight on an upright phone the pilot leans in a little and looks a touch up, so the window takes
+    // the middle of the screen and the console slides down behind the flying buttons (half a metre: clear of the console in every ship)
+    const lean = !ffChase && this._ffFlying() && uprightPhone() && this.seat && at === this.eyeLocal;
+    this._ffLean = (this._ffLean || 0) + ((lean ? 0.5 : 0) - (this._ffLean || 0)) * Math.min(1, dt * 3);
+    if (this._ffLean > 0.002 && at === this.eyeLocal && this.seat) {
+      const y = (this.seat.yaw || 0) * DEG, la = this._leanAt || (this._leanAt = {});
+      la.x = at.x - Math.sin(y) * this._ffLean; la.y = at.y; la.z = at.z - Math.cos(y) * this._ffLean; at = la; pitchAdd += this._ffLean * 0.14;
+    }
+    if (!eye) eye = f.toWorld(at, this._eye);
     const cam = this.engine.cameraWorldPos;
-    if (at !== this.eyeLocal && f.up) {
+    if (!ffChase && at !== this.eyeLocal && at !== this._leanAt && f.up) {
       // never under the ground: a hill behind her must not swallow the view
       const gap = f._groundAtWorld(eye).gap;
       if (Number.isFinite(gap) && gap < 4) { const lift = 4 - gap; eye.x += f.up.x * lift; eye.y += f.up.y * lift; eye.z += f.up.z * lift; }
@@ -937,8 +988,8 @@ export class ShipSystem {
     cam.x = eye.x; cam.y = eye.y; cam.z = eye.z;
     const sh = this.hitShake > 0 ? this.hitShake * 0.03 : 0;
     this._q.setFromEuler(new THREE.Euler(this.camPitch + pitchAdd + (sh ? (Math.random() - 0.5) * sh : 0), -this.camYaw + (sh ? (Math.random() - 0.5) * sh : 0), sh ? (Math.random() - 0.5) * sh * 0.6 : 0, 'YXZ'));
-    this.engine.camera.quaternion.copy(f.quaternion).multiply(this._q);
-    this.engine.camera.up.set(0, 1, 0).applyQuaternion(f.quaternion);
+    this.engine.camera.quaternion.copy(camQ).multiply(this._q);
+    this.engine.camera.up.set(0, 1, 0).applyQuaternion(camQ);
   }
 
   _outsideFrame(dt, inp) {
@@ -1630,6 +1681,8 @@ export function poseRamp(r, R, key, progress, angle) {
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+/** FREEFLIGHT VIEW: a phone held upright (the phone layout is on and the screen is taller than it is wide). */
+const uprightPhone = () => { try { return document.documentElement.classList.contains('phone-ui') && innerHeight > innerWidth; } catch { return false; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* private window */ } };
 const fmtTime = (t) => { const m = Math.floor(t / 60), s = Math.floor(t % 60); return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; };
 
