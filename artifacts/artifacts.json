@@ -9,7 +9,7 @@
    "image": "/artifacts/img/turkey-trouble-yard.jpg",
    "what": "A Thanksgiving game on a wet farm at dusk after a storm, seen over your shoulder. Four ways to play: find the turkey hiding on the farm, survive while it hunts you, hunt it before it escapes, or be the turkey and cross a lane, a creek, roads, a field and a highway. There is a secret ending. Phone: left thumb walks, right side looks. Computer: WASD.",
    "made": "The whole farm, the turkey and the trucks are made by code. Blender 5.1 bakes the dusk light into the farm in about 40 seconds on our own RTX 4060. Three.js shows it in the browser with our own wet-ground shader. The people are the site's realistic ones. Real surface photos and sky from Poly Haven (CC0). Built by Claude (Fable 5.2) with Opus 5.5 and Sonnet 5.5 helpers.",
-   "honest": "Not tried on a real iPhone yet, only in the iPhone's browser engine on a PC. The sounds are made by code and nobody has listened to them properly. The spruce trees are simple shapes up close, the dog's legs look a bit like tubes, and a dive is just the person tipping forward.",
+   "honest": "Tried on one real iPhone so far (Escape the Farm, the morning it went live); the other three modes have only run in the iPhone's browser engine on a PC. The sounds are made by code and nobody has listened to them properly. The spruce trees are simple shapes up close, the dog's legs look a bit like tubes, and a dive is just the person tipping forward.",
    "links": [
     [
      "Play Turkey Trouble",
