@@ -137,7 +137,7 @@ const GROUND_MAP = /* glsl */`
   vec3 cGrass2 = texture2D( tGrass, gp * 0.081 + 0.19 ).rgb;
   vec3 alb = cMud * ( 0.72 + cMud2 * 6.0 );
   alb = mix( alb, texture2D( tStubble, gp * vec2( 0.28, 0.28 ) ).rgb, wt.b );
-  alb = mix( alb, texture2D( tGravel, gp * 0.47 ).rgb, sp.r );
+  alb = mix( alb, texture2D( tGravel, gp * 0.47, 0.8 ).rgb * 0.88, sp.r );      // (a little softer: at phone size the sharp gravel read as white confetti)
   alb = mix( alb, cGrass * ( 0.7 + cGrass2 * 6.0 ), sp.g );
   alb = mix( alb, texture2D( tAsphalt, gp * 0.41 ).rgb * 1.15, sp.b );
   ttAsphalt = sp.b; ttGravel = sp.r * ( 1.0 - sp.b );
@@ -241,6 +241,59 @@ function beamMaterial(color, strength) {
       }`,
     blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false,
   });
+}
+
+// ---------------------------------------------------------------- chimney smoke
+// n puffs per chimney, one instanced quad each, all in one draw. Each puff is born small at the chimney top, rises and
+// slows, the wind takes it east, it grows and thins out. Coloured like the sky near the horizon (a touch paler) and fogged.
+function smokePlume(chimneys, n, fog, tint) {
+  const base = new THREE.PlaneGeometry(1, 1);
+  const g = new THREE.InstancedBufferGeometry();
+  g.index = base.index; g.setAttribute('position', base.getAttribute('position'));
+  const seed = new Float32Array(chimneys.length * n), origin = new Float32Array(chimneys.length * n * 3);
+  chimneys.forEach((c, ci) => {
+    for (let i = 0; i < n; i++) {
+      const k = ci * n + i;
+      seed[k] = (i + 0.37 * ((i * 7 + ci * 3) % 5) / 5) / n;
+      origin[k * 3] = c.x; origin[k * 3 + 1] = c.y; origin[k * 3 + 2] = c.z;
+    }
+  });
+  g.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seed, 1));
+  g.setAttribute('aOrigin', new THREE.InstancedBufferAttribute(origin, 3));
+  g.instanceCount = seed.length;
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uTime: U.uTime, uColor: { value: tint }, uFogColor: { value: fog.color }, uDens: { value: fog.density } },
+    vertexShader: /* glsl */`
+      attribute float aSeed; attribute vec3 aOrigin; uniform float uTime; uniform float uDens;
+      varying vec2 vUv; varying float vA; varying float vFog; varying float vSeed;
+      void main() {
+        float age = fract( uTime / 13.0 + aSeed );
+        vec3 c = aOrigin;
+        c.y += 0.1 + 4.6 * ( 1.0 - pow( 1.0 - age, 1.35 ) );
+        c.x += age * 1.2 + age * age * 6.0 + sin( age * 3.7 + aSeed * 13.0 ) * 0.3 * age;
+        c.z += sin( age * 5.1 + aSeed * 21.0 ) * 0.4 * age;
+        float size = 0.7 + 2.8 * pow( age, 0.7 );
+        vec4 mv = viewMatrix * vec4( c, 1.0 );
+        float a = aSeed * 6.283 + age * 0.9;
+        mv.xy += mat2( cos( a ), sin( a ), - sin( a ), cos( a ) ) * position.xy * size;
+        gl_Position = projectionMatrix * mv;
+        vUv = position.xy; vSeed = aSeed;
+        vA = smoothstep( 0.0, 0.07, age ) * pow( 1.0 - age, 1.6 );
+        float d = length( mv.xyz ); vFog = 1.0 - exp( - uDens * uDens * d * d );
+      }`,
+    fragmentShader: /* glsl */`
+      varying vec2 vUv; varying float vA; varying float vFog; varying float vSeed; uniform vec3 uColor; uniform vec3 uFogColor;
+      void main() {
+        float r = length( vUv ) * 2.0, an = atan( vUv.y, vUv.x + 1e-4 );
+        float lump = 0.8 + 0.1 * sin( an * 3.0 + vSeed * 31.0 ) + 0.07 * sin( an * 5.0 - vSeed * 17.0 );
+        float m = 1.0 - smoothstep( 0.1, lump, r ); m *= m;
+        gl_FragColor = vec4( mix( uColor, uFogColor, vFog * 0.5 ), m * vA * 0.5 * ( 1.0 - vFog * 0.7 ) );      // far away it fades out rather than turning fog-dark against the bright sky
+      }`,
+    transparent: true, depthWrite: false, fog: false,
+  });
+  const mesh = new THREE.Mesh(g, mat);
+  mesh.frustumCulled = false; mesh.renderOrder = 5; mesh.name = 'chimney_smoke';
+  return mesh;
 }
 
 // ---------------------------------------------------------------- the sky
@@ -357,7 +410,9 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
     } else if (kind === 'baked') {
       const lm = lightmaps.get(src.userData.lm), intensity = src.userData.lmRange * Math.PI;
       if (!made.has(key)) {
-        if (SHINY.test(m.name)) { const c = m.clone(); c.lightMap = lm; c.lightMapIntensity = intensity; c.envMapIntensity = 1.0; made.set(key, patchBakedShiny(c)); }
+        if (SHINY.test(m.name)) { const c = m.clone(); c.lightMap = lm; c.lightMapIntensity = intensity; c.envMapIntensity = 1.0;
+          if (/^stone/.test(m.name)) { c.envMapIntensity = 0.45; c.color.multiplyScalar(0.55); c.roughness = 0.38; }      // wet dark stone: under the ford lamp the dry grey read as white plates in the creek
+          made.set(key, patchBakedShiny(c)); }
         else made.set(key, patchBakedMatte(new THREE.MeshBasicMaterial({ name: m.name, map: m.map, color: m.color, lightMap: lm, lightMapIntensity: intensity })));
       }
       o.material = made.get(key);
@@ -392,6 +447,18 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
     const cone = new THREE.Mesh(new THREE.ConeGeometry(L.y * 0.85, L.y, 24, 1, true), beams.get(L.color));
     cone.position.set(L.x, L.y / 2, L.z); cone.renderOrder = 4; cone.name = 'beam_' + L.id; world.add(cone);
   }
+  // power wires and the swing rope: their thin meshes break into dashes far away on a phone, so each is also drawn as a
+  // one-pixel line (one draw call for all of them). Close up the mesh is thicker than the line and hides it.
+  if (meta.lines && meta.lines.length) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(meta.lines.flat(), 3));
+    const lines = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: new THREE.Color().setRGB(0.018, 0.017, 0.02), fog: true }));
+    lines.name = 'thin_lines'; lines.matrixAutoUpdate = false; world.add(lines);
+  }
+  // chimney smoke: a few soft puffs per chimney, alpha-blended (not added: added smoke glows against the sky), all in one draw
+  const smoke = meta.chimneys && meta.chimneys.length ? smokePlume(meta.chimneys, qName === 'low' ? 8 : 12, scene.fog,
+    new THREE.Color().setRGB(0.5, 0.47, 0.5)) : null;      // pale wood smoke, a touch warm from the last of the glow
+  if (smoke) world.add(smoke);
   const headBeam = beamMaterial('#fff1d6', 0.16);
   const headGeo = new THREE.ConeGeometry(1.5, 11, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 5.5);      // tip at the lamp, opening forward (+z)
   const dynamic = new THREE.Group(); dynamic.name = 'dynamic'; scene.add(dynamic);

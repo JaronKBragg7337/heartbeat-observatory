@@ -206,6 +206,6 @@ for n in (('mud', 'asphalt', 'gravel') if REDO_GROUND else ()):
 # ground_splat.png and ground_wet.png stay lossless PNG: each colour channel is its own mask, and lossy pictures
 # (which mix the channels to compress them) leak one mask into another
 sv = sun_vector()
-json.dump({'lmRange': LM_RANGE, 'skyRange': SKY_RANGE, 'sunDir': [sv.x, sv.z, -sv.y], 'bounds': BND, 'ambient': ambient, 'horizon': horizon, 'fog': fog, 'glowU': glow_u, 'lamps': lamp_info},
+json.dump({'lmRange': LM_RANGE, 'skyRange': SKY_RANGE, 'sunDir': [sv.x, sv.z, -sv.y], 'bounds': BND, 'ambient': ambient, 'horizon': horizon, 'fog': fog, 'glowU': glow_u, 'lamps': lamp_info, 'lines': LINES, 'chimneys': CHIMNEYS},
           open(os.path.join(ASSETS, 'world.json'), 'w'), indent=1)
 say('DONE bake')

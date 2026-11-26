@@ -123,7 +123,7 @@
       { "id": "yard", "kind": "yard", "z0": -34, "z1": 0, "about": "cross the farmyard past the farmer and the dog; leave by the south gate (x -3..3)" },
       { "id": "farmlane", "kind": "lane", "z0": 6, "z1": 12, "sublanes": [ { "z": 9, "dir": 1, "speed": 3.2, "vehicle": "tractor_wagon", "gapMin": 24, "gapMax": 38 } ] },
       { "id": "creek", "kind": "creek", "z0": 18, "z1": 28, "about": "water: ride the drifting logs, or use the stones at the ford. Falling in puts the turkey back on the north bank.",
-        "waterY": -0.08, "logY": -0.36, "rideY": 0.23, "stoneY": 0.06,
+        "waterY": -0.08, "logY": -0.36, "rideY": 0.29, "stoneY": 0.06,
         "sublanes": [ { "z": 20.6, "dir": 1, "speed": 1.6, "vehicle": "log", "gapMin": 2.4, "gapMax": 4.6 }, { "z": 23, "dir": 1, "speed": 2.3, "vehicle": "log", "gapMin": 2.8, "gapMax": 5.2 }, { "z": 25.4, "dir": 1, "speed": 1.9, "vehicle": "log", "gapMin": 2.4, "gapMax": 4.8 } ],
         "stones": [ { "x": -22, "z": 19.6 }, { "x": -21.2, "z": 21.4 }, { "x": -22.4, "z": 23.1 }, { "x": -21.4, "z": 24.9 }, { "x": -22.2, "z": 26.6 } ] },
       { "id": "gravel", "kind": "road", "z0": 34, "z1": 40, "sublanes": [ { "z": 35.5, "dir": -1, "speed": 7.5, "vehicle": "pickup", "gapMin": 14, "gapMax": 26 }, { "z": 38.5, "dir": 1, "speed": 8.2, "vehicle": "pickup", "gapMin": 14, "gapMax": 26 } ] },

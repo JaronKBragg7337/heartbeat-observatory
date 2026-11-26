@@ -149,6 +149,8 @@ PH = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'polyhaven')     # the 
 
 STATIC = {'buildings': [], 'props': [], 'south': []}     # lightmapped, by atlas
 UNBAKED = []                                             # in the world, lit at run time (thin or far things)
+CHIMNEYS = []                                            # chimney tops (game x, y, z): the game puts smoke there
+LINES = []                                               # thin things also drawn as 1-pixel lines in the game (game x, y, z pairs), so they never break into dashes far away
 GLOW = []                                                # emissive things: no bake, no shadow
 CASTERS = []                                             # stand-ins that only cast shadows in the bake
 LIGHTS = []
@@ -399,6 +401,7 @@ def farmhouse():
     for sy in (-1, 1):
         m.box(M['trim'], (0, sy * (D / 2 + 0.45), top - 0.45 * rise / (D / 2) - 0.12), (W + 0.9, 0.05, 0.2))
     m.box(M['brick'], (W / 2 - 1.3, 0.9, top + rise * 0.55 + 0.6), (0.85, 0.85, rise + 1.6))
+    CHIMNEYS.append({'id': 'farmhouse', 'x': c['x'] + W / 2 - 1.3, 'y': round(top + rise * 0.55 + 0.6 + (rise + 1.6) / 2, 3), 'z': c['z'] - 0.9})
     m.box(M['concrete'], (W / 2 - 1.3, 0.9, top + rise * 0.55 + 1.45 + rise / 2 - 0.05), (1.0, 1.0, 0.12))
     S = -D / 2
     # front (south): door, two lit windows down, three up (one lit)
@@ -615,6 +618,7 @@ def dummy_house():
         for sy in (-1, 1):
             m.box(M['trim'], (sx * (W / 2 + 0.01), sy * (D / 2 + 0.01), F + H / 2), (0.14, 0.14, H))
     m.box(M['brick'], (-W / 2 + 1.1, -0.6, top + rise * 0.6 + 0.4), (0.7, 0.7, rise + 1.0))
+    CHIMNEYS.append({'id': 'dummy_house', 'x': c['x'] - W / 2 + 1.1, 'y': round(top + rise * 0.6 + 0.4 + (rise + 1.0) / 2, 3), 'z': c['z'] + 0.6})
     N = D / 2                                              # the door is on the north side: the turkey comes from the north
     frame(m, 'N', N, 0, F + 1.02, 0.95, 2.04, sill=False)
     m.box(M['door_green'], (0, N + 0.03, F + 1.02), (0.95, 0.06, 2.04))
@@ -783,7 +787,8 @@ def poles_and_wires():
                 t = k / 8
                 q = Vector((a.x + (b.x - a.x) * t, a.y + sy, 7.92 - 1.1 * 4 * t * (1 - t)))
                 if prev is not None:
-                    w.cyl(M['wire'], prev, q, 0.012, segs=3, caps=False)
+                    w.cyl(M['wire'], prev, q, 0.014, segs=3, caps=False)
+                    LINES.append([round(v, 3) for v in (prev.x, prev.z, -prev.y, q.x, q.z, -q.y)])
                 prev = q
     STATIC['props'].append(m.finish())
     GLOW.append(g.finish())
@@ -861,7 +866,9 @@ def trees():
         say('trees: built and cached,', sum(len(p.vertices) - 2 for p in o.data.polygons), 'triangles')
     # the tire swing on the oak
     s = Mesh('swing', oak['x'], oak['z'], 0)
-    s.cyl(M['iron'], (2.2, 0.3, 5.4), (2.2, 0.3, 1.25), 0.012, segs=4)
+    s.cyl(M['bark'], (0.2, 0.05, 4.5), (2.75, 0.33, 5.62), 0.2, 0.08, segs=7)      # the limb the rope hangs from (the rope used to end in the air)
+    s.cyl(M['iron'], (2.2, 0.3, 5.4), (2.2, 0.3, 1.25), 0.015, segs=6)
+    LINES.append([oak['x'] + 2.2, 5.4, oak['z'] - 0.3, oak['x'] + 2.2, 1.25, oak['z'] - 0.3])
     s.cyl(M['glass'], (2.2, 0.12, 0.95), (2.2, 0.48, 0.95), 0.36, segs=14)
     STATIC['props'].append(s.finish())
 

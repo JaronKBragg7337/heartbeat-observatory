@@ -341,9 +341,17 @@ function escapeTips(g) {
 
 function titleFrame(dt) {
   titleT += dt;
-  const a = stage.layout.arena;
-  const cx = (a.minX + a.maxX) / 2 - 4, cz = (a.minZ + a.maxZ) / 2 + 6;
-  orbitShot(stage.camera, titleT, cx, cz, 26, 8.5 + Math.sin(titleT * 0.1) * 1.5, 0.035, 2);
+  // the farm at dusk from the south-east: farmhouse, barn and windmill against the sky, the yard lamp between them.
+  // The menu card covers the lower part of a phone, so the camera looks down until the skyline sits in the top quarter;
+  // in landscape the card sits in the middle and the camera looks more level. It drifts slowly, never stops.
+  const ca = stage.camera, portrait = ca.aspect < 1;
+  const w = titleT * 0.045, s = Math.sin(w), s2 = Math.sin(w * 0.61 + 1.3);
+  const ex = 46 + s * 7, ey = 8.6 + s2 * 0.8, ez = -17 - s * 4.5;
+  const tx = -9 + s * 4, tz = -44;
+  const hd = Math.hypot(tx - ex, tz - ez), pitch = (portrait ? 0.36 : 0.29) + s2 * 0.012;
+  ca.position.set(ex, ey, ez);
+  ca.lookAt(tx, ey - hd * Math.tan(pitch), tz);
+  const a = stage.layout.arena, cx = (a.minX + a.maxX) / 2 - 4, cz = (a.minZ + a.maxZ) / 2 + 6;      // sound and the hero light stay in the yard
   if (cast) {
     const t = cast.turkey;
     const anim = (titleT % 9) < 1.2 ? 'gobble' : 'idle';
@@ -405,5 +413,5 @@ function directorNext() {
   start(nextKind, { keepRun: true, carry });
 }
 
-window.__tt = { app, audio, pilot: null, get stage() { return stage; }, get cast() { return cast; }, get cam() { return cam; } };
+window.__tt = { app, audio, pilot: null, get titleT() { return titleT; }, set titleT(v) { titleT = v; }, get stage() { return stage; }, get cast() { return cast; }, get cam() { return cam; } };
 boot();

@@ -208,8 +208,8 @@ export function createEscape(layout, opts = {}) {
         // (a log that drifts past the corridor edge leaves you behind: the clamp holds you, the log goes on, you fall in)
         if (!support && !stone) { me.wet += DT; if (me.wet > TP.waterGrace) sendBack(lane.z0 - 1.0, 'splash'); }
         else me.wet = 0;
-      } else { me.onLog = null; me.wet = 0; }
-    } else if (!airborne) { me.onLog = null; me.wet = 0; }
+      } else { me.onLog = null; me.onStone = false; me.wet = 0; }
+    } else if (!airborne) { me.onLog = null; me.onStone = false; me.wet = 0; }      // (onStone used to stay true after the ford, lifting the turkey 6 cm off every road)
 
     if (lane && lane.subs.length && lane.kind !== 'creek') {
       for (const sub of lane.subs) {
