@@ -2,13 +2,43 @@
 // A peck costs one of three hearts. Survive 75 s.
 import { makeBase, makePath, dist, DT } from './common.js';
 import { stepMover, makeMover, followPath, stepToward, turnToward } from '../mover.js';
-import { HUNTED } from '../tuning.js';
+import { HUNTED, HUNTED_CARRY } from '../tuning.js';
+
+// Carried from Find the turkey stands a beak away. It first flaps back (same way it faced you from), to the
+// farthest free spot 8-10 m off that it can still see you from, so the chase opens with room to turn and run.
+function carryBack(world, player, tp) {
+  let dx = tp.x - player.x, dz = tp.z - player.z, d = Math.hypot(dx, dz);
+  if (d >= HUNTED_CARRY.minDist) return tp;
+  if (d < 1e-3) { dx = 0; dz = 1; d = 1; }
+  const ux = dx / d, uz = dz / d;
+  let best = null, bestScore = -1e9;
+  const p = { x: 0, z: 0 };
+  for (let k = 0; k < 24; k++) {                       // straight back first, then fanning out to the sides
+    const a = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 12);
+    const c = Math.cos(a), s = Math.sin(a), vx = ux * c - uz * s, vz = ux * s + uz * c;
+    for (let r = HUNTED_CARRY.maxDist; r >= HUNTED_CARRY.minDist; r -= 0.5) {
+      p.x = player.x + vx * r; p.z = player.z + vz * r;
+      world.clampArena(p, HUNTED.r + 0.5);
+      if (world.blocked(p.x, p.z, HUNTED.r)) continue;
+      const dd = Math.hypot(p.x - player.x, p.z - player.z);
+      if (dd < HUNTED_CARRY.minDist - 0.01) continue;
+      const score = (world.losClear(p.x, p.z, player.x, player.z, HUNTED.eyeH) ? 10 : 0) - Math.abs(a) * 2;
+      if (score > bestScore) { bestScore = score; best = { x: p.x, z: p.z }; }
+      break;
+    }
+    if (bestScore >= 10 && k > 0 && k % 2 === 0) break;
+  }
+  return best || tp;
+}
 
 export function createHunted(layout, opts = {}) {
   const g = makeBase(layout, opts, 'hunted');
   const { world, nav, rng, emit, player } = g;
   const st = (opts.carry && opts.carry.turkey) || layout.spawns.turkeyHunted;
-  const tp = world.freeSpot(st.x, st.z, HUNTED.r);
+  let tp = world.freeSpot(st.x, st.z, HUNTED.r);
+  if (opts.carry && opts.carry.turkey) tp = carryBack(world, player, tp);
+  // ...and you start facing it, so the camera behind you shows it (in a shed you look out of the door at it)
+  if (opts.carry) player.heading = Math.atan2(tp.x - player.x, tp.z - player.z);
   const turkey = makeMover(tp.x, tp.z, st.heading ?? st.rotY ?? 0, { r: HUNTED.r });
   Object.assign(turkey, { anim: 'startled', animT: 0, state: 'wake', timer: opts.carry ? HUNTED.wakeCarry : HUNTED.wake, chargeCd: 1.5, cdx: 0, cdz: 0, replan: 0, lostT: 0, seen: false, lastX: player.x, lastZ: player.z, lookT: 0 });
   g.turkey = turkey;

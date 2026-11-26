@@ -2,7 +2,7 @@
 # Makes: lightmaps, the dusk sky (a picture for the background, an HDR for reflections), ground textures as WebP,
 # assets/world.glb and assets/world.json (lamp strengths measured from the bake itself).
 LM_RANGE = 4.0
-SKY_RANGE = 2.0
+SKY_RANGE = 4.0
 SIZES = {'ground_n': 2048, 'ground_s': 2048, 'static_buildings': 2048, 'static_props': 1024, 'static_south': 1024}
 scene.cycles.samples = int(os.environ.get('TT_BAKE_SAMPLES', '192'))
 scene.cycles.use_adaptive_sampling = True
@@ -115,10 +115,11 @@ def ground_light(x, z):
     return [float(v) for v in lin[r0:r1, c0:c1].reshape(-1, 3).mean(axis=0)]
 
 
-ambient = [float(v) for v in np.median(np.array([ground_light(x, z) for x, z in ((-30, -56), (30, -50), (-50, 20), (50, 50), (-40, 90), (40, 100))]), axis=0)]
+ambient = [float(v) for v in np.median(np.array([ground_light(x, z) for x, z in ((-30, -56), (30, -50), (-50, 20), (50, 50), (-55, 70), (55, 20))]), axis=0)]
 lamp_info = []
 for l in L['lamps']:
-    lamp_info.append({'id': l['id'], 'x': l['x'], 'y': l['y'], 'z': l['z'], 'color': l['color'], 'reach': l['reach'], 'under': ground_light(l['x'], l['z'])})
+    lamp_info.append({'id': l['id'], 'x': l['x'], 'y': l['y'], 'z': l['z'], 'color': l['color'], 'reach': l['reach'], 'under': ground_light(l['x'], l['z']), 'watts': WATTS.get(l['id'], 400),
+                      'pole': 1 if (l.get('pole') or l.get('arm') or l['id'] in ('yard', 'highway_w', 'highway_e')) else 0})
 say('ambient on the ground', [round(v, 4) for v in ambient], '| under the yard lamp', [round(v, 3) for v in lamp_info[0]['under']])
 
 # ---------------------------------------------------------------- the sky alone: background picture and reflection image
@@ -161,6 +162,10 @@ save_web('sky8', sky_code(sky), os.path.join(ASSETS, 'sky.webp'), non_color=True
 h2 = sky.reshape(1024, 2, 2048, 2, 3).mean(axis=(1, 3))
 save_web('sky8h', sky_code(h2), os.path.join(ASSETS, 'sky_half.webp'), non_color=True, quality=95)
 horizon = [float(v) for v in sky[1024 + 6:1024 + 30, :, :].reshape(-1, 3).mean(axis=0)]
+band = sky[1024 + 8:1024 + 140, :, :].mean(axis=(0, 2))
+glow_u = float(np.convolve(np.concatenate([band[-64:], band, band[:64]]), np.ones(129) / 129, 'same')[64:-64].argmax() / 4096)
+fog = [float(v) * 0.9 for v in np.percentile(sky[1024 + 45:1024 + 115, :, :].mean(axis=0), 25, axis=0)]      # the haze of the darker side: far ground never ends up lighter than the sky behind it
+say('sky glow is at u =', round(glow_u, 3), '(the game wants about 0.944: west, a little south) | haze colour', [round(v, 3) for v in fog])
 say('sky rendered; mean just above the horizon', [round(v, 4) for v in horizon], 'max', float(sky.max()))
 
 # ---------------------------------------------------------------- export
@@ -191,15 +196,16 @@ for extra in (dict(export_image_format='WEBP', export_image_quality=82, **draco)
 say('exported', path, round(os.path.getsize(path) / 1048576, 2), 'MB')
 
 # ground pictures for the game's own ground shader
-for n in ('mud', 'gravel', 'grass', 'asphalt', 'stubble'):
+REDO_GROUND = os.environ.get('TT_GROUND_TEX') == '1'     # the ground pictures are photo sets now (build/ph_ground.py); 1 = write the code-made ones again
+for n in (('mud', 'gravel', 'grass', 'asphalt', 'stubble') if REDO_GROUND else ()):
     a = pixels_of(load_image(os.path.join(TEX, n + '_a.png')))[:, :, :3]
     save_web('g_' + n, a, os.path.join(ASSETS, 'ground_' + n + '.webp'), quality=88)
-for n in ('mud', 'asphalt', 'gravel'):
+for n in (('mud', 'asphalt', 'gravel') if REDO_GROUND else ()):
     nm = pixels_of(load_image(os.path.join(TEX, n + '_n.png'), True))[:, :, :3]
     save_web('gn_' + n, nm, os.path.join(ASSETS, 'ground_' + n + '_n.webp'), non_color=True, quality=90)
 # ground_splat.png and ground_wet.png stay lossless PNG: each colour channel is its own mask, and lossy pictures
 # (which mix the channels to compress them) leak one mask into another
 sv = sun_vector()
-json.dump({'lmRange': LM_RANGE, 'skyRange': SKY_RANGE, 'sunDir': [sv.x, sv.z, -sv.y], 'bounds': BND, 'ambient': ambient, 'horizon': horizon, 'lamps': lamp_info},
+json.dump({'lmRange': LM_RANGE, 'skyRange': SKY_RANGE, 'sunDir': [sv.x, sv.z, -sv.y], 'bounds': BND, 'ambient': ambient, 'horizon': horizon, 'fog': fog, 'glowU': glow_u, 'lamps': lamp_info},
           open(os.path.join(ASSETS, 'world.json'), 'w'), indent=1)
 say('DONE bake')

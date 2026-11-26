@@ -155,7 +155,7 @@ INFO = {}
 
 
 def mat(name, color, rough=0.5, metal=0.0, emit=None, es=0.0, tex=None, alpha=False, double=False, coat=0.0,
-        sheen=0.0, spec=None):
+        sheen=0.0, spec=None, nrm=None, nrm_s=1.0):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     nt = m.node_tree
@@ -184,7 +184,7 @@ def mat(name, color, rough=0.5, metal=0.0, emit=None, es=0.0, tex=None, alpha=Fa
         except Exception:
             pass
     m.use_backface_culling = not double
-    INFO[name] = dict(color=color, tex=tex, alpha=alpha)
+    INFO[name] = dict(color=color, tex=tex, alpha=alpha, nrm=nrm, nrm_s=nrm_s)
     build_graph(m, preview=True)
     return m
 
@@ -210,6 +210,15 @@ def build_graph(m, preview):
                 m.blend_method = 'CLIP'
             except Exception:
                 pass
+    if info.get('nrm') is not None:
+        tn = nt.nodes.new('ShaderNodeTexImage')
+        tn.image = info['nrm']
+        tn.location = (-700, -350)
+        nm = nt.nodes.new('ShaderNodeNormalMap')
+        nm.location = (-400, -350)
+        nm.inputs['Strength'].default_value = info['nrm_s']
+        nt.links.new(tn.outputs['Color'], nm.inputs['Color'])
+        nt.links.new(nm.outputs['Normal'], b.inputs['Normal'])
     if preview:
         a = nt.nodes.new('ShaderNodeVertexColor')
         a.layer_name = 'Col'
@@ -229,16 +238,136 @@ def build_graph(m, preview):
         b.inputs['Base Color'].default_value = (*info['color'], 1)
 
 
-TX_WOOD = tex_grain('tt_wood', 512, (0.22, 0.17, 0.12), (0.54, 0.46, 0.35), seed=3)
-TX_STRAW = tex_grain('tt_straw', 256, (0.40, 0.31, 0.15), (0.80, 0.68, 0.42), streak=2.2, knots=False, seed=5)
+def as_jpeg(im, q=82, name=None):
+    """Re-save an image as JPEG in the scratch folder (the glb keeps JPEGs as JPEGs: far smaller than PNG)."""
+    name = name or im.name
+    w, h = im.size
+    px = np.empty(w * h * 4, np.float32)
+    im.pixels.foreach_get(px)
+    path = os.path.join(SCRATCH, name + '.jpg')
+    out = bpy.data.images.new(name + '_tmp', w, h, alpha=False)
+    out.pixels.foreach_set(px)
+    out.filepath_raw = path
+    out.file_format = 'JPEG'
+    try:
+        out.save(quality=q)
+    except TypeError:
+        scene.render.image_settings.quality = q
+        out.save()
+    bpy.data.images.remove(out)
+    bpy.data.images.remove(im)
+    j = bpy.data.images.load(path)
+    j.name = name
+    return j
+
+
+PH = r'C:\Users\lilli\Projects\turkey-work\polyhaven'   # CC0 photo textures already on disk (Poly Haven)
+
+
+def photo(name, src, size=512, fn=None, noncolor=False, q=82):
+    """A Poly Haven photo map, resized to size px, optionally recoloured (fn works on sRGB-stored floats)."""
+    if not os.path.exists(src):
+        say('photo texture missing:', src)
+        return None
+    im = bpy.data.images.load(src)
+    im.scale(size, size)
+    px = np.empty(size * size * 4, np.float32)
+    im.pixels.foreach_get(px)
+    px = px.reshape(size, size, 4)
+    if fn is not None:
+        px[..., :3] = np.clip(fn(px[..., :3]), 0, 1)
+    out = bpy.data.images.new(name, size, size, alpha=False)
+    out.pixels.foreach_set(px.ravel())
+    bpy.data.images.remove(im)
+    j = as_jpeg(out, q, name)
+    if noncolor:
+        j.colorspace_settings.name = 'Non-Color'
+    return j
+
+
+def hay_colour(rgb, flakes=True):
+    """Grey thatch photo -> dry straw: keep its strand pattern, remap to straw colours (creases darker and browner)."""
+    L = rgb @ np.array([0.3, 0.59, 0.11], np.float32)
+    l = (L - L.mean()) / (L.std() + 1e-6)
+    t = np.clip(0.56 + 0.21 * l, 0, 1)[..., None]
+    dark = np.array([0.40, 0.30, 0.15], np.float32)
+    light = np.array([0.94, 0.85, 0.59], np.float32)
+    c = dark * (1 - t) ** 1.2 + light * (1 - (1 - t) ** 1.2)
+    c = c + (rgb - L[..., None]) * 0.5
+    if not flakes:
+        return c
+    # flakes: a baler packs hay in slices about 11 cm thick; 8 per tile along u, each slice a touch domed, thin dark seams
+    h, w = rgb.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    u = xx / w * 8 + 0.022 * np.sin(yy / h * 2 * np.pi * 2) + 0.015 * np.sin(yy / h * 2 * np.pi * 7 + 1.0)
+    f = u - np.floor(u)
+    d = np.minimum(f, 1 - f)                        # 0 at a seam, 0.5 mid-slice
+    seam = np.exp(-(d / 0.022) ** 2)
+    dome = 0.93 + 0.09 * np.sin(np.clip(f, 0, 1) * np.pi)
+    return c * (dome * (1 - 0.38 * seam))[..., None]
+
+
+def soften_normal(k):
+    def f(rgb):
+        flat = np.array([0.5, 0.5, 1.0], np.float32)
+        return flat + (rgb - flat) * k
+    return f
+
+
+def tex_endgrain(name, size=256, seed=4):
+    """Sawn log end: pale sapwood, darker heartwood, growth rings, a few radial checks, thin bark rim at the edge."""
+    rng = np.random.default_rng(seed)
+    y, x = (np.mgrid[0:size, 0:size].astype(np.float32) + 0.5) / size * 2 - 1
+    a = np.arctan2(y, x)
+    r = np.sqrt(x * x + y * y)
+    rr = r * (1 + 0.035 * np.sin(a * 3 + 1.0) + 0.02 * np.sin(a * 5 + 2.0)) + 0.03 * np.sin(a * 2) * r
+    ph = (rr ** 0.8) * 2 * np.pi * 17 + 0.5 * np.sin(a * 6 + rr * 9) + 0.8 * np.sin(rr * 23 + 1.3)
+    ring = np.clip((np.sin(ph) - 0.45) * 3.0, 0, 1) * (0.6 + 0.4 * np.sin(rr * 37 + 0.5) ** 2)
+    fine = 0.5 + 0.5 * np.sin(ph * 4.1 + np.sin(a * 23) * 0.3)
+    sap = np.array([0.80, 0.69, 0.52], np.float32)
+    heart = np.array([0.62, 0.46, 0.30], np.float32)
+    late = np.array([0.46, 0.33, 0.21], np.float32)
+    hm = np.clip((0.62 - rr) / 0.12, 0, 1)[..., None]
+    c = sap * (1 - hm) + heart * hm
+    c = c * (0.93 + 0.07 * fine[..., None])
+    c = c * (1 - ring[..., None] * 0.55) + late * ring[..., None] * 0.55
+    for k in range(3):                                         # drying checks: short cracks from the bark inward
+        a0 = rng.uniform(-np.pi, np.pi)
+        r0 = rng.uniform(0.45, 0.7) if k else 0.1
+        da = np.abs((a - a0 + 0.012 * np.sin(rr * 40) + np.pi) % (2 * np.pi) - np.pi)
+        w = 0.012 * np.clip((rr - r0) / (0.9 - r0), 0, 1)
+        m = ((da * np.maximum(rr, 0.05)) < w) & (rr > r0) & (rr < 0.9)
+        c = np.where(m[..., None], c * 0.35, c)
+    c = np.where((rr < 0.025)[..., None], np.array([0.30, 0.20, 0.12], np.float32), c)            # pith
+    c = c * (0.94 + 0.06 * rng.random((size, size, 1)).astype(np.float32))                        # saw-cut fuzz
+    c = c * (0.9 + 0.1 * np.sin(a * 2 + 0.7) * np.clip(rr, 0, 1))[..., None]                       # weathered on one side
+    cam = np.clip((rr - 0.86) / 0.04, 0, 1)[..., None]                                             # cambium + bark rim
+    c = c * (1 - cam) + np.array([0.50, 0.36, 0.22], np.float32) * cam
+    brk = np.clip((rr - 0.92) / 0.03, 0, 1)[..., None]
+    c = c * (1 - brk) + np.array([0.17, 0.12, 0.085], np.float32) * brk
+    out = np.ones((size, size, 4), np.float32)
+    out[..., :3] = c
+    return save_png(name, out)
+
+
+TX_WOOD = as_jpeg(tex_grain('tt_wood', 512, (0.22, 0.17, 0.12), (0.54, 0.46, 0.35), seed=3), 80)
+TX_STRAW = photo('tt_hay', os.path.join(PH, 'thatch_roof_angled', 'thatch_roof_angled_diff_1k.jpg'), 512, hay_colour, q=80)
+TX_STRAW_END = photo('tt_hay_end', os.path.join(PH, 'thatch_roof_angled', 'thatch_roof_angled_diff_1k.jpg'), 256,
+                     lambda c: hay_colour(c, False) * 0.97, q=80) or TX_STRAW
+if TX_STRAW is None:
+    TX_STRAW = tex_grain('tt_straw', 256, (0.40, 0.33, 0.18), (0.86, 0.78, 0.55), streak=2.2, knots=False, seed=5)
 TX_NET = tex_net('tt_net')
-TX_BARK = tex_grain('tt_bark', 256, (0.06, 0.045, 0.032), (0.38, 0.31, 0.23), streak=1.7, knots=False, seed=9)
+TX_BARK = photo('tt_bark', os.path.join(PH, 'bark_brown_02', 'bark_brown_02_diff_1k.jpg'), 512, q=80)
+TX_BARK_N = photo('tt_bark_n', os.path.join(PH, 'bark_brown_02', 'bark_brown_02_nor_gl_1k.jpg'), 512, noncolor=True, q=85)
+if TX_BARK is None:
+    TX_BARK = tex_grain('tt_bark', 256, (0.06, 0.045, 0.032), (0.38, 0.31, 0.23), streak=1.7, knots=False, seed=9)
+TX_END = as_jpeg(tex_endgrain('tt_logend'), 85)
 TX_FEATHER = tex_feather('tt_feather')
 
 M = dict(
-    paint=mat('paint', (0.34, 0.035, 0.03), rough=0.30, coat=0.5),
-    glass=mat('glass', (0.012, 0.014, 0.016), rough=0.08, spec=0.6),
-    chrome=mat('chrome', (0.80, 0.80, 0.80), rough=0.16, metal=1.0),
+    paint=mat('paint', (0.34, 0.035, 0.03), rough=0.40, coat=0.22),
+    glass=mat('glass', (0.045, 0.052, 0.058), rough=0.04, spec=0.7),
+    chrome=mat('chrome', (0.62, 0.62, 0.61), rough=0.26, metal=1.0),
     steel=mat('steel', (0.42, 0.41, 0.40), rough=0.45, metal=0.85),
     trim=mat('trim', (0.035, 0.035, 0.035), rough=0.55),
     rubber=mat('rubber', (0.028, 0.027, 0.026), rough=0.72),
@@ -249,13 +378,17 @@ M = dict(
     taillamp=mat('taillamp', (0.5, 0.02, 0.01), rough=0.15, emit=(1.0, 0.06, 0.03), es=4.0),
     amber=mat('amber', (0.9, 0.42, 0.05), rough=0.15, emit=(1.0, 0.45, 0.05), es=0.6),
     wood=mat('wood', (1, 1, 1), rough=0.55, tex=TX_WOOD),
-    straw=mat('straw', (1, 1, 1), rough=0.85, tex=TX_STRAW),
-    twine=mat('twine', (0.55, 0.28, 0.07), rough=0.7),
-    grain=mat('grain', (0.82, 0.52, 0.10), rough=0.8),
+    straw=mat('straw', (1, 1, 1), rough=0.9, tex=TX_STRAW, sheen=0.08),
+    straw_end=mat('straw_end', (1, 1, 1), rough=0.9, tex=TX_STRAW_END, sheen=0.08),
+    straw_loose=mat('straw_loose', (1, 1, 1), rough=0.9, tex=TX_STRAW, double=True),
+    twine=mat('twine', (0.40, 0.30, 0.17), rough=0.75),
+    grain=mat('grain', (0.62, 0.36, 0.07), rough=0.75),
     fur=mat('fur', (1, 1, 1), rough=0.78, sheen=0.6),
     eye=mat('eye', (0.02, 0.012, 0.008), rough=0.05, spec=0.8),
-    bark=mat('bark', (1, 1, 1), rough=0.6, tex=TX_BARK),
-    logend=mat('logend', (1, 1, 1), rough=0.7),
+    bark=mat('bark', (1, 1, 1), rough=0.62, tex=TX_BARK, nrm=TX_BARK_N, nrm_s=1.4),
+    bark_wet=mat('bark_wet', (1, 1, 1), rough=0.22, tex=TX_BARK, nrm=TX_BARK_N, nrm_s=1.0, spec=0.7),
+    logend=mat('logend', (1, 1, 1), rough=0.75, tex=TX_END),
+    nose=mat('nose', (0.02, 0.018, 0.016), rough=0.25, spec=0.6),
     pumpkin=mat('pumpkin', (1, 1, 1), rough=0.42, coat=0.2),
     netting=mat('netting', (1, 1, 1), rough=0.8, tex=TX_NET, alpha=True, double=True),
     frame=mat('net_frame', (0.70, 0.71, 0.72), rough=0.35, metal=1.0),
@@ -585,14 +718,167 @@ def wheel_parts(center, R, Ri, W, side, segs=24, kind='road', rim_m=None, dish=0
     return tire(center, R, Ri, W, side, segs, kind) + rim(center, Ri, W, side, segs, rim_m or M['wheel'], dish, hub, nuts)
 
 
-def band(c, s, m, rz=0.0):
-    """A box with its two +-x faces removed: a strap (twine) around something. 8 triangles."""
+def band(c, s, m, rz=0.0, axis='x'):
+    """A box with its two open faces removed: a strap (twine) looped around the given axis. 8 triangles."""
     sx, sy, sz = [v / 2 for v in s]
     verts = [(dx * sx, dy * sy, dz * sz) for dx in (-1, 1) for dy in (-1, 1) for dz in (-1, 1)]
-    faces = [(0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
+    if axis == 'x':
+        faces = [(0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
+    else:
+        faces = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 2, 6, 4), (1, 5, 7, 3)]
     o = make_obj('band', verts, faces, m)
     o.data.transform(Matrix.Translation(Vector(c)) @ Matrix.Rotation(rz, 4, 'Z'))
     return o
+
+
+def bale(c, s, rz, rx, ry, rng):
+    """One small square bale: soft rounded edges, slightly lumpy, photo straw mapped on every side."""
+    b = box((0, 0, 0), s, M['straw'], bev=0.05, seg=2)
+    b.data.materials.append(M['straw_end'])
+    me = b.data
+    n = len(me.vertices)
+    co = np.empty(n * 3, np.float32)
+    me.vertices.foreach_get('co', co)
+    co = co.reshape(-1, 3)
+    half = np.array(s, np.float32) / 2
+    seed = rng.uniform(0, 50)
+    lump = noise3(co * 3.0 + seed, 1.0, seed) * 0.5 + noise3(co * 7.0, 1.0, seed + 3) * 0.25
+    co += (co / half) * (0.007 * lump)[:, None]
+    co[:, 2] += 0.006 * np.abs(co[:, 1] / half[1]) * (co[:, 2] > 0)    # cut sides sit a touch proud: tops crown
+    me.vertices.foreach_set('co', co.ravel())
+    me.update()
+    # UVs in the bale's own frame: texture u always runs along the bale's length, so the flake seams baked into the
+    # hay texture (8 per tile) cross the top and the sides the way a baler packs them; the cut ends get one flake face
+    uv = me.uv_layers[0] if me.uv_layers else me.uv_layers.new(name='UVMap')
+    u0, v0 = rng.randrange(8) / 8, rng.random()
+    tile = s[0] * 1.02
+    for p in me.polygons:
+        nrm = p.normal
+        ax = max(range(3), key=lambda i: abs(nrm[i]))
+        for li in p.loop_indices:
+            v = me.vertices[me.loops[li].vertex_index].co
+            if ax == 0:
+                uu, vv = v.y * 1.2, v.z * 1.2
+                p.material_index = 1
+            elif ax == 1:
+                uu, vv = v.x / tile, v.z * 1.2
+            else:
+                uu, vv = v.x / tile, v.y * 1.2
+            uv.data[li].uv = (uu + u0, vv + v0)
+    me.transform(Matrix.Translation(Vector(c)) @ Matrix.Rotation(rz, 4, 'Z') @ Matrix.Rotation(rx, 4, 'X')
+                 @ Matrix.Rotation(ry, 4, 'Y'))
+    return b
+
+
+def twine_loop(c, bl, bh, rz, w=0.011, out=0.004, ch=0.03):
+    """A twine loop round the bale's length and height, chamfered at the corners so it hugs the rounded edges."""
+    hx, hz = bl / 2 + out, bh / 2 + out
+    prof = [(hx, hz - ch), (hx - ch, hz), (-hx + ch, hz), (-hx, hz - ch), (-hx, -hz + ch), (-hx + ch, -hz), (hx - ch, -hz),
+            (hx, -hz + ch)]
+    verts = [(x, yy, z) for (x, z) in prof for yy in (-w / 2, w / 2)]
+    faces = []
+    for i in range(8):
+        j = (i + 1) % 8
+        faces.append((2 * i, 2 * j, 2 * j + 1, 2 * i + 1))
+    o = make_obj('twine', verts, faces, M['twine'])
+    orient(o, lambda q: Vector((q.x, 0, q.z)))
+    o.data.transform(Matrix.Translation(Vector(c)) @ Matrix.Rotation(rz, 4, 'Z'))
+    return o
+
+
+def hay_wisps(tops, rng, deck=None):
+    """Loose strands of hay: thin double-sided cards on the bale tops, some drooping over an edge, some on the deck."""
+    verts, faces, uvs = [], [], []
+
+    def strand(p0, a, ln, w, droop, lift=0.006):
+        d = Vector((math.cos(a), math.sin(a), 0))
+        side = Vector((-d.y, d.x, 0)) * (w / 2)
+        base = len(verts)
+        u0 = (rng.randrange(8) + 0.35) / 8
+        for k in range(4):
+            f = k / 3
+            p = Vector(p0) + d * (ln * f)
+            p.z += lift + 0.012 * math.sin(f * math.pi) - droop * f * f
+            tw = side * (1 - 0.5 * f)
+            verts.append(p - tw)
+            verts.append(p + tw)
+            uvs.append((u0, f * ln * 1.15))
+            uvs.append((u0 + w * 1.15, f * ln * 1.15))
+        for k in range(3):
+            a0 = base + 2 * k
+            faces.append((a0, a0 + 1, a0 + 3, a0 + 2))
+    for (cx, cy, cz, rz, bl, bw) in tops:
+        for _ in range(rng.choice((1, 2, 2, 3))):
+            if rng.random() < 0.35:             # hangs off the long side
+                sgn = rng.choice((-1, 1))
+                p0 = (cx + rng.uniform(-0.3, 0.3), cy + sgn * (bw / 2 - 0.06), cz)
+                strand(p0, math.pi / 2 * sgn + rz + rng.uniform(-0.4, 0.4), rng.uniform(0.22, 0.34),
+                       rng.uniform(0.014, 0.024), rng.uniform(0.10, 0.16))
+            else:
+                p0 = (cx + rng.uniform(-0.35, 0.35), cy + rng.uniform(-0.15, 0.15), cz)
+                strand(p0, rng.uniform(0, 2 * math.pi), rng.uniform(0.15, 0.28), rng.uniform(0.012, 0.022), 0.0)
+    if deck:
+        z, x0, x1, y0, y1 = deck
+        for _ in range(8):
+            sgn = rng.choice((-1, 1))
+            x = x1 - 0.12 if sgn > 0 else x0 + 0.12
+            strand((x, rng.uniform(y0, y1), z), (0 if sgn > 0 else math.pi) + rng.uniform(-0.5, 0.5),
+                   rng.uniform(0.2, 0.3), rng.uniform(0.016, 0.026), rng.uniform(0.12, 0.2), lift=0.004)
+    o = make_obj('wisps', verts, faces, M['straw_loose'])
+    uvl = o.data.uv_layers.new(name='UVMap')
+    for p in o.data.polygons:
+        for li in p.loop_indices:
+            uvl.data[li].uv = uvs[o.data.loops[li].vertex_index]
+    smooth(o, 80)
+    return [o]
+
+
+def orient(o, fn):
+    """Flip faces so that fn(face centre) . normal > 0 (open shells cannot use recalc_face_normals)."""
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    for f in bm.faces:
+        f.normal_update()
+        if f.normal.dot(fn(f.calc_center_median())) < 0:
+            f.normal_flip()
+    bm.to_mesh(o.data)
+    bm.free()
+    o.data.update()
+    return o
+
+
+def arch_well(x_out, x_in, yc, zc, r, lip_x, m_liner, m_lip, a0=0.1, a1=math.pi - 0.1, n=12, lip=0.035):
+    """A dark wheel-well liner behind a wheel arch cut-out, its inner wall, and a rubber lip round the arch edge."""
+    out = []
+    v, f = [], []
+    for i in range(n + 1):
+        a = a0 + (a1 - a0) * i / n
+        for x in (x_out, x_in):
+            v.append((x, yc + r * math.cos(a), zc + r * math.sin(a)))
+    for i in range(n):
+        f.append((2 * i, 2 * i + 1, 2 * i + 3, 2 * i + 2))
+    li = make_obj('liner', v, f, m_liner)
+    orient(li, lambda c: Vector((0, yc - c.y, zc - c.z)))
+    smooth(li, 80)
+    out.append(li)
+    v = [(x_in, yc, zc)] + [(x_in, yc + r * math.cos(a0 + (a1 - a0) * i / n), zc + r * math.sin(a0 + (a1 - a0) * i / n))
+                            for i in range(n + 1)]
+    f = [(0, i + 1, i + 2) for i in range(n)]
+    wall = make_obj('wall', v, f, m_liner)
+    sx = 1 if x_out > x_in else -1
+    orient(wall, lambda c: Vector((sx, 0, 0)))
+    out.append(wall)
+    v, f = [], []
+    for i in range(n + 1):
+        a = a0 + (a1 - a0) * i / n
+        for rr in (r - 0.004, r + lip):
+            v.append((lip_x, yc + rr * math.cos(a), zc + rr * math.sin(a)))
+    for i in range(n):
+        f.append((2 * i, 2 * i + 1, 2 * i + 3, 2 * i + 2))
+    lp = make_obj('lip', v, f, m_lip)
+    orient(lp, lambda c: Vector((sx, 0, 0)))
+    out.append(lp)
+    return out
 
 
 # ====================================================================== cab helpers
@@ -605,7 +891,7 @@ def greenhouse(P, y_pts, zb, hwb, hwt, glass_rings_n=3):
 def build_pickup():
     root = emp('pickup', None, (0, 0, 0))
     P = []
-    R, Ri, W = 0.385, 0.20, 0.26
+    R, Ri, W = 0.40, 0.205, 0.265
     AF, AR, TX = -1.75, 1.55, 0.795
     arch_r, arch_c = 0.475, 0.40
     arches = [(AF, arch_c, arch_r)]
@@ -642,6 +928,9 @@ def build_pickup():
         P.append(loft([ring(y, arch_z(y, 0.50, [(AR, arch_c, arch_r)]), 1.12, 0.032, 0.032, rb=0.008, rt=0.028, n=1,
                             xc=s * 0.888) for y in ysb], M['paint']))
         P.append(box((s * 0.74, AR, 0.86), (0.25, 0.92, 0.28), M['trim'], bev=0.08, seg=2))       # wheel well hump
+        # dark wheel wells (no seeing through the arches) and a black rubber lip that draws each arch
+        P += arch_well(s * 0.915, s * 0.58, AF, arch_c, arch_r - 0.004, s * 0.926, M['rubber'], M['trim'])
+        P += arch_well(s * 0.90, s * 0.62, AR, arch_c, arch_r - 0.004, s * 0.908, M['rubber'], M['trim'])
         P.append(box((s * 0.889, 2.695, 0.93), (0.055, 0.02, 0.28), M['taillamp'], bev=0.006))   # tail lamp
         P.append(box((s * 0.72, -2.708, 0.86), (0.27, 0.02, 0.15), M['headlamp'], bev=0.006))    # headlamp
         P.append(box((s * 0.72, -2.698, 0.86), (0.31, 0.02, 0.19), M['chrome'], bev=0.006))
@@ -946,23 +1235,30 @@ def build_tractor_wagon():
     P.append(revolve([(0.05 + 0.012 * math.cos(a), 0.012 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 5, endpoint=False)],
                      (0, HY, 0.47), (0, 0, 1), 12, M['steel'], closed=True))
     # bales
+    # small square bales (0.90 x 0.46 x 0.36 m), stacked by hand: a little crooked, two twine loops each, loose wisps
+    rng = random.Random(23)
     BL, BW, BH = 0.90, 0.46, 0.36
-    layers = [(2, 10, 0.0), (2, 9, 0.23), (2, 5, 0.23 + 0.47 * 2)]
-    for li, (nx, ny, y_off) in enumerate(layers):
+    layers = [(2, 10, 0.0, None), (2, 9, 0.23, None), (2, 5, 0.23 + 0.47 * 2, (1, 3))]
+    tops = []
+    for li, (nx, ny, y_off, gap) in enumerate(layers):
         for ix in range(nx):
             for iy in range(ny):
-                cx = (ix - 0.5) * (BL + 0.02) + random.uniform(-0.02, 0.02)
-                cy = -0.10 + 0.245 + y_off + iy * 0.472 + random.uniform(-0.015, 0.015)
-                cz = 1.02 + BH / 2 + li * BH + random.uniform(-0.003, 0.004)
-                rz = random.uniform(-0.05, 0.05)
-                bl, bw, bh = BL * random.uniform(0.95, 1.03), BW * random.uniform(0.96, 1.02), BH * random.uniform(0.95, 1.02)
-                b = box((cx, cy, cz - (BH - bh) / 2), (bl, bw, bh), M['straw'], bev=0.06, seg=1, rz=rz,
-                        rx=random.uniform(-0.025, 0.025), ry=random.uniform(-0.02, 0.02))
-                cube_uv(b, 1.1, (random.random(), random.random()))
+                if gap and (ix, iy) == gap:
+                    continue                          # one bale already taken off the top
+                cx = (ix - 0.5) * (BL + 0.025) + rng.uniform(-0.035, 0.035)
+                cy = -0.10 + 0.245 + y_off + iy * 0.472 + rng.uniform(-0.025, 0.025)
+                rz = rng.uniform(-0.07, 0.07)
+                if li == 2 and iy == 4 and ix == 0:
+                    rz += 0.22; cx += 0.04            # the last one thrown on crooked
+                bl, bw, bh = BL * rng.uniform(0.94, 1.04), BW * rng.uniform(0.95, 1.03), BH * rng.uniform(0.93, 1.03)
+                cz = 1.02 + li * BH + bh / 2 + rng.uniform(-0.004, 0.006)
+                b = bale((cx, cy, cz), (bl, bw, bh), rz, rng.uniform(-0.03, 0.03), rng.uniform(-0.025, 0.025), rng)
                 P.append(b)
-                for t in (-0.22, 0.22):
-                    P.append(band((cx + t * math.cos(rz), cy + t * math.sin(rz), cz - (BH - bh) / 2), (0.012, bw + 0.004, bh + 0.004),
-                                  M['twine'], rz=rz))
+                for t in (-0.115, 0.115):
+                    P.append(twine_loop((cx - t * math.sin(rz), cy + t * math.cos(rz), cz), bl, bh, rz))
+                if li == 2 or (li == 1 and iy in (0, 8)):
+                    tops.append((cx, cy, cz + bh / 2, rz, bl, bw))
+    P += hay_wisps(tops, rng, deck=(1.025, -1.15, 1.15, 0.0, 4.7))
     node(wagon, 'body', P, (0, HY, 0))
     for nm, x, y, s in (('wheel_fl', 0.85, WF, 1), ('wheel_fr', -0.85, WF, -1), ('wheel_rl', 0.85, WR, 1), ('wheel_rr', -0.85, WR, -1)):
         node(wagon, nm, wheel_parts((x, y, 0.40), 0.40, 0.22, 0.22, s, segs=16, kind='rib', dish=0.2, hub=0.05, nuts=False), (x, y, 0.40))
@@ -999,37 +1295,80 @@ def skin_part(name, pts, radii, levels=2):
     return o
 
 
+def fur(o, amp, seed, mask=None, droop=0.0, k=60.0):
+    """Push a skin mesh out along its normals in small clumps (a coat, not a rubber hide). mask(co, nrm) -> 0..1 extra."""
+    me = o.data
+    n = len(me.vertices)
+    co = np.empty(n * 3, np.float32)
+    me.vertices.foreach_get('co', co)
+    co = co.reshape(-1, 3)
+    nr = np.empty(n * 3, np.float32)
+    me.vertices.foreach_get('normal', nr)
+    nr = nr.reshape(-1, 3)
+    clump = np.clip(0.5 + 0.5 * noise3(co, k, seed), 0, 1)
+    big = np.clip(0.5 + 0.5 * noise3(co, k * 0.3, seed + 2.0), 0, 1)
+    a = amp * (0.3 + 0.7 * clump * (0.5 + 0.5 * big))
+    if mask is not None:
+        a = a * (1 + mask(co, nr))
+    d = nr * a[:, None]
+    d[:, 2] -= droop * a                          # long hair hangs
+    co += d
+    me.vertices.foreach_set('co', co.ravel())
+    me.update()
+    return o
+
+
 def build_dog():
+    """A farm collie (sable and white rough collie / shepherd type): deep chest, tuck-up, long wedge muzzle, semi-erect
+    ears, neck ruff, feathered legs and a low bushy tail. Pivots unchanged so the game's rig keeps working."""
     root = emp('dog', None, (0, 0, 0))
-    body = skin_part('d_body', [(0, 0.25, 0.47), (0, 0.17, 0.47), (0, 0.05, 0.465), (0, -0.09, 0.44), (0, -0.20, 0.43),
-                                (0, -0.28, 0.50), (0, -0.33, 0.565), (0, -0.355, 0.60)],
-                     [(0.075, 0.08), (0.10, 0.11), (0.085, 0.085), (0.115, 0.15), (0.11, 0.155), (0.095, 0.105), (0.072, 0.075),
-                      (0.06, 0.06)])
-    head = [skin_part('d_head', [(0, -0.355, 0.60), (0, -0.365, 0.605), (0, -0.395, 0.625), (0, -0.445, 0.607), (0, -0.495, 0.59),
-                                 (0, -0.535, 0.583)],
-                      [(0.062, 0.062), (0.066, 0.064), (0.072, 0.068), (0.054, 0.05), (0.04, 0.035), (0.024, 0.021)])]
+    ss = lambda a, b, v: np.clip((v - a) / (b - a), 0, 1)
+    body = skin_part('d_body', [(0, 0.27, 0.485), (0, 0.20, 0.48), (0, 0.10, 0.475), (0, -0.02, 0.455), (0, -0.14, 0.44),
+                                (0, -0.24, 0.45), (0, -0.31, 0.51), (0, -0.345, 0.575), (0, -0.365, 0.625), (0, -0.378, 0.652)],
+                     [(0.08, 0.08), (0.118, 0.11), (0.098, 0.09), (0.112, 0.135), (0.122, 0.158), (0.118, 0.155),
+                      (0.095, 0.12), (0.08, 0.095), (0.068, 0.075), (0.058, 0.06)])
+    # coat: ruff round the neck and chest, fringe under the belly, britches on the rump
+    fur(body, 0.012, 1.0, droop=0.5, mask=lambda c, n: 1.6 * ss(-0.18, -0.30, c[:, 1]) + 0.9 * ss(-0.3, -0.8, n[:, 2])
+        + 1.2 * ss(0.14, 0.26, c[:, 1]) * ss(0.5, 0.42, c[:, 2]))
+    head = [skin_part('d_head', [(0, -0.355, 0.60), (0, -0.375, 0.65), (0, -0.40, 0.678), (0, -0.44, 0.684),
+                                 (0, -0.478, 0.668), (0, -0.52, 0.652), (0, -0.562, 0.642)],
+                      [(0.048, 0.05), (0.06, 0.06), (0.062, 0.058), (0.058, 0.052), (0.042, 0.04), (0.031, 0.029),
+                       (0.021, 0.02)])]
+    fur(head[0], 0.006, 3.0, mask=lambda c, n: 2.0 * ss(-0.42, -0.36, c[:, 1]))
+    head.append(skin_part('d_jaw', [(0, -0.45, 0.642), (0, -0.50, 0.628), (0, -0.548, 0.622)],
+                          [(0.034, 0.022), (0.024, 0.014), (0.015, 0.01)], levels=1))
+    head.append(revolve([(0, -0.014), (0.013, -0.01), (0.017, 0), (0.013, 0.008), (0, 0.011)], (0, -0.575, 0.646),
+                        (0, 1, 0), 8, M['nose']))
     for s in (1, -1):
-        head.append(skin_part('d_ear', [(s * 0.040, -0.383, 0.66), (s * 0.052, -0.383, 0.695), (s * 0.056, -0.40, 0.708)],
-                              [(0.028, 0.011), (0.02, 0.008), (0.007, 0.004)], levels=1))
-        head.append(revolve([(0, -0.011), (0.008, -0.008), (0.011, 0), (0.008, 0.008), (0, 0.011)], (s * 0.037, -0.428, 0.638),
-                            (0, 1, 0), 8, M['eye']))
-    tail = skin_part('d_tail', [(0, 0.25, 0.48), (0, 0.31, 0.43), (0, 0.355, 0.35), (0, 0.38, 0.26), (0, 0.39, 0.18), (0, 0.405, 0.14)],
-                     [0.03, 0.038, 0.042, 0.038, 0.028, 0.012], levels=1)
+        # semi-erect ears: up from the back of the skull, the top third tipped forward
+        head.append(skin_part('d_ear', [(s * 0.036, -0.395, 0.715), (s * 0.048, -0.40, 0.76), (s * 0.054, -0.418, 0.785),
+                                        (s * 0.056, -0.44, 0.782)],
+                              [(0.032, 0.011), (0.022, 0.009), (0.012, 0.006), (0.004, 0.003)], levels=1))
+        head.append(revolve([(0, -0.011), (0.008, -0.008), (0.011, 0), (0.008, 0.008), (0, 0.011)], (s * 0.038, -0.468, 0.688),
+                            (0.35 * s, -1, 0), 8, M['eye']))
+    tail = skin_part('d_tail', [(0, 0.26, 0.49), (0, 0.315, 0.445), (0, 0.35, 0.37), (0, 0.365, 0.28), (0, 0.37, 0.20),
+                                (0, 0.385, 0.145), (0, 0.415, 0.125)],
+                     [0.03, 0.04, 0.046, 0.047, 0.043, 0.032, 0.012], levels=1)
+    fur(tail, 0.02, 5.0, droop=0.8, k=45.0, mask=lambda c, n: 1.2 * ss(0.0, 0.6, n[:, 1]))     # feathered underside
     legs = {}
     for s, side in ((1, 'L'), (-1, 'R')):
-        legs['legF' + side] = skin_part('d_lf', [(s * 0.056, -0.20, 0.45), (s * 0.064, -0.175, 0.28), (s * 0.064, -0.19, 0.09),
-                                                 (s * 0.064, -0.212, 0.03), (s * 0.064, -0.238, 0.022)],
-                                        [0.058, 0.034, 0.02, 0.024, 0.019])
-        legs['legR' + side] = skin_part('d_lr', [(s * 0.062, 0.17, 0.46), (s * 0.078, 0.10, 0.29), (s * 0.075, 0.22, 0.14),
-                                                 (s * 0.072, 0.20, 0.03), (s * 0.072, 0.178, 0.022)],
-                                        [0.082, 0.042, 0.022, 0.024, 0.019])
+        lf = skin_part('d_lf', [(s * 0.05, -0.20, 0.45), (s * 0.062, -0.168, 0.31), (s * 0.064, -0.182, 0.17),
+                                (s * 0.062, -0.19, 0.075), (s * 0.062, -0.202, 0.036), (s * 0.062, -0.232, 0.024)],
+                       [0.064, 0.044, 0.03, 0.022, 0.023, 0.027])
+        fur(lf, 0.008, 7.0 + s, droop=0.3, mask=lambda c, n: 1.5 * ss(0.2, 0.8, n[:, 1]) * ss(0.12, 0.25, c[:, 2]))   # feathering
+        legs['legF' + side] = lf
+        lr = skin_part('d_lr', [(s * 0.05, 0.17, 0.46), (s * 0.066, 0.115, 0.32), (s * 0.075, 0.19, 0.205),
+                                (s * 0.072, 0.232, 0.125), (s * 0.07, 0.218, 0.045), (s * 0.07, 0.192, 0.024)],
+                       [0.07, 0.055, 0.037, 0.026, 0.021, 0.027])
+        fur(lr, 0.01, 9.0 + s, droop=0.4, mask=lambda c, n: 1.3 * ss(0.1, 0.7, n[:, 1]) * ss(0.18, 0.32, c[:, 2]))    # britches
+        legs['legR' + side] = lr
     allp = [body, tail] + head + list(legs.values())
     tot = sum(tris(o) for o in allp)
     say('dog raw tris', tot)
-    if tot > 4800:
+    if tot > 5900:
         legl = list(legs.values())
         fixed = tot - sum(tris(o) for o in legl)
-        ratio = max(0.2, (4750 - fixed) / sum(tris(o) for o in legl))
+        ratio = max(0.2, (5850 - fixed) / sum(tris(o) for o in legl))
         say('dog leg decimate ratio', round(ratio, 3))
         for o in legl:
             md = o.modifiers.new('dec', 'DECIMATE')
@@ -1057,70 +1396,92 @@ def noise3(p, k=1.0, seed=0.0):
             + 0.5 * np.sin(x * 5.3 - y * 4.7 + z * 3.9 + seed * 3))
 
 
+LOG_R, LOG_L = 0.30, 4.0
+
+
 def build_log():
+    """A round creek log: 0.3 m radius, 4 m long along Y (three.js z), bark with grooves, two sawn ends with rings,
+    three branch stubs, wet dark bark below the waterline, moss on top. Origin: bottom centre (lowest point z = 0)."""
     rng = random.Random(11)
-    L, R0, NS, NR = 3.70, 0.235, 18, 22
+    L, R0, NS, NR = LOG_L, LOG_R, 30, 16
     verts, faces, uvs = [], [], []
-    ys = np.linspace(-L / 2, L / 2, NR)
-    jag0 = [rng.uniform(0.0, 0.10) for _ in range(NS)]
-    jag1 = [rng.uniform(0.0, 0.16) for _ in range(NS)]
+    ys = [float(v) for v in np.linspace(-L / 2, L / 2, NR)]
+
+    def cut(t, sgn):      # the saw cut is a little slanted, not perfectly square
+        return sgn * (L / 2 + (0.035 * math.cos(t - 0.4) if sgn > 0 else 0.025 * math.cos(t + 1.9)))
 
     def rad(t, y):
-        taper = 1.0 - 0.10 * (y + L / 2) / L
-        r = R0 * taper * (1 + 0.035 * math.sin(t * 7 + y * 1.3) + 0.03 * math.sin(t * 3 - y * 2.1) + 0.02 * math.sin(y * 5)
-                          + 0.012 * math.sin(t * 19 + y * 0.7))
-        return r * (1 + 0.05 * math.exp(-((y - 0.6) ** 2) / 0.02))
+        taper = 1.04 - 0.08 * (y + L / 2) / L
+        groove = abs(math.sin(t * 5 + 0.35 * math.sin(y * 2.3) + y * 0.15)) ** 3
+        r = R0 * taper * (1 + 0.025 * math.sin(t * 2 + y * 0.9) + 0.018 * math.sin(t * 3 - y * 1.7) + 0.012 * math.sin(y * 4.1)
+                          - 0.03 * groove)
+        r *= 1 + 0.045 * math.exp(-((y - 0.55) ** 2) / 0.03) + 0.035 * math.exp(-((y + 1.0) ** 2) / 0.03)   # swells at stubs
+        return r
     for i, y in enumerate(ys):
         for j in range(NS + 1):
             t = 2 * math.pi * j / NS
-            r = rad(t, y)
-            yy = y - jag0[j % NS] if i == 0 else (y + jag1[j % NS] if i == NR - 1 else y)
+            yy = cut(t, -1) if i == 0 else (cut(t, 1) if i == NR - 1 else y)
+            r = rad(t, yy)
             verts.append((r * math.cos(t), yy, R0 + r * math.sin(t)))
-            uvs.append((yy * 0.9, j / NS * 2))
+            uvs.append((j / NS * 2.0, yy / 1.05))           # photo grooves run along the log
     C = NS + 1
     for i in range(NR - 1):
         for j in range(NS):
             faces.append((i * C + j, i * C + j + 1, (i + 1) * C + j + 1, (i + 1) * C + j))
     o = make_obj('log_main', verts, faces, M['bark'])
+    o.data.materials.append(M['bark_wet'])
     uvl = o.data.uv_layers.new(name='UVMap')
     for p in o.data.polygons:
         for li in p.loop_indices:
             uvl.data[li].uv = uvs[o.data.loops[li].vertex_index]
+        if p.center.z < R0 * 0.62:               # floats low in the creek: the lower part is wet and shiny
+            p.material_index = 1
     cleanup(o)
-    smooth(o, 60)
+    smooth(o, 70)
     parts = [o]
-    # broken ends: bark rim, then pale split wood with a splintered centre
-    for i, sgn, jag in ((0, -1, jag0), (NR - 1, 1, jag1)):
-        y = float(ys[i])
-        cv, cf = [], []
+    # sawn ends: a flat disc with growth rings (texture), the bark rim matches the trunk's outline
+    for sgn in (-1, 1):
+        cv, cf, cuv = [], [], []
+        rs = [rad(2 * math.pi * j / NS, cut(2 * math.pi * j / NS, sgn)) for j in range(NS)]
+        rmean = sum(rs) / NS
         for j in range(NS):
             t = 2 * math.pi * j / NS
-            r = rad(t, y)
-            yy = y + sgn * jag[j]
+            yy = cut(t, sgn)
+            r = rs[j]
             cv.append((r * math.cos(t), yy, R0 + r * math.sin(t)))
-        for j in range(NS):
-            t = 2 * math.pi * j / NS
-            r = rad(t, y) * 0.84
-            yy = y + sgn * (jag[j] * 0.7 + 0.01)
-            cv.append((r * math.cos(t), yy, R0 + r * math.sin(t)))
-        cv.append((0.02 * sgn, y + sgn * (max(jag) * 0.8 + 0.03), R0 + 0.01))
+            rr = 0.985 * r / rmean
+            cuv.append((0.5 + 0.5 * rr * math.cos(t) * sgn, 0.5 + 0.5 * rr * math.sin(t)))
+        cv.append((0.0, sum(c[1] for c in cv) / NS, R0))
+        cuv.append((0.5, 0.5))
         for j in range(NS):
             j2 = (j + 1) % NS
-            cf.append((j, j2, NS + j2, NS + j))
-            cf.append((NS + j, NS + j2, 2 * NS))
+            cf.append((j2, j, NS) if sgn > 0 else (j, j2, NS))
         e = make_obj('log_end', cv, cf, M['logend'])
-        cleanup(e)
-        smooth(e, 50)
+        uv = e.data.uv_layers.new(name='UVMap')
+        for p in e.data.polygons:
+            for li in p.loop_indices:
+                uv.data[li].uv = cuv[e.data.loops[li].vertex_index]
+        for p in e.data.polygons:
+            p.use_smooth = False
         parts.append(e)
-    # broken branch stubs
-    for (y, ang, ln, r) in ((-0.9, 0.15, 0.22, 0.055), (0.35, math.pi - 0.25, 0.21, 0.06), (1.25, -0.5, 0.14, 0.045),
-                            (-0.2, math.pi + 0.5, 0.12, 0.04)):
-        d = Vector((math.cos(ang), 0.25, math.sin(ang))).normalized()
-        base = Vector((0, y, R0)) + d * (R0 * 0.75)
-        st = revolve([(0, -0.05), (r, -0.05), (r * 0.85, ln * 0.7), (r * 0.6, ln), (0.0, ln + 0.02)], base, d, 7, M['bark'])
-        cube_uv(st, 0.9)
+    # branch stubs, broken off short; they stick out sideways so the top of the log stays a clear ride
+    for (y, ang, ln, r) in ((-1.0, 0.30, 0.30, 0.075), (0.55, math.pi - 0.38, 0.26, 0.07), (1.45, -0.45, 0.18, 0.055)):
+        d = Vector((math.cos(ang), 0.30, math.sin(ang))).normalized()
+        base = Vector((0, y, R0)) + d * (R0 * 0.70)
+        st = revolve([(0, -0.06), (r * 1.25, -0.06), (r, 0.02), (r * 0.86, ln * 0.6), (r * 0.7, ln), (r * 0.25, ln + 0.025),
+                      (0.0, ln + 0.03)], base, d, 8, M['bark'], smooth_deg=60)
+        a_, b1, b2 = basis(d)
+        uvs_ = st.data.uv_layers.new(name='UVMap')
+        for p in st.data.polygons:
+            for li in p.loop_indices:
+                v = st.data.vertices[st.data.loops[li].vertex_index].co - base
+                uvs_.data[li].uv = (math.atan2(v.dot(b2), v.dot(b1)) / math.pi * 0.35, v.dot(d) / 1.05)
         parts.append(st)
-    return join(parts, 'log')
+    lg = join(parts, 'log')
+    zmin = min(v.co.z for v in lg.data.vertices)
+    lg.data.transform(Matrix.Translation((0, 0, -zmin)))
+    say('log height', round(max(v.co.z for v in lg.data.vertices), 4), 'zmin was', round(zmin, 4))
+    return lg
 
 
 def build_pumpkin():
@@ -1324,6 +1685,13 @@ def tint_object(o, rootname, root):
     p = model_coords(o, root)
     z = p[:, 2]
     occl = 0.16 + 0.84 * ao ** 0.85
+    if rootname == 'dog':        # no dark crease ring where the head and leg meshes meet the body
+        part_ = o.name.split('|')[-1]
+        if part_ in ('head', 'body'):
+            nk = np.clip(1 - np.abs(p[:, 1] + 0.37) / 0.05, 0, 1) * np.clip((p[:, 2] - 0.55) / 0.05, 0, 1)
+            occl = np.maximum(occl, 0.85 * nk + occl * (1 - nk))
+        if part_.startswith('leg'):
+            occl = np.maximum(occl, 0.8 * np.clip((p[:, 2] - 0.36) / 0.06, 0, 1))
     rgb = np.ones((n, 3), np.float32) * occl[:, None]
     nz = noise3(p, 2.3, 1.0)
     nz2 = noise3(p, 6.1, 4.0)
@@ -1334,54 +1702,108 @@ def tint_object(o, rootname, root):
         mud = np.clip((h - z) / (h * 0.75), 0, 1) ** 1.3 * np.clip(0.55 + 0.45 * nz + 0.2 * nz2, 0, 1)
         if '|wheel' in o.name:
             mud = np.clip(0.35 + 0.5 * mud, 0, 1)
+        # thrown up by the tyres: heavy round the wheel arches, fading up the panels
+        arch_y = {'pickup': ((-1.75, 0.40), (1.55, 0.40)), 'grain_truck': ((-3.10, 0.50), (2.15, 0.50)),
+                  'tractor_wagon': ((-4.22, 0.36), (-2.10, 0.78))}[rootname]
+        y = p[:, 1]
+        for ay, az in arch_y:
+            dd = np.sqrt((y - ay) ** 2 + (z - az) ** 2)
+            ring_m = np.clip(1 - np.abs(dd - (az + 0.10)) / 0.22, 0, 1) * np.clip(0.45 + 0.55 * nz2, 0, 1)
+            mud = np.maximum(mud, ring_m * 0.75)
         mud = np.where(clean, mud * 0.25, mud)
-        mud_c = np.array([0.62, 0.50, 0.38], np.float32)
+        mud = np.where(mats == 'wheel', mud * 0.45, mud)          # rims stay readable as rims
+        mud_c = np.array([0.58, 0.47, 0.35], np.float32)
         rgb = rgb * (1 - mud[:, None] * (1 - mud_c[None, :]))
-        st = mats == 'straw'
+        # road dust and age over the whole paint: knocks the showroom shine and saturation down
+        paintm = np.isin(mats, ['paint', 'chrome', 'trim', 'steel', 'rim_paint']).astype(np.float32)
+        dust = np.clip(0.35 + 0.35 * nz + 0.25 * nz2, 0, 1) * paintm
+        dust_c = np.array([0.90, 0.87, 0.82], np.float32)
+        rgb = rgb * (1 - dust[:, None] * (1 - dust_c[None, :]))
+        if rootname == 'pickup':           # an old farm pickup: a little rust starting at the arch lips and rockers
+            rr = np.clip((nz * 0.6 + nz2 * 0.6 - 0.55) * 3, 0, 1) * (mats == 'paint') * np.clip((0.95 - z) / 0.4, 0, 1)
+            rgb = rgb * (1 - rr[:, None] * (1 - np.array([0.55, 0.30, 0.16])[None, :]))
+        st = np.isin(mats, ['straw', 'straw_loose', 'straw_end'])
         if st.any():
-            var = 0.72 + 0.4 * (0.5 + 0.5 * noise3(p, 1.9, 9.0))
-            grn = np.clip(noise3(p, 1.3, 3.0), 0, 1) * 0.5
-            sc = var[:, None] * (np.ones(3)[None, :] * (1 - grn[:, None]) + np.array([0.78, 0.92, 0.62])[None, :] * grn[:, None])
-            rgb = np.where(st[:, None], rgb * sc, rgb)
+            # bale to bale: some brighter, some older and greyer, a few with a faint green cast
+            var = 0.84 + 0.22 * (0.5 + 0.5 * noise3(p, 1.9, 9.0))
+            grey = np.clip(noise3(p, 1.1, 5.0) - 0.3, 0, 1) * 0.35
+            grn = np.clip(noise3(p, 1.3, 3.0) - 0.3, 0, 1) * 0.35
+            base = np.ones((n, 3))
+            base = base * (1 - grey[:, None]) + np.array([0.86, 0.86, 0.90])[None, :] * grey[:, None]
+            base = base * np.array([1.0, 0.96, 0.84])[None, :]        # warm the straw toward sRGB ~170,150,95
+            base = base * (1 - grn[:, None]) + np.array([0.86, 0.95, 0.76])[None, :] * grn[:, None]
+            sc = var[:, None] * base
+            # the AO term alone makes deep creases near black: lift it a little on straw
+            rgb = np.where(st[:, None], np.clip(rgb * 1.08, 0, 1) * sc, rgb)
+            lo = mats == 'straw_loose'
+            rgb = np.where(lo[:, None], np.maximum(rgb, 0.8 * sc), rgb)
         if rootname == 'grain_truck':
             rust = np.clip((nz * 0.6 + nz2 * 0.5 - 0.45) * 3, 0, 1) * np.where(mats == 'paint', 1, np.where(mats == 'steel', 0.25, 0.0))
             rust_c = np.array([0.55, 0.32, 0.18], np.float32)
             rgb = rgb * (1 - rust[:, None] * (1 - rust_c[None, :]))
+            gm = mats == 'grain'          # shelled corn: golden with darker hollows and a few chaff-pale streaks
+            if gm.any():
+                gv = 0.8 + 0.25 * np.clip(0.5 + 0.5 * noise3(p, 9.0, 6.0), 0, 1) + 0.12 * np.clip(noise3(p, 3.0, 1.5), 0, 1)
+                rgb = np.where(gm[:, None], rgb * gv[:, None] * np.array([1.0, 0.95, 0.85])[None, :], rgb)
     elif rootname == 'dog':
-        sable = np.array([0.20, 0.095, 0.035]); tan = np.array([0.42, 0.24, 0.09]); white = np.array([0.78, 0.75, 0.68])
+        # sable and white: golden-brown coat with a darker black-tipped saddle, full white collar and chest,
+        # white legs and feet, white blaze, muzzle tip and tail tip. Hair clumps vary the shade.
+        gold = np.array([0.25, 0.115, 0.035]); dark = np.array([0.05, 0.03, 0.016]); white = np.array([0.66, 0.63, 0.56])
+        cream = np.array([0.50, 0.36, 0.19])
         x, y = p[:, 0], p[:, 1]
         part = o.name.split('|')[-1]
-        top = np.clip((z - 0.38) / 0.12, 0, 1)
-        c = tan[None, :] * (1 - top[:, None]) + sable[None, :] * top[:, None]
-        c = c * (0.85 + 0.15 * nz2[:, None])
-        wmask = np.zeros(n, bool)
         ss = lambda a, b, v: np.clip((v - a) / (b - a), 0, 1)
+        hair = np.clip(0.5 + 0.5 * noise3(p, 60.0, 2.0), 0, 1)
+        lower = ss(0.42, 0.30, z)                                     # paler, creamier underneath
+        c = gold[None, :] * (1 - lower[:, None] * 0.6) + cream[None, :] * (lower[:, None] * 0.6)
+        saddle = ss(0.43, 0.54, z) * np.clip(0.75 + 0.5 * hair + 0.3 * nz, 0, 1)
+        if part == 'body':
+            saddle = saddle * ss(-0.30, -0.18, y)
+        if part == 'head':
+            saddle = 0.45 * ss(0.70, 0.74, z) + 0.25 * ss(0.66, 0.70, z) * ss(-0.44, -0.40, y)   # ears + skull top darker
+        if part == 'tail':
+            saddle = 0.6 * ss(0.36, 0.46, z)
+        if part.startswith('leg'):
+            saddle = saddle * 0.0
+        c = c * (1 - saddle[:, None]) + dark[None, :] * saddle[:, None]
+        c = c * (0.78 + 0.32 * hair[:, None])
         wsoft = np.zeros(n, np.float32)
         if part == 'body':
-            wsoft = np.maximum(wsoft, ss(-0.20, -0.26, y) * ss(0.52, 0.47, z) * ss(0.10, 0.06, np.abs(x)))   # chest front
-            wsoft = np.maximum(wsoft, ss(-0.27, -0.31, y) * ss(0.46, 0.50, z))                             # collar
+            wsoft = np.maximum(wsoft, ss(-0.27, -0.33, y))                                          # full collar
+            wsoft = np.maximum(wsoft, ss(-0.17, -0.26, y) * ss(0.52, 0.44, z))                      # chest + ruff front
+            wsoft = np.maximum(wsoft, ss(-0.10, -0.20, y) * ss(0.34, 0.30, z) * 0.8)                # brisket
         if part == 'head':
-            wsoft = np.maximum(wsoft, ss(-0.44, -0.48, y) * ss(0.595, 0.575, z))                             # chin
-            wsoft = np.maximum(wsoft, ss(0.02, 0.008, np.abs(x)) * ss(-0.41, -0.44, y) * ss(0.59, 0.61, z))  # blaze
+            wsoft = np.maximum(wsoft, ss(-0.37, -0.355, y) * ss(0.66, 0.62, z))                     # collar reaches the throat
+            wsoft = np.maximum(wsoft, ss(-0.46, -0.50, y) * ss(0.645, 0.625, z))                    # chin + lower jaw
+            wsoft = np.maximum(wsoft, ss(0.022, 0.01, np.abs(x)) * ss(-0.42, -0.47, y) * ss(0.67, 0.69, z))   # blaze
+            wsoft = np.maximum(wsoft, ss(-0.53, -0.56, y) * 0.85)                                   # muzzle tip
         if part.startswith('leg'):
-            h0 = 0.11 if part.startswith('legF') else 0.08
-            wsoft = np.maximum(wsoft, ss(h0, h0 - 0.03, z))                                                 # socks
+            h0 = 0.24 if part.startswith('legF') else 0.12
+            wsoft = np.maximum(wsoft, ss(h0, h0 - 0.06, z))                                         # white legs / feet
         if part == 'tail':
-            wsoft = np.maximum(wsoft, ss(0.24, 0.17, z))                                                    # tail tip
-        c = c * (1 - wsoft[:, None]) + white[None, :] * wsoft[:, None]
-        if part == 'head':
-            c = np.where((y < -0.532)[:, None], np.array([0.03, 0.025, 0.02])[None, :], c)
+            wsoft = np.maximum(wsoft, ss(0.21, 0.15, z))                                            # tail tip
+        wsoft = np.clip(wsoft * (0.85 + 0.3 * hair), 0, 1)
+        c = c * (1 - wsoft[:, None]) + (white[None, :] * (0.88 + 0.12 * hair[:, None])) * wsoft[:, None]
+        if part == 'head':      # black lip line and dark eye rims
+            lip = ss(-0.46, -0.50, y) * np.exp(-((z - 0.634) / 0.007) ** 2)
+            er = np.sqrt((np.abs(x) - 0.038) ** 2 + (y + 0.468) ** 2 + (z - 0.688) ** 2)
+            rim = np.clip((0.022 - er) / 0.008, 0, 1)
+            k = np.maximum(lip, rim * 0.8)
+            c = c * (1 - k[:, None] * 0.85)
         rgb = rgb * c
     elif rootname == 'log':
+        # creek log: darker than a dry trunk, darkest and wettest at the waterline, moss patches along the top
         mats = vert_material_names(o)
-        moss = np.array([0.55, 0.85, 0.35]); wood = np.array([0.62, 0.48, 0.32])
-        r = np.sqrt(p[:, 0] ** 2 + (p[:, 2] - 0.235) ** 2)
-        c = np.ones((n, 3)) * (0.85 + 0.3 * (0.5 + 0.5 * nz2))[:, None]
-        mossm = np.clip((nz - 0.1) * 1.6, 0, 1) * np.clip((p[:, 2] - 0.28) / 0.15, 0, 1)
-        c = c * (1 - mossm[:, None]) + (c * moss[None, :]) * mossm[:, None]
+        H = 2 * LOG_R
+        moss = np.array([0.42, 0.62, 0.22])
+        c = np.ones((n, 3)) * (0.62 + 0.16 * (0.5 + 0.5 * nz2))[:, None]
+        wet = np.clip((0.30 * H - z) / (0.25 * H), 0, 1)
+        c = c * (1 - 0.45 * wet)[:, None]
+        mossm = np.clip((nz + 0.25 * nz2 - 0.05) * 1.8, 0, 1) * np.clip((z - 0.70 * H) / (0.2 * H), 0, 1)
+        c = c * (1 - mossm[:, None]) + (c * moss[None, :] * 1.1) * mossm[:, None]
         endm = (mats == 'logend').astype(np.float32)
-        ringc = wood[None, :] * (0.8 + 0.2 * np.sin(r * 140 + nz * 2))[:, None] * np.where(r > 0.17, 0.6, 1.0)[:, None]
-        c = c * (1 - endm[:, None]) + ringc * endm[:, None]
+        endc = np.ones((n, 3)) * 0.92
+        c = c * (1 - endm[:, None]) + endc * endm[:, None]
         rgb = rgb * c
     elif rootname == 'pumpkin':
         org = np.array([0.80, 0.33, 0.05]); deep = np.array([0.50, 0.17, 0.025]); stemc = np.array([0.36, 0.33, 0.20])

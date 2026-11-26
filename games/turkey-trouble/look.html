@@ -19,7 +19,8 @@ const CAMS = { yard: [-3.5, 1.9, -3.5, 1, 2.6, -36], barn: [8.5, 1.6, -24.5, 17,
 try {
   const stage = await createStage({ canvas: document.getElementById('c'), quality: P.get('q') || 'auto', onProgress: (p) => { info.textContent = 'loading ' + Math.round(p * 100) + '%'; } });
   const { THREE, camera } = stage;
-  const c = CAMS[P.get('cam')] || CAMS.yard;
+  const EYE = (P.get('eye') || '').split(',').map(Number), AT = (P.get('at') || '').split(',').map(Number);
+  const c = EYE.length === 3 && AT.length === 3 ? [...EYE, ...AT] : (CAMS[P.get('cam')] || CAMS.yard);      // ?eye=x,y,z&at=x,y,z = any view
   camera.position.set(c[0], c[1], c[2]);
   let yaw = Math.atan2(c[3] - c[0], c[5] - c[2]), pitch = Math.atan2(c[4] - c[1], Math.hypot(c[3] - c[0], c[5] - c[2]));
   const keys = {};
@@ -35,6 +36,7 @@ try {
   if (P.get('person')) { const p = await stage.loadPerson(P.get('person')); p.root.position.set(4.3, 0, -28.2); p.root.rotation.y = 0.5; stage.dynamic.add(p.root); if (p.actions.Idle) p.actions.Idle.play(); window.__person = p; }
   let last = performance.now(), frames = 0, acc = 0, fps = 0;
   stage.renderer.info.autoReset = false;
+  if (P.get('clean')) info.style.display = 'none';
   window.__look = { stage, ready: true };
   stage.renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -42,7 +44,7 @@ try {
     camera.position.x += (Math.sin(yaw) * f - Math.cos(yaw) * s) * sp; camera.position.z += (Math.cos(yaw) * f + Math.sin(yaw) * s) * sp; camera.position.y += u * sp;
     camera.lookAt(camera.position.x + Math.sin(yaw) * Math.cos(pitch), camera.position.y + Math.sin(pitch), camera.position.z + Math.cos(yaw) * Math.cos(pitch));
     if (window.__person) window.__person.mixer.update(dt);
-    stage.update(P.get('still') ? 0 : dt, { x: camera.position.x, z: camera.position.z });
+    stage.update(P.get('still') ? 0 : dt, (P.get('turkey') ? { x: 2.3, y: 0, z: -26.6 } : null));
     stage.renderer.info.reset();
     stage.render();
     frames += 1; acc += dt;

@@ -54,4 +54,15 @@ export const ESCAPE = {
   endWalk: 1.7, knockReach: 0.7, knock1: 0.55, knock2: 1.15, cardAt: 2.7,
 };
 
+// Lane overrides on top of layout.json (the game's side of the feel). By lane id: rows = new z per sublane (in order),
+// speed / gap multipliers per sublane. The highway's rows sat 0.75-1 m apart, so there was nowhere to stand between
+// them: spread to the lane edges they leave a ~1.5 m median between each pair, a breath between rows.
+export const LANE_TUNING = {
+  highway: { rows: [63.3, 67, 70.7], speed: [0.95, 0.92, 1], gapMin: [1.1, 1.1, 1] },
+};
+// Escape start: if the spawn sits in a doorway under a roof, step it out until the follow camera has a clear view.
+export const ESCAPE_START = { roofClear: 0.78, maxPush: 5, step: 0.25 };
+// It Hunts You, carried from Find: the turkey first flaps back to at least this far from you.
+export const HUNTED_CARRY = { minDist: 8, maxDist: 10 };
+
 export const ENDING_LINES = ['Knock knock.', "Who's there?", 'The turkey.'];

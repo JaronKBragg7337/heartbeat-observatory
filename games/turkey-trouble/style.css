@@ -59,7 +59,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; touch-action: ma
 
 .toast { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(.96); padding: 10px 18px; border-radius: 14px; z-index: 22;
   background: rgba(20, 13, 9, .7); border: 1px solid var(--line); font-size: 19px; font-weight: 700; color: var(--cream); opacity: 0; pointer-events: none;
-  transition: opacity .25s, transform .25s; white-space: nowrap; max-width: 92vw; text-align: center; }
+  transition: opacity .25s, transform .25s; width: max-content; max-width: min(86vw, 440px); text-align: center; line-height: 1.25; text-wrap: balance; }
 .toast.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .toast.big { font-size: 30px; color: var(--amber2); background: none; border: 0; text-shadow: 0 2px 16px rgba(0, 0, 0, .8); }
 .hint { position: absolute; left: 50%; bottom: calc(var(--sab) + 120px); transform: translateX(-50%); font-size: 14px; color: var(--cream2); z-index: 20;
@@ -91,6 +91,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; touch-action: ma
   display: flex; flex-direction: column; justify-content: center; gap: 3px; transition: background .15s, border-color .15s; }
 .mode b { font-size: 15px; color: var(--cream); }
 .mode span { font-size: 12px; color: var(--muted); line-height: 1.25; }
+.mode .best { font-style: normal; font-size: 12px; font-weight: 700; color: var(--amber2); font-variant-numeric: tabular-nums; }
 .mode:active, .mode:hover { background: rgba(232, 164, 64, .12); border-color: rgba(232, 164, 64, .45); }
 .mode.story { grid-column: 1 / -1; background: rgba(232, 164, 64, .16); border-color: rgba(232, 164, 64, .55); min-height: 56px; align-items: center; text-align: center; }
 .mode.story b { font-size: 17px; color: var(--amber2); }

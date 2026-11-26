@@ -2,6 +2,22 @@
  "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
  "items": [
   {
+   "id": "turkey-trouble-2026-11-26",
+   "date": "2026-11-26",
+   "title": "Turkey Trouble: a Thanksgiving game, farm and all, made by code",
+   "tool": "Blender 5.1 (light baked on our own RTX 4060) + Three.js + Claude (Fable 5.2) with Opus 5.5 and Sonnet 5.5 helpers",
+   "image": "/artifacts/img/turkey-trouble-yard.jpg",
+   "what": "A Thanksgiving game on a wet farm at dusk after a storm, seen over your shoulder. Four ways to play: find the turkey hiding on the farm, survive while it hunts you, hunt it before it escapes, or be the turkey and cross a lane, a creek, roads, a field and a highway. There is a secret ending. Phone: left thumb walks, right side looks. Computer: WASD.",
+   "made": "The whole farm, the turkey and the trucks are made by code. Blender 5.1 bakes the dusk light into the farm in about 40 seconds on our own RTX 4060. Three.js shows it in the browser with our own wet-ground shader. The people are the site's realistic ones. Real surface photos and sky from Poly Haven (CC0). Built by Claude (Fable 5.2) with Opus 5.5 and Sonnet 5.5 helpers.",
+   "honest": "Not tried on a real iPhone yet, only in the iPhone's browser engine on a PC. The sounds are made by code and nobody has listened to them properly. The dog still looks like a toy and the trees repeat.",
+   "links": [
+    [
+     "Play Turkey Trouble",
+     "/games/turkey-trouble/"
+    ]
+   ]
+  },
+  {
    "id": "vex-image-to-room-2026-11-25",
    "date": "2026-11-25",
    "title": "Picture to 3D room: ChatGPT builds a room in our own render engine",

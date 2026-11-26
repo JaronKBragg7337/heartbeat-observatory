@@ -76,7 +76,7 @@ export function createFx(scene, camera) {
       for (let i = 0; i < 22; i++) {
         const a = puffs.spawn(), ang = Math.random() * Math.PI * 2, sp = rnd(0.6, 2.4);
         a.pos.set(x + Math.cos(ang) * 0.15, y + 0.05, z + Math.sin(ang) * 0.15); a.vel.set(Math.cos(ang) * sp, rnd(2.2, 5.2), Math.sin(ang) * sp);
-        a.gravity = 9.8; a.drag = 0.4; a.size = rnd(0.05, 0.11); a.grow = 0; a.life = a.max = rnd(0.5, 0.9); a.color.setRGB(0.42, 0.5, 0.58); a.bill = true; a.floor = y - 0.2;
+        a.gravity = 9.8; a.drag = 0.4; a.size = rnd(0.05, 0.11); a.grow = 0; a.life = a.max = rnd(0.5, 0.9); a.color.setRGB(0.2, 0.25, 0.3); a.bill = true; a.floor = y - 0.2;
       }
       for (let i = 0; i < 3; i++) {
         const a = puffs.spawn();
@@ -97,7 +97,7 @@ export function createFx(scene, camera) {
       for (let i = 0; i < 4; i++) {
         const a = puffs.spawn();
         a.pos.set(x + rnd(-0.2, 0.2), 0.12, z + rnd(-0.2, 0.2)); a.vel.set(rnd(-0.5, 0.5), rnd(0.25, 0.7), rnd(-0.5, 0.5)); a.gravity = 0; a.drag = 1.2;
-        a.size = rnd(0.25, 0.4); a.grow = 0.9; a.life = a.max = rnd(0.7, 1.2); a.color.setRGB(0.05 * strength, 0.042 * strength, 0.034 * strength); a.bill = true; a.floor = -10;
+        a.size = rnd(0.25, 0.4); a.grow = 0.9; a.life = a.max = rnd(0.7, 1.2); a.color.setRGB(0.012 * strength, 0.010 * strength, 0.008 * strength); a.bill = true; a.floor = -10;
       }
     },
   };

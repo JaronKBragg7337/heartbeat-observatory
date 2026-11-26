@@ -18,7 +18,8 @@ export function createHud() {
   const hud = {
     el,
     show(on) { el.hud.hidden = !on; if (!on) { el.action.hidden = true; el.stamina.hidden = true; } },
-    screen(name) { for (const s of screens) $(s).hidden = s !== name; },
+    // a card takes the screen: the play toast and hint go (a big "Got it!" showed through the result card)
+    screen(name) { for (const s of screens) $(s).hidden = s !== name; el.toast.classList.remove('on'); toastT = 0; el.hint.hidden = true; hintT = 0; },
     hideScreens() { for (const s of screens) $(s).hidden = true; },
     setup(game) {
       el.label.textContent = game.hud.label;

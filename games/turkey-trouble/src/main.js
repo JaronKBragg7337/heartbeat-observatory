@@ -91,11 +91,19 @@ function showTitle() {
   app.screen = 'title'; app.game = null; app.story = null; app.endingT = -1;
   hud.show(false); hud.screen('title');
   cast.hideAll(); cam.reset();
+  showBests();
   const sp = stage.layout.spawns.player;
   cast.turkey.root.visible = true; cast.turkey.root.position.set(sp.x + 1.6, 0, sp.z - 6); cast.turkey.root.rotation.set(0, 0.6, 0);
   titleT = 0;
 }
 let titleT = 0;
+// best times on the title's mode cards (Escape only for now; never on the ending card)
+function showBests() {
+  const el = $('bestEscape'); if (!el) return;
+  const v = store.get('best-escape', '');
+  const n = Number(v);
+  if (v !== '' && Number.isFinite(n) && n > 0) { el.textContent = `Best: ${fmtTime(n)}`; el.hidden = false; } else el.hidden = true;
+}
 
 // ------------------------------------------------------------------------------------------ playing
 async function start(mode, extra = {}) {
@@ -202,8 +210,9 @@ function startEndingCard() {
   $('endingButtons').hidden = true;
   app.screen = 'ending'; app.endingT = 0;
   store.set('escaped', Number(store.get('escaped', '0')) + 1);
-  const b = best('escape', Math.round(app.game.result.time));
-  void b;
+  best('escape', Math.round(app.game.result.time));
+  // the run-again button: faster each time until the cap, then it says so (still one more go, just as fast)
+  $('btnFaster').textContent = app.game.topSpeed ? 'Run again (top speed!)' : app.run > 0 ? `Run again (even faster)` : 'Run again (faster)';
 }
 function tickEndingCard(dt) {
   if (app.endingT < 0) return;
@@ -275,6 +284,7 @@ function frame(now) {
     let n = 0;
     while (acc >= DT && n < 8) {
       if (app.director && app.bot) { app.bot.think(input); }
+      else if (window.__tt.pilot) { controls.read(input, cam.yaw); window.__tt.pilot(input, g); }   // test hook: a bot plays, the normal camera watches
       else { controls.read(input, cam.yaw); input.action = controls.takeAction(); }
       v.beforeStep();
       g.events.length = 0;
@@ -301,6 +311,11 @@ function frame(now) {
       const fin = stage.layout.escape.finish, side = fin.signAt && fin.signAt.x > door.x ? -1 : 1;
       cam.setShot({ from: { x: door.x + side * 3.6, y: 1.25, z: door.z - 2.2 }, at: { x: P.x + side * 0.15, y: 0.75, z: P.z + 0.25 }, rate: 2.2 });
     }
+    else if (g.ending.path.i >= 1) {
+      // on the path through the spruce: a high shot from behind and above (over the tree tops), so the camera
+      // never sits inside the trees and the kinked way through reads from above
+      cam.setShot({ from: { x: P.x, y: 11.5, z: P.z - 4.5 }, at: { x: P.x, y: 0.4, z: P.z + 1.2 }, rate: 1.8 });
+    }
     else { cam.setShot(null); cam.yaw = 0; cam.pitch = 0.3; cam.lookIdle = 0; }
   } else if (app.director) directorCam(dt, g);
   cam.update(dt, focus, P.heading, P.speed);
@@ -320,6 +335,8 @@ function escapeTips(g) {
   const creek = lanes.find((l) => l.kind === 'creek'), road = lanes.find((l) => l.kind === 'road');
   if (creek && P.z > creek.z0 - 5 && P.z < creek.z0 && !sessionFlag('tip-creek')) hud.toast('Hop log to log with Flap', 2.4);
   if (road && P.z > road.z0 - 4 && P.z < road.z0 && !sessionFlag('tip-road')) hud.toast('Wait for a gap, then run!', 2.2);
+  const hw = lanes.find((l) => l.id === 'highway');
+  if (hw && P.z > hw.z0 - 4 && P.z < hw.z0 && !sessionFlag('tip-highway')) hud.toast('Three lanes. You can wait between them', 2.4);
 }
 
 function titleFrame(dt) {
@@ -388,5 +405,5 @@ function directorNext() {
   start(nextKind, { keepRun: true, carry });
 }
 
-window.__tt = { app, audio, get stage() { return stage; }, get cast() { return cast; }, get cam() { return cam; } };
+window.__tt = { app, audio, pilot: null, get stage() { return stage; }, get cast() { return cast; }, get cam() { return cam; } };
 boot();

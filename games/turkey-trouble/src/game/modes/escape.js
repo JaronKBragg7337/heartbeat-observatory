@@ -3,14 +3,45 @@
 // After the last road the game takes the turkey for a little walk (the ending lives here as rules, the card in the UI).
 import { makeBase, makePath, dist, DT } from './common.js';
 import { stepMover, makeMover, followPath, stepToward, turnToward } from '../mover.js';
-import { TURKEY_PLAYER as TP, ESCAPE as E, PERSON, ENDING_LINES } from '../tuning.js';
+import { TURKEY_PLAYER as TP, ESCAPE as E, PERSON, ENDING_LINES, LANE_TUNING, ESCAPE_START } from '../tuning.js';
+
+// The camera rides this far behind and above the turkey (camera.js 'turkey' mode: dist 8.8 at pitch 0.66).
+const CAM_BACK = 8.8 * Math.cos(0.66);
+// Out of a doorway: step the spawn along its facing until the camera behind it is no longer under a roof.
+export function escapeStartFor(layout, world) {
+  const s = layout.spawns.escapeStart, ry = s.rotY || 0, fx = Math.sin(ry), fz = Math.cos(ry);
+  const p = { x: s.x, z: s.z, rotY: ry };
+  if (!world.raycastRoofs) return p;
+  for (let d = 0; d <= ESCAPE_START.maxPush; d += ESCAPE_START.step) {
+    const x = s.x + fx * d, z = s.z + fz * d;
+    if (world.blocked(x, z, TP.r)) break;
+    p.x = x; p.z = z;
+    if (world.raycastRoofs(x, z, x - fx * CAM_BACK, z - fz * CAM_BACK) >= ESCAPE_START.roofClear) break;
+  }
+  return p;
+}
+// layout lanes + the game's overrides (LANE_TUNING), without touching the layout object
+export function tunedLanes(layout) {
+  return layout.escape.lanes.map((l) => {
+    const t = LANE_TUNING[l.id];
+    if (!t || !l.sublanes) return { ...l };
+    const sublanes = l.sublanes.map((sl, i) => {
+      const o = { ...sl };
+      if (t.rows && t.rows[i] != null && t.rows[i] > l.z0 && t.rows[i] < l.z1) o.z = t.rows[i];
+      if (t.speed && t.speed[i] != null) o.speed = sl.speed * t.speed[i];
+      if (t.gapMin && t.gapMin[i] != null) { o.gapMin = sl.gapMin * t.gapMin[i]; o.gapMax = Math.max(o.gapMax, o.gapMin); }
+      return o;
+    });
+    return { ...l, sublanes };
+  });
+}
 
 export function createEscape(layout, opts = {}) {
   const g = makeBase(layout, opts, 'escape');
   const { world, nav, rng, emit } = g;
   const esc = layout.escape;
   const run = opts.run || 0;
-  const start = layout.spawns.escapeStart;
+  const start = escapeStartFor(layout, world);
   const me = makeMover(start.x, start.z, start.rotY || 0, TP);
   Object.assign(me, { y: 0, hopT: 0, hopCd: 0, hdx: 0, hdz: 0, invuln: 0, stun: 0, wet: 0, onLog: null, onStone: false, anim: 'idle', animT: 0 });
   g.player = me; g.turkey = me;           // the turkey IS the player here
@@ -22,7 +53,7 @@ export function createEscape(layout, opts = {}) {
   const gateFence = layout.fences;
 
   // ---- lanes and their pooled movers (vehicles and logs)
-  const lanes = esc.lanes.map((l, i) => ({ ...l, index: i, subs: [] }));
+  const lanes = tunedLanes(layout).map((l, i) => ({ ...l, index: i, subs: [] }));
   g.lanes = lanes;
   g.vehicles = [];                         // flat list, for the view's pool
   for (const lane of lanes) {
@@ -47,6 +78,8 @@ export function createEscape(layout, opts = {}) {
   // faster with every lane and every new run, but capped so a run is always crossable
   const speedUp = () => Math.min(E.speedCap, (1 + E.speedPerLane * cleared) * (1 + E.speedPerRun * run));
   g.speedUp = speedUp;
+  // one more "Run again (faster)" would not be any faster at the start of the run: the button says top speed instead
+  g.topSpeed = 1 + E.speedPerRun * run >= E.speedCap - 1e-9;
 
   function laneAt(z) { for (const l of lanes) if (z >= l.z0 - 0.5 && z <= l.z1 + 0.5) return l; return null; }
 
@@ -95,13 +128,16 @@ export function createEscape(layout, opts = {}) {
   }
 
   // ---- the ending (rules side): the walk to the door and the two knocks
-  const ending = { t: 0, stage: 'walk', path: makePath(8), knocks: 0, lines: ENDING_LINES };
+  const ending = { t: 0, stage: 'walk', path: makePath(Math.max(8, (esc.finish.path || []).length + 1)), knocks: 0, lines: ENDING_LINES, stuck: 0 };
   g.ending = ending;
   function startEnding() {
     g.phase = 'ending';
-    const fp = esc.finish.path;
+    // the walk follows finish.path as a line of any number of points; the last one is moved to the door
+    const fp = esc.finish.path && esc.finish.path.length ? esc.finish.path : [esc.finish.door];
     ending.path.n = 0;
     for (const p of fp) { const q = ending.path.pts[ending.path.n++]; q.x = p.x; q.z = p.z; }
+    const fl = fp[fp.length - 1], dr = esc.finish.door;
+    if (Math.hypot(fl.x - dr.x, fl.z - dr.z) > 0.5) { const q = ending.path.pts[ending.path.n++]; q.x = dr.x; q.z = dr.z; }
     // stand at the door point, but never so close that the beak goes into the house: back off to a beak's reach
     const door = esc.finish.door, last = ending.path.pts[ending.path.n - 1], ry = door.rotY || 0;
     const fx = Math.sin(ry), fz = Math.cos(ry);
@@ -300,6 +336,12 @@ export function createEscape(layout, opts = {}) {
       const s = Math.min(d, sp * DT);
       me.px = me.x; me.pz = me.z;
       if (d > 1e-4) { me.x += (dx / d) * s; me.z += (dz / d) * s; me.heading = turnToward(me.heading, Math.atan2(dx, dz), 6 * DT); }
+      // the first leg starts wherever you crossed, so it slides around trees or posts on the way to the path;
+      // the path's own legs are drawn clear by the look. (Stuck for half a second: walk straight through instead.)
+      if (p.i === 0 && ending.stuck < 0.5) {
+        const bx = me.x, bz = me.z; world.collide(me, TP.r);
+        if (Math.hypot(me.x - bx, me.z - bz) > s * 0.6) ending.stuck += DT; else ending.stuck = Math.max(0, ending.stuck - DT);
+      }
       me.speed = s / DT; me.y = 0;
       me.anim = 'walk';
       if (d < 0.05) { p.i++; if (p.i >= p.n) { ending.stage = 'knock'; ending.t = 0; me.speed = 0; } }

@@ -46,7 +46,7 @@ export function makeFollowCam(camera, world) {
     // pull in when a collider (or a roof) is between the actor and the camera: fast in, slow back out
     const full = c.dist * cp;
     const wx = focus.x - fx * full, wz = focus.z - fz * full;
-    const hit = Math.min(world.raycast(focus.x, focus.z, wx, wz, 1.6, 0.3), world.raycastRoofs ? world.raycastRoofs(focus.x, focus.z, wx, wz) : 1);
+    const hit = Math.min(world.raycast(focus.x, focus.z, wx, wz, 1.6, 0.3, 0.35), world.raycastRoofs ? world.raycastRoofs(focus.x, focus.z, wx, wz) : 1);
     const want = Math.max(1.1, full * hit - 0.25) / cp;
     c.distNow = want < c.distNow ? damp(c.distNow, want, 18, dt) : damp(c.distNow, want, 2.5, dt);
     const k = c.distNow / c.dist;                       // 1 = normal, smaller = pulled in

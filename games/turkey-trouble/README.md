@@ -28,3 +28,30 @@ Play: `/games/turkey-trouble/`. Two builders: the look (`layout.json`, `src/rend
 node --test test/*.test.mjs
 ```
 Layout sanity, every mode played by a bot (win and lose), the ending's exact text, determinism.
+
+## How the look is made
+- The whole farm, the turkey and the trucks are made by code, not drawn by hand. The scripts are in `build/`: `farm.py` (the farm), `turkey.py` (the turkey), `models.py` (the other models) and `farm_bake.py` (the light).
+- Blender 5.1 bakes the dusk light into the farm. It runs on our own RTX 4060 and takes about 40 seconds.
+- Three.js shows the farm in the browser, with our own wet-ground shader so the ground looks soaked after the storm.
+- The people are the site's realistic ones.
+- Real surface photos and the sky come from Poly Haven (CC0), listed below.
+- The sounds are made by code too (WebAudio), nothing is loaded.
+- Built by Claude (Fable 5.2) with Opus 5.5 and Sonnet 5.5 helpers.
+
+## Credits
+Surfaces and sky from Poly Haven (CC0)
+- weathered_brown_planks, https://polyhaven.com/a/weathered_brown_planks, CC0 (fences, porch, coop, shed posts)
+- wood_plank_wall, https://polyhaven.com/a/wood_plank_wall, CC0 (barn siding)
+- corrugated_iron, https://polyhaven.com/a/corrugated_iron, CC0 (barn, shed and coop roofs)
+- rusty_metal_02, https://polyhaven.com/a/rusty_metal_02, CC0 (not used yet)
+- roof_slates_02, https://polyhaven.com/a/roof_slates_02, CC0 (house roofs)
+- asphalt_02, https://polyhaven.com/a/asphalt_02, CC0 (the two paved roads)
+- gravelly_sand, https://polyhaven.com/a/gravelly_sand, CC0 (not used yet)
+- brown_mud_leaves_01, https://polyhaven.com/a/brown_mud_leaves_01, CC0 (yard mud)
+- leafy_grass, https://polyhaven.com/a/leafy_grass, CC0 (grass)
+- bark_brown_02, https://polyhaven.com/a/bark_brown_02, CC0 (tree trunks, poles, the creek logs)
+- concrete_floor_worn_001, https://polyhaven.com/a/concrete_floor_worn_001, CC0 (foundations, barn floor, silo)
+- thatch_roof_angled, https://polyhaven.com/a/thatch_roof_angled, CC0 (hay bales (recoloured to straw))
+- kloppenheim_02, https://polyhaven.com/a/kloppenheim_02, CC0 (not used (spare sky))
+- kiara_9_dusk, https://polyhaven.com/a/kiara_9_dusk, CC0 (not used (spare sky))
+- qwantani_dusk_2, https://polyhaven.com/a/qwantani_dusk_2, CC0 (the dusk sky (light, background and reflections))

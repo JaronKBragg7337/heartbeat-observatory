@@ -34,6 +34,36 @@ scene.cycles.sample_clamp_indirect = 4.0
 scene.cycles.max_bounces = 6
 
 # ================================================================ textures and materials
+PH_TEX = {'barn': ('wood_plank_wall', 1.6, False), 'greywood': ('weathered_brown_planks', 1.4, False), 'shingles': ('roof_slates_02', 2.2, True),
+          'tin': ('corrugated_iron', 2.0, True), 'concrete': ('concrete_floor_worn_001', 3.0, True), 'bark': ('bark_brown_02', 1.0, False),
+          'hay': ('thatch_roof_angled', 0.9, False)}       # thatch strands, recoloured to dry straw
+PH_TILE = {}                                               # metres one copy covers, for the surfaces that were swapped
+
+
+def ph_image(asset, kind, non_color=False, size=512, straw=False):
+    root = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'polyhaven')
+    src = os.path.join(root, asset, f'{asset}_{kind}_1k.jpg')
+    dst = os.path.join(TEX, f'ph_{asset}_{kind}_{size}' + ('_straw' if straw else '') + '.png')
+    if not os.path.exists(src):
+        return None
+    if not os.path.exists(dst):
+        im = bpy.data.images.load(src)
+        im.scale(size, size)
+        if straw:                                          # keep the strands, change the colour: grey thatch -> dry straw
+            px = np.empty(size * size * 4, np.float32)
+            im.pixels.foreach_get(px)
+            px = px.reshape(-1, 4)
+            lum = px[:, :3] @ np.array([0.3, 0.6, 0.1], np.float32)
+            k = np.clip(lum / max(1e-4, float(lum.mean())), 0.35, 1.9) ** 0.85
+            px[:, 0], px[:, 1], px[:, 2] = np.clip(0.60 * k, 0, 1), np.clip(0.52 * k, 0, 1), np.clip(0.31 * k, 0, 1)
+            im.pixels.foreach_set(px.ravel())
+        im.filepath_raw = dst
+        im.file_format = 'PNG'
+        im.save()
+        bpy.data.images.remove(im)
+    return load_image(dst, non_color)
+
+
 def textures():
     names = ['mud', 'gravel', 'grass', 'asphalt', 'stubble', 'barn', 'greywood', 'siding', 'siding_dummy', 'shingles', 'tin', 'concrete', 'brick', 'bark', 'hay']
     extra = ['window_a', 'window_b']
@@ -52,6 +82,14 @@ def textures():
         t[n] = (load_image(os.path.join(TEX, n + '_a.png')), load_image(os.path.join(TEX, n + '_n.png'), True))
     for n in extra:
         t[n] = load_image(os.path.join(TEX, n + '_a.png'))
+    if os.environ.get('TT_PH_TEX', '0') == '1':            # photo surfaces (Poly Haven, CC0) in place of the code-made ones
+        for n, (asset, tile, shiny) in PH_TEX.items():
+            d = ph_image(asset, 'diff', straw=(n == 'hay'))
+            if d is None:
+                continue
+            t[n] = (d, ph_image(asset, 'nor_gl', True) if shiny else None)
+            PH_TILE[n] = tile
+        say('photo surfaces on:', sorted(PH_TILE))
     return t
 
 
@@ -60,7 +98,7 @@ say('textures ready')
 
 
 def tm(name, tex, tile, rough, strength=1.0, color=(1, 1, 1)):
-    return material(name, color=color, rough=rough, albedo=T[tex][0], normal=T[tex][1], normal_strength=strength, tile=tile)
+    return material(name, color=color, rough=rough, albedo=T[tex][0], normal=T[tex][1], normal_strength=strength, tile=PH_TILE.get(tex, tile))
 
 
 M = {
@@ -74,7 +112,7 @@ M = {
     'brick': tm('brick', 'brick', 0.6, 0.75),
     'bark': tm('bark', 'bark', 0.8, 0.8),
     'hay': tm('hay', 'hay', 0.55, 0.85),
-    'twine': material('twine', (0.05, 0.04, 0.03), rough=0.8),
+    'twine': material('twine', (0.17, 0.14, 0.08), rough=0.8),
     'trim': material('trim', (0.62, 0.61, 0.57), rough=0.45),
     'glass': material('glass', (0.012, 0.016, 0.02), rough=0.05),
     'iron': material('iron', (0.045, 0.045, 0.05), rough=0.45, metal=0.85),
@@ -95,6 +133,8 @@ M = {
     'far': material('far', (0.03, 0.04, 0.05), rough=1.0),
     'bulb': material('bulb', (1, 0.8, 0.55), emit=(1.0, 0.66, 0.34), emit_strength=40.0),
     'bulb_cool': material('bulb_cool', (1, 0.86, 0.7), emit=(1.0, 0.80, 0.56), emit_strength=40.0),
+    'bulb_merc': material('bulb_merc', (0.8, 0.9, 1.0), emit=(0.60, 0.80, 1.0), emit_strength=40.0),
+    'needles': material('needles', (0.011, 0.024, 0.017), rough=0.95),
     'window_a': material('window_a', emit_img=T['window_a'], emit_strength=2.2, rough=0.2),
     'window_b': material('window_b', emit_img=T['window_b'], emit_strength=1.9, rough=0.2),
 }
@@ -102,6 +142,8 @@ for m in bpy.data.materials:
     m.use_backface_culling = True
 M['bark_tree'] = tm('bark_tree', 'bark', 0.8, 0.8)
 M['wire'] = material('wire', (0.02, 0.02, 0.022), rough=0.5)
+M['needles'].use_backface_culling = False
+PH = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'polyhaven')     # the CC0 photo skies and surfaces (see README credits)
 
 STATIC = {'buildings': [], 'props': [], 'south': []}     # lightmapped, by atlas
 UNBAKED = []                                             # in the world, lit at run time (thin or far things)
@@ -152,11 +194,11 @@ def make_masks():
     splat = np.dstack([gravel, grass * (1 - gravel), asphalt])
 
     wetland = np.clip(mud + gravel * 0.8 + asphalt, 0, 1)
-    puddle = smooth(0.60, 0.70, n2) * wetland
+    puddle = smooth(0.66, 0.76, n2) * smooth(0.30, 0.55, n1) * wetland          # small broken pools, not sheets
     ruts = (np.exp(-((np.abs(X) - 0.8) / 0.22) ** 2) * (Z > -2) * (Z < 34)) * smooth(0.35, 0.6, n1)
     lane_ruts = np.exp(-((np.abs(Z - 9) - 0.85) / 0.25) ** 2) * smooth(0.3, 0.55, np.roll(n1, 50, 0))
     edge = np.maximum(np.exp(-((Z - 62.5) / 0.35) ** 2), np.exp(-((Z - 71.5) / 0.35) ** 2)) * smooth(0.4, 0.6, n2) + np.exp(-((Z - 85.5) / 0.3) ** 2) * smooth(0.4, 0.6, n3)
-    puddles = np.clip(np.maximum.reduce([puddle, ruts * 0.9, lane_ruts * 0.9, edge * 0.9]), 0, 1)
+    puddles = np.clip(np.maximum.reduce([puddle, ruts * smooth(0.5, 0.72, np.roll(n2, 37, 1)) * 0.9, lane_ruts * smooth(0.5, 0.72, np.roll(n2, 91, 0)) * 0.9, edge * 0.9]), 0, 1)
     damp = np.clip(0.35 + 0.65 * n3, 0, 1) * np.clip(wetland + 0.5, 0, 1)
     wet = np.dstack([puddles, damp, stubble * (1 - gravel)])
     save_png('ground_splat', splat, os.path.join(ASSETS, 'ground_splat.png'), non_color=True)
@@ -595,7 +637,8 @@ def dummy_house():
     GLOW.extend([g.finish(), dk.finish(), gb.finish()])
     # the sign: two posts, a painted board, letters as real shapes, and its own little lamp. It faces north.
     sg = L['escape']['finish']['signAt']
-    s = Mesh('dummy_sign', sg['x'], sg['z'], 0.35)
+    SIGN_ROT = sg.get('rotY', 0.35)                        # which way the board faces (0 = north)
+    s = Mesh('dummy_sign', sg['x'], sg['z'], SIGN_ROT)
     BW, BH, BZ = 2.5, 0.72, 1.5
     for sx in (-1, 1):
         s.box(M['greywood'], (sx * (BW / 2 - 0.12), -0.07, (BZ + BH / 2) / 2), (0.1, 0.1, BZ + BH / 2))
@@ -619,18 +662,18 @@ def dummy_house():
     t.rotation_euler = (math.radians(90), 0, math.radians(180))
     t.location = Vector((0, 0.035, BZ))
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    t.rotation_euler = (0, 0, 0.35)
+    t.rotation_euler = (0, 0, SIGN_ROT)
     t.location = B(sg['x'], sg['z'])
     t.data.materials.append(M['sign_text'])
     t.name = 'dummy_sign_text'
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     GLOW.append(t)
-    lb = Mesh('sign_bulbs', sg['x'], sg['z'], 0.35)
+    lb = Mesh('sign_bulbs', sg['x'], sg['z'], SIGN_ROT)
     lb.cyl(M['iron'], (0, 0.0, BZ + BH / 2 + 0.06), (0, 0.42, BZ + BH / 2 + 0.3), 0.012, segs=5)
     lb.cyl(M['iron'], (0, 0.42, BZ + BH / 2 + 0.34), (0, 0.42, BZ + BH / 2 + 0.22), 0.02, 0.1, segs=10)
     lb.sphere(M['bulb'], (0, 0.42, BZ + BH / 2 + 0.22), 0.035)
     GLOW.append(lb.finish())
-    wx, wz = sg['x'] - 0.42 * math.sin(0.35), sg['z'] - 0.42 * math.cos(0.35)
+    wx, wz = sg['x'] - 0.42 * math.sin(SIGN_ROT), sg['z'] - 0.42 * math.cos(SIGN_ROT)
     point_light('sign_lamp', wx, BZ + BH / 2 + 0.2, wz, (1.0, 0.75, 0.5), 22, size=0.05)
 
 
@@ -698,13 +741,14 @@ def fences():
     UNBAKED.append(o)
 
 
-def pole_lamp(mesh, glow, x, z, y, arm_dir=(1, 0), cool=False):
+def pole_lamp(mesh, glow, x, z, y, arm_dir=(1, 0), cool=False, trunk=True, bulb=None):
     p = B(x, z)
-    mesh.cyl(M['bark'], (p.x, p.y, 0), (p.x, p.y, y + 0.9), 0.14, 0.1, segs=8)
+    if trunk:
+        mesh.cyl(M['bark'], (p.x, p.y, 0), (p.x, p.y, y + 0.9), 0.14, 0.1, segs=8)
     ax, ay = arm_dir
     mesh.cyl(M['iron'], (p.x, p.y, y + 0.55), (p.x + ax * 1.5, p.y + ay * 1.5, y + 0.3), 0.03, segs=6)
     glow.cyl(M['iron'], (p.x + ax * 1.5, p.y + ay * 1.5, y + 0.36), (p.x + ax * 1.5, p.y + ay * 1.5, y + 0.2), 0.1, 0.24, segs=12)
-    glow.sphere(M['bulb_cool' if cool else 'bulb'], (p.x + ax * 1.5, p.y + ay * 1.5, y + 0.19), 0.11, scale=(1, 1, 0.5))
+    glow.sphere(M[bulb or ('bulb_cool' if cool else 'bulb')], (p.x + ax * 1.5, p.y + ay * 1.5, y + 0.19), 0.11, scale=(1, 1, 0.5))
 
 
 def poles_and_wires():
@@ -714,6 +758,13 @@ def poles_and_wires():
     pole_lamp(m, g, lamps['yard']['x'] - 1.5, lamps['yard']['z'], lamps['yard']['y'], (1, 0))
     pole_lamp(m, g, lamps['highway_w']['x'], lamps['highway_w']['z'] - 1.5, lamps['highway_w']['y'], (0, -1))
     pole_lamp(m, g, lamps['highway_e']['x'], lamps['highway_e']['z'] + 1.5, lamps['highway_e']['y'], (0, 1))
+    for l in L['lamps']:                                  # the lamps along the turkey's way out: own poles, or arms on the power poles
+        at = l.get('pole') or l.get('arm')
+        if not at:
+            continue
+        dx, dy = l['x'] - at['x'], -(l['z'] - at['z'])
+        n = math.hypot(dx, dy) or 1.0
+        pole_lamp(m, g, at['x'], at['z'], l['y'], (dx / n, dy / n), trunk='pole' in l, bulb='bulb_merc' if l['color'].lower() == '#cfe6ff' else None)
     line = []
     for x in range(-66, 67, 33):                          # the power line along the north side of the gravel road
         p = B(x, 32.6)
@@ -813,6 +864,69 @@ def trees():
     STATIC['props'].append(s.finish())
 
 
+def windbreak():
+    # three staggered rows of spruce south of the last road: the woods the turkey runs for. They hide what stands behind them.
+    # The way through is kinked (it leaves further west than it enters), so nobody sees the house or its sign from the road.
+    r = random.Random(77)
+    bm = bmesh.new()
+    bm.loops.layers.uv.new('UVMap')
+    normals = []                                              # one per vertex, in the order they are made
+    count = 0
+
+    def vert(p, n):
+        normals.append(n)
+        return bm.verts.new(p)
+
+    rows = ((90.0, (-10.9, -7.5)), (92.0, (-12.9, -7.5)), (94.0, (-12.9, -9.5)))      # z of the row, and the passage it leaves open
+    for row, (zrow, (g0, g1)) in enumerate(rows):
+        x = -46.0 + row * 0.63
+        while x < 46.0:
+            rad, h = r.uniform(1.6, 2.2), r.uniform(7.5, 10.5)
+            xx, zz = x + r.uniform(-0.3, 0.3), zrow + r.uniform(-0.3, 0.3)
+            x += r.uniform(1.7, 2.1)
+            if g0 - 0.75 * rad < xx < g1 + 0.75 * rad:
+                continue
+            b = B(xx, zz)
+            base, tiers, seg = 0.8, 12, 10
+            ring0 = [vert((b.x + 0.14 * math.cos(2 * math.pi * k / 6), b.y + 0.14 * math.sin(2 * math.pi * k / 6), -0.05), (math.cos(2 * math.pi * k / 6), math.sin(2 * math.pi * k / 6), 0.0)) for k in range(6)]
+            ring1 = [vert((b.x + 0.10 * math.cos(2 * math.pi * k / 6), b.y + 0.10 * math.sin(2 * math.pi * k / 6), base + 0.8), (math.cos(2 * math.pi * k / 6), math.sin(2 * math.pi * k / 6), 0.0)) for k in range(6)]
+            for k in range(6):
+                f = bm.faces.new([ring0[k], ring0[(k + 1) % 6], ring1[(k + 1) % 6], ring1[k]]); f.material_index = 1
+            lx, ly = r.uniform(-0.025, 0.025), r.uniform(-0.025, 0.025)
+            for t in range(tiers):
+                f0 = t / tiers
+                z0 = base + (h - base) * f0 * 0.93
+                R = rad * (1 - f0) ** 0.7 + 0.1
+                ztip = min(h, z0 + (h - base) / tiers * 2.6)
+                cx, cy = b.x + lx * z0, b.y + ly * z0
+                tip = vert((cx + lx * (ztip - z0), cy + ly * (ztip - z0), ztip), (0.0, 0.0, 1.0))
+                a0 = r.uniform(0, 6.28)
+                ring = []
+                for k in range(seg):
+                    a = a0 + 2 * math.pi * k / seg
+                    rr = R * (1.0 if k % 2 == 0 else 0.7) * r.uniform(0.84, 1.14)
+                    droop = (0.3 if k % 2 == 0 else 0.05) * (h - base) / tiers
+                    nn = Vector((math.cos(a), math.sin(a), 0.5)).normalized()
+                    ring.append(vert((cx + rr * math.cos(a), cy + rr * math.sin(a), z0 - droop), (nn.x, nn.y, nn.z)))
+                for k in range(seg):
+                    f = bm.faces.new([ring[k], ring[(k + 1) % seg], tip]); f.material_index = 0
+            count += 1
+    me = bpy.data.meshes.new('windbreak')
+    bm.to_mesh(me); bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    try:
+        me.normals_split_custom_set_from_vertices(normals)      # soft, even shading: a dark mass with a ragged edge, not stacked cones
+    except Exception as e:
+        say('windbreak: custom normals not set', repr(e)[:80])
+    me.materials.append(M['needles']); me.materials.append(M['bark_tree'])
+    ob = bpy.data.objects.new('windbreak', me)
+    scene.collection.objects.link(ob)
+    ob['kind'] = 'unbaked'
+    UNBAKED.append(ob)
+    say('windbreak:', count, 'spruce,', len(me.polygons), 'faces')
+
+
 def props():
     m = Mesh('props')
     for bid in ('bale_a', 'bale_b', 'bale_c'):
@@ -822,7 +936,7 @@ def props():
         dx, dy = 0.62 * math.cos(a), 0.62 * math.sin(a)
         m.cyl(M['hay'], (p.x - dx, p.y - dy, 0.76), (p.x + dx, p.y + dy, 0.76), 0.78, segs=20)
         for f in (-0.62, 0.0, 0.62):                                 # twine round the bale
-            m.cyl(M['twine'], (p.x + dx * (f - 0.03), p.y + dy * (f - 0.03), 0.76), (p.x + dx * (f + 0.03), p.y + dy * (f + 0.03), 0.76), 0.79, segs=20)
+            m.cyl(M['twine'], (p.x + dx * (f - 0.03), p.y + dy * (f - 0.03), 0.76), (p.x + dx * (f + 0.03), p.y + dy * (f + 0.03), 0.76), 0.784, segs=20)
     c = COL['bale_stack']
     p = B(c['x'], c['z'])
     for k, (ox, oz) in enumerate(((-0.6, 0.24), (0.6, 0.24), (0, 0.72), (-0.62, 0.24 + 0.0), (0.05, 1.2))):
@@ -905,6 +1019,84 @@ def props():
     STATIC['south'].append(s.finish())
 
 
+def tufts():
+    # dry grass and weeds where nobody mows: fence lines, creek banks, road shoulders, the drive, the field edges
+    N = 256
+    rng = np.random.default_rng(5)
+    img = np.zeros((N, N, 4), np.float32)
+    ys = np.arange(N)[:, None] / (N - 1.0)
+    xs = np.arange(N)[None, :] / (N - 1.0)
+    for k in range(40):
+        x0, lean, h, w = rng.uniform(0.08, 0.92), rng.uniform(-0.2, 0.2), rng.uniform(0.45, 0.98), rng.uniform(0.012, 0.028)
+        cx = x0 + lean * ys ** 1.6
+        half = w * np.clip(1 - ys / h, 0, 1) ** 0.7
+        a = (np.abs(xs - cx) < half) & (ys < h)
+        col = (np.array([0.20, 0.16, 0.07]) if rng.random() < 0.62 else np.array([0.07, 0.10, 0.04])) * rng.uniform(0.6, 1.0)
+        shade = 0.5 + 0.5 * ys
+        for c in range(3):
+            img[:, :, c] = np.where(a, col[c] * shade, img[:, :, c])
+        img[:, :, 3] = np.maximum(img[:, :, 3], a.astype(np.float32))
+    img[:, :, :3] = np.where(img[:, :, 3:4] > 0, img[:, :, :3], np.array([0.14, 0.12, 0.06], np.float32)) ** (1 / 2.2)
+    tex = save_png('tufts_a', img, os.path.join(TEX, 'tufts_a.png'))
+    m = bpy.data.materials.new('tufts')
+    m.use_nodes = True
+    nt = m.node_tree
+    b = nt.nodes.get('Principled BSDF')
+    n = nt.nodes.new('ShaderNodeTexImage'); n.image = tex
+    nt.links.new(n.outputs['Color'], b.inputs['Base Color']); nt.links.new(n.outputs['Alpha'], b.inputs['Alpha'])
+    b.inputs['Roughness'].default_value = 0.9
+    m.use_backface_culling = True
+    r = random.Random(41)
+    spots = []
+    for f in L['fences']:
+        dx, dz = f['x2'] - f['x1'], f['z2'] - f['z1']
+        cnt = int(math.hypot(dx, dz) / 0.55)
+        for k in range(cnt):
+            if r.random() < 0.7:
+                t = (k + r.random()) / cnt
+                spots.append((f['x1'] + dx * t + r.uniform(-0.25, 0.25), f['z1'] + dz * t + r.uniform(-0.25, 0.25)))
+    x = BND['minX'] + 2
+    while x < BND['maxX'] - 2:
+        for z, lo, hi, p in ((17.4, -0.5, 0.3, 0.6), (28.6, -0.3, 0.5, 0.6), (60.9, -0.35, 0.3, 0.4), (73.1, -0.3, 0.35, 0.4), (78.9, -0.35, 0.3, 0.4), (87.1, -0.25, 0.3, 0.45),
+                             (43.3, -0.5, 0.4, 0.45), (58.8, -0.4, 0.5, 0.45), (5.4, -0.4, 0.4, 0.3), (12.7, -0.4, 0.4, 0.3)):
+            if r.random() < p and not (abs(x) < 3.4 and z < 34) and not (z > 86 and abs(x + 9) < 2.6):
+                spots.append((x + r.uniform(-0.3, 0.3), z + r.uniform(lo, hi)))
+        x += 0.75
+    z = 0.8
+    while z < 33.5:
+        for sx in (-1, 1):
+            if r.random() < 0.5 and not (5.4 < z < 12.8) and not (17 < z < 29):
+                spots.append((sx * (2.95 + r.uniform(0, 0.35)), z + r.uniform(-0.3, 0.3)))
+        z += 0.8
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new('UVMap')
+    for (x, z) in spots:
+        b0 = B(x, z)
+        w, h, yaw, u0 = r.uniform(0.45, 0.85), r.uniform(0.28, 0.62), r.uniform(0, math.pi), r.choice((0.0, 0.5))
+        for q in range(2):
+            a = yaw + q * math.pi / 2 + r.uniform(-0.3, 0.3)
+            cx, cy = math.cos(a) * w / 2, math.sin(a) * w / 2
+            pts = [(b0.x - cx, b0.y - cy, -0.02), (b0.x + cx, b0.y + cy, -0.02), (b0.x + cx, b0.y + cy, h), (b0.x - cx, b0.y - cy, h)]
+            uvs = [(u0, 0), (u0 + 0.5, 0), (u0 + 0.5, 1), (u0, 1)]
+            for order in ((0, 1, 2, 3), (3, 2, 1, 0)):             # one face for each side, so both sides are lit the same
+                f = bm.faces.new([bm.verts.new(pts[i]) for i in order])
+                for loop, i in zip(f.loops, order):
+                    loop[uv].uv = uvs[i]
+    me = bpy.data.meshes.new('tufts')
+    bm.to_mesh(me); bm.free()
+    me.materials.append(m)
+    try:
+        me.normals_split_custom_set([(0.0, 0.0, 1.0)] * len(me.loops))      # lit like the ground they stand on, not like flat cards
+    except Exception as e:
+        say('tufts: custom normals not set', repr(e)[:80])
+    ob = bpy.data.objects.new('tufts', me)
+    scene.collection.objects.link(ob)
+    ob['kind'] = 'unbaked'
+    ob.visible_shadow = False
+    UNBAKED.append(ob)
+    say('tufts:', len(spots))
+
+
 def road_paint():
     m = Mesh('road_paint')
     for z in (66.9, 67.1):
@@ -947,6 +1139,17 @@ def make_world():
     nt = w.node_tree
     bg = nt.nodes.get('Background')
     sv = sun_vector()
+    hdri = os.environ.get('TT_HDRI', 'qwantani_dusk_2')              # a real dusk sky (Poly Haven, CC0); 'none' = the sky made by nodes below
+    hpath = os.path.join(PH, hdri, hdri + '_4k.hdr')
+    if hdri != 'none' and os.path.exists(hpath):
+        tc = nt.nodes.new('ShaderNodeTexCoord'); mp = nt.nodes.new('ShaderNodeMapping'); env = nt.nodes.new('ShaderNodeTexEnvironment')
+        env.image = bpy.data.images.load(hpath)
+        mp.inputs['Rotation'].default_value = (0, 0, math.radians(float(os.environ.get('TT_HDRI_ROT', '116.1'))))     # turns its glow to our west-south-west
+        nt.links.new(tc.outputs['Generated'], mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], env.inputs['Vector'])
+        nt.links.new(env.outputs['Color'], bg.inputs['Color'])
+        bg.inputs['Strength'].default_value = float(os.environ.get('TT_SKY_GAIN', '0.178'))                       # open ground then gets about 0.2 (light / pi)
+        say('sky: photo sky', hdri)
+        return
     try:
         tc = nt.nodes.new('ShaderNodeTexCoord')
         nrm = nt.nodes.new('ShaderNodeVectorMath'); nrm.operation = 'NORMALIZE'
@@ -1017,6 +1220,10 @@ def make_world():
         bg.inputs['Strength'].default_value = 1.0
 
 
+WATTS = {'yard': 1500, 'porch': 110, 'barn_door': 420, 'barn_inside': 170, 'shed': 150, 'highway_w': 2200, 'highway_e': 2200, 'dummy_porch': 100,
+         'gate': 950, 'ford': 900, 'creek_e': 900, 'gravel_w': 1000, 'gravel_m': 1000, 'gravel_e': 1000, 'last_gap': 950, 'last_e': 1100}
+
+
 def lights():
     sv = sun_vector()
     d = bpy.data.lights.new('sun', 'SUN')
@@ -1026,7 +1233,7 @@ def lights():
     o = bpy.data.objects.new('sun', d)
     o.rotation_euler = Vector((0, 0, 1)).rotation_difference(sv).to_euler()
     scene.collection.objects.link(o)
-    watts = {'yard': 1500, 'porch': 110, 'barn_door': 420, 'barn_inside': 170, 'shed': 150, 'highway_w': 2200, 'highway_e': 2200, 'dummy_porch': 100}
+    watts = WATTS
     for lp in L['lamps']:
         point_light(lp['id'], lp['x'], lp['y'] - 0.05, lp['z'], hexcol(lp['color']), watts.get(lp['id'], 400), size=0.12)
     # warm spill from the lit windows
@@ -1038,7 +1245,9 @@ def lights():
 say('building')
 GROUND = build_ground()
 farmhouse(); barn(); silo(); shed(); coop(); dummy_house(); windmill()
-fences(); poles_and_wires(); trees(); props(); road_paint(); casters()
+fences(); poles_and_wires(); trees(); windbreak(); props(); road_paint(); casters()
+if os.environ.get('TT_TUFTS', '0') == '1':
+    tufts()
 make_world(); lights()
 for o in GLOW:
     if o is not None:
