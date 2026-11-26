@@ -645,10 +645,16 @@ export function makeShipMaterials(o = {}) {
     mats.hull.roughnessMap = tex.hull.orm; mats.hull.metalnessMap = tex.hull.orm;
     mats.hull.normalScale = new THREE.Vector2(1.1, 1.1);
   } else { mats.hull.color = new THREE.Color(0xb7b9b3); mats.hull.roughness = 0.55; mats.hull.metalness = 0.5; }
-  mats.hullDark = plain(0x3c4248, 0.55, 0.6);
+  // hullDark (engine mounts, belly, side plates) and engine (the housings) were flat untextured colours, very dark (0x3c4248 /
+  // 0x2b2f33 = 4% / 2.5% albedo) and mostly metal (0.6 / 0.9): on the Mars pad, any face out of the sun got almost no diffuse light
+  // and reflected only the dim sky, so the stern block and engine housings rendered as solid black boxes (Jaron's phone, 11/26).
+  // Now: a dark grey paint over the hull's own panel texture (lines, rivets, wear), mostly dielectric, so shade reads as shade.
+  mats.hullDark = plain(0x8a9299, 1, 0.35);
+  if (tex.hull) { mats.hullDark.map = tex.hull.albedo; mats.hullDark.normalMap = tex.hull.normal; mats.hullDark.roughnessMap = tex.hull.orm; mats.hullDark.metalnessMap = tex.hull.orm; mats.hullDark.normalScale = new THREE.Vector2(0.9, 0.9); }
+  else { mats.hullDark.color.setHex(0x5a6168); mats.hullDark.roughness = 0.6; }
   mats.hullAccent = plain(0xc8632c, 0.5, 0.35);
   mats.hullStripe = plain(0xe0a83c, 0.5, 0.3);
-  mats.engine = plain(0x2b2f33, 0.35, 0.9);
+  mats.engine = withNormal(plain(0x6a7178, 0.8, 0.55), tex.metalDark, 0.6);
   mats.engineGlow = new THREE.MeshBasicMaterial({ color: 0x9fdcff, toneMapped: false, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
   mats.nozzleInner = new THREE.MeshBasicMaterial({ color: 0xffb066, toneMapped: false, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
 
