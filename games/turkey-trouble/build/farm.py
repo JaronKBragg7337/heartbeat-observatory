@@ -143,6 +143,8 @@ for m in bpy.data.materials:
 M['bark_tree'] = tm('bark_tree', 'bark', 0.8, 0.8)
 M['wire'] = material('wire', (0.02, 0.02, 0.022), rough=0.5)
 M['needles'].use_backface_culling = False
+M['far_woods'] = material('far_woods', (0.010, 0.014, 0.018), rough=1.0)
+M['far_woods'].use_backface_culling = False
 PH = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'polyhaven')     # the CC0 photo skies and surfaces (see README credits)
 
 STATIC = {'buildings': [], 'props': [], 'south': []}     # lightmapped, by atlas
@@ -1021,17 +1023,17 @@ def props():
 
 def tufts():
     # dry grass and weeds where nobody mows: fence lines, creek banks, road shoulders, the drive, the field edges
-    N = 256
+    N = 512
     rng = np.random.default_rng(5)
     img = np.zeros((N, N, 4), np.float32)
     ys = np.arange(N)[:, None] / (N - 1.0)
     xs = np.arange(N)[None, :] / (N - 1.0)
-    for k in range(40):
-        x0, lean, h, w = rng.uniform(0.08, 0.92), rng.uniform(-0.2, 0.2), rng.uniform(0.45, 0.98), rng.uniform(0.012, 0.028)
+    for k in range(90):
+        x0, lean, h, w = rng.uniform(0.06, 0.94), rng.uniform(-0.2, 0.2), rng.uniform(0.4, 0.98), rng.uniform(0.005, 0.012)
         cx = x0 + lean * ys ** 1.6
         half = w * np.clip(1 - ys / h, 0, 1) ** 0.7
         a = (np.abs(xs - cx) < half) & (ys < h)
-        col = (np.array([0.20, 0.16, 0.07]) if rng.random() < 0.62 else np.array([0.07, 0.10, 0.04])) * rng.uniform(0.6, 1.0)
+        col = (np.array([0.13, 0.11, 0.055]) if rng.random() < 0.62 else np.array([0.05, 0.07, 0.03])) * rng.uniform(0.6, 1.0)
         shade = 0.5 + 0.5 * ys
         for c in range(3):
             img[:, :, c] = np.where(a, col[c] * shade, img[:, :, c])
@@ -1072,7 +1074,7 @@ def tufts():
     uv = bm.loops.layers.uv.new('UVMap')
     for (x, z) in spots:
         b0 = B(x, z)
-        w, h, yaw, u0 = r.uniform(0.45, 0.85), r.uniform(0.28, 0.62), r.uniform(0, math.pi), r.choice((0.0, 0.5))
+        w, h, yaw, u0 = r.uniform(0.35, 0.7), r.uniform(0.22, 0.5), r.uniform(0, math.pi), r.choice((0.0, 0.5))
         for q in range(2):
             a = yaw + q * math.pi / 2 + r.uniform(-0.3, 0.3)
             cx, cy = math.cos(a) * w / 2, math.sin(a) * w / 2
@@ -1097,9 +1099,32 @@ def tufts():
     say('tufts:', len(spots))
 
 
+def far_woods():
+    # a ragged dark line of far woods all round, so the misty fields never meet the sky in a ruler line
+    r = random.Random(9)
+    bm = bmesh.new()
+    bm.loops.layers.uv.new('UVMap')
+    for (rx, rz, lo, hi, n) in ((128.0, 150.0, 5.0, 9.0, 300), (160.0, 185.0, 8.0, 13.0, 260)):
+        ring = []
+        for k in range(n):
+            a = 2 * math.pi * k / n
+            ring.append((B(rx * math.cos(a), 21 + rz * math.sin(a)), lo + (hi - lo) * (0.5 + 0.25 * math.sin(k * 0.37 + rx) + 0.15 * math.sin(k * 1.13 + rz) + r.uniform(-0.1, 0.1))))      # a lumpy tree line, not peaks
+        for k in range(n):
+            (p0, h0), (p1, h1) = ring[k], ring[(k + 1) % n]
+            bm.faces.new([bm.verts.new((p0.x, p0.y, -0.6)), bm.verts.new((p1.x, p1.y, -0.6)), bm.verts.new((p1.x, p1.y, h1)), bm.verts.new((p0.x, p0.y, h0))])
+    me = bpy.data.meshes.new('far_woods')
+    bm.to_mesh(me); bm.free()
+    me.materials.append(M['far_woods'])
+    ob = bpy.data.objects.new('far_woods', me)
+    scene.collection.objects.link(ob)
+    ob['kind'] = 'unbaked'
+    ob.visible_shadow = False; ob.visible_diffuse = False; ob.visible_glossy = False       # it must not shade the farm from the sky
+    UNBAKED.append(ob)
+
+
 def road_paint():
     m = Mesh('road_paint')
-    for z in (66.9, 67.1):
+    for z in (65.03, 65.27, 68.73, 68.97):                 # two painted strips between the three rows of traffic: a place to wait
         m.box(M['road_yellow'], (0, -z, 0.012), (BND['maxX'] - BND['minX'], 0.1, 0.012))
     for z in (62.35, 71.65):
         m.box(M['road_white'], (0, -z, 0.012), (BND['maxX'] - BND['minX'], 0.11, 0.012))
@@ -1245,7 +1270,7 @@ def lights():
 say('building')
 GROUND = build_ground()
 farmhouse(); barn(); silo(); shed(); coop(); dummy_house(); windmill()
-fences(); poles_and_wires(); trees(); windbreak(); props(); road_paint(); casters()
+fences(); poles_and_wires(); trees(); windbreak(); props(); road_paint(); casters(); far_woods()
 if os.environ.get('TT_TUFTS', '0') == '1':
     tufts()
 make_world(); lights()

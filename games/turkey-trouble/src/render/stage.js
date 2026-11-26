@@ -379,7 +379,7 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
       if (src.userData.kind === 'spin') spinners.push(src);
       if (m.name === 'tufts') { m.transparent = false; m.alphaTest = 0.42; m.depthWrite = true; m.roughness = 1; m.envMapIntensity = 0.7; }      // grass cut-outs
       o.material = patchLit(m);
-      if (m.name === 'far') { m.roughness = 1; m.envMapIntensity = 0.6; }
+      if (m.name === 'far' || m.name === 'far_woods') { m.roughness = 1; m.envMapIntensity = 0.6; }
     }
   }
   for (const s of spinners) { s.traverse((c) => { c.matrixAutoUpdate = true; }); }
