@@ -29,13 +29,14 @@ const CSS = `
 #ff-bar .warpc{display:none}
 /* a phone on its side has no height to spare: one row, the compression is one button that steps through the choices */
 @media (max-height:480px) and (orientation:landscape){#ff-bar{display:flex;flex-wrap:nowrap;gap:5px;padding:4px}#ff-bar[hidden]{display:none!important}#ff-bar .ffrow:not([hidden]){display:contents}#ff-bar .ffnote{display:none!important}#ff-bar [data-a=warp]{display:none}#ff-bar .warpc{display:block}}
+#ff-bar .fftip{font-size:11px;color:#ffe1bb;background:#3a2a14;border:1px solid #ba936a;border-radius:8px;padding:5px 8px;margin-bottom:5px;text-align:center}#ff-bar .fftip[hidden]{display:none!important}
 #ff-overlay{position:fixed;inset:0;width:100%;height:100%;z-index:64;pointer-events:none;display:none}
 @media (max-width:520px){#ff-bar{left:12px;right:12px;width:auto;transform:none;bottom:112px;font-size:10px}#ff-bar button{font-size:10px;padding:2px}}
 `;
 const fmtD = (m) => (!Number.isFinite(m) ? '—' : Math.abs(m) >= 1e7 ? `${(m / 1000).toFixed(0)} km` : Math.abs(m) >= 1e5 ? `${(m / 1000).toFixed(0)} km` : Math.abs(m) >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
 const fmtV = (v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(2)} km/s` : `${Math.round(v)} m/s`);
 export const fmtT = (s) => (!Number.isFinite(s) ? '—' : s >= 5400 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} m` : s >= 120 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
-const FFHINT = 'W/S pitch · A/D turn · Q/E roll · Space thrust · C brake · J L I K U O jets · E stand';
+const FFHINT = 'W/S pitch · A/D turn · Q/E roll · Space thrust · C brake · J L I K U O jets · P free flight off · X stand';
 const ASSIST_LABEL = { off: 'OFF', prograde: 'PROGRADE', retro: 'RETRO', target: 'TARGET' };
 const THROTTLES = [0.25, 0.5, 1];
 
@@ -64,6 +65,19 @@ export class FreeFlightUI {
     const cv = document.createElement('canvas'); cv.id = 'ff-overlay'; document.body.appendChild(cv);
     this.cv = cv; this.ctx = cv.getContext('2d');
     this._build();
+    // FREEFLIGHT keys: P arms / disarms free flight from the pilot or captain seat; X stands up while the ship is flying (E is roll then).
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.code === 'KeyP' && this._seated() && !(this.space.trip && this.space.trip.active)) this.space.ffCommand({ enabled: !this.ff.enabled });
+      else if (e.code === 'KeyX' && this.ship.seat) this.ship.interact();
+    });
+  }
+
+  /** True while the pilot is flying: E must roll, never stand. Parked and not armed, E stands as before. */
+  eIsRoll() {
+    const f = this.ship.flight;
+    return this._seated() && (this.ff.enabled || this.ff.active || !(f && f.landed));
   }
 
   get ff() { return this.space.ff; }
@@ -72,12 +86,12 @@ export class FreeFlightUI {
 
   _build() {
     const bar = this.bar, mk = (a, txt, extra = '') => `<button data-a="${a}" ${extra}>${txt}</button>`;
-    bar.innerHTML = `<div class="ffnote" id="ff-note"></div>
+    bar.innerHTML = `<div class="ffnote" id="ff-note"></div><div class="fftip" id="ff-tip" hidden></div>
       <div class="ffrow" id="ff-row1">${mk('toggle', 'FREE FLIGHT')}${mk('assist', 'ASSIST')}${mk('target', 'TARGET')}</div>
       <div class="ffrow" id="ff-row2">${mk('thr', 'THR')}${mk('rcs', 'RCS')}</div>
       <div class="ffrow" id="ff-warps">${FREE.warps.map((w) => mk('warp', '×' + w, `data-w="${w}"`)).join('')}${mk('warpc', '×1', 'class="warpc"')}</div>`;
     for (const b of bar.querySelectorAll('button')) bindActivation(b, () => this._press(b));
-    this.els = { note: bar.querySelector('#ff-note'), row1: bar.querySelector('#ff-row1'), row2: bar.querySelector('#ff-row2'), warps: bar.querySelector('#ff-warps'),
+    this.els = { note: bar.querySelector('#ff-note'), tip: bar.querySelector('#ff-tip'), row1: bar.querySelector('#ff-row1'), row2: bar.querySelector('#ff-row2'), warps: bar.querySelector('#ff-warps'),
       toggle: bar.querySelector('[data-a=toggle]'), assist: bar.querySelector('[data-a=assist]'), target: bar.querySelector('[data-a=target]'),
       thr: bar.querySelector('[data-a=thr]'), rcs: bar.querySelector('[data-a=rcs]'), warpc: bar.querySelector('[data-a=warpc]') };
   }
@@ -97,6 +111,15 @@ export class FreeFlightUI {
   update(dt) {
     const ff = this.ff, seated = this._seated(), show = seated && !(this.space.trip && this.space.trip.active);
     this.bar.hidden = !show;
+    if (ff.enabled) { try { localStorage.setItem('cosmos.ffUsed', '1'); } catch { /* private mode: the tip just keeps showing */ } this._used = true; }
+    if (this._used === undefined) { try { this._used = localStorage.getItem('cosmos.ffUsed') === '1'; } catch { this._used = false; } }
+    if (this.els.tip) {
+      const showTip = show && !this._used && !ff.enabled && !ff.active;
+      this.els.tip.hidden = !showTip;
+      if (showTip && !this.els.tip.textContent) this.els.tip.textContent = window.matchMedia && matchMedia('(pointer: coarse)').matches
+        ? 'Free flight: tap FREE FLIGHT below, then hold LIFT to climb out of the air.'
+        : 'Free flight: press P (or click FREE FLIGHT), then hold Space to climb out of the air.';
+    }
     const overlay = show && ff.active;
     this.cv.style.display = overlay ? 'block' : 'none';
     // THRUST and BRAKE: the same two buttons that read LIFT and SINK on the ground
@@ -104,7 +127,7 @@ export class FreeFlightUI {
     const want = ff.active && seated ? ['THRUST ▲', 'BRAKE ▼'] : ['LIFT ▲', 'SINK ▼'];
     if (lift && lift.textContent !== want[0]) { lift.textContent = want[0]; sink.textContent = want[1]; }
     const hint = document.getElementById('ship-hint');                  // the desktop key hint says what the keys do now
-    if (hint) { if (ff.active && seated) { if (this._hint0 === undefined) this._hint0 = hint.textContent; hint.textContent = FFHINT; } else if (this._hint0 !== undefined) { hint.textContent = this._hint0; this._hint0 = undefined; } }
+    if (hint) { if ((ff.active || ff.enabled) && seated) { if (this._hint0 === undefined) this._hint0 = hint.textContent; hint.textContent = ff.active ? FFHINT : this._hint0.replace('E stand', 'X stand · E rolls'); } else if (this._hint0 !== undefined) { hint.textContent = this._hint0; this._hint0 = undefined; } }
     if (!show) return;
     this.acc += dt;
     if (this.acc >= 0.25) { this.acc = 0; this._draw(); }

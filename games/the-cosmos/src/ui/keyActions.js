@@ -4,6 +4,7 @@ export const KEY_ACTIONS = [
   ['KeyG','Debug · G'],['KeyV','View · V'],['KeyE','Use / dig / lift · E'],
   ['KeyQ','Drop one · Q'],['KeyR','Drop all · R'],['KeyC','Climb / descend · C'],
   ['KeyT','Talk / hire · T'],['KeyF','Fire · F'],
+  ['KeyP','Free flight · P'],['KeyX','Stand up · X'],
   ['Digit1','Spade · 1'],['Digit2','Shovel · 2'],['Digit3','Bucket · 3'],
   ['Space','Jump / ascend'],['KeyW','Forward'],['KeyS','Back'],['KeyA','Left'],['KeyD','Right'],
   ['ShiftLeft','Run'],['Escape','Close panels'],

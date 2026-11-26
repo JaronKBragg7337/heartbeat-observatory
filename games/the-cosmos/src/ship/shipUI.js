@@ -195,8 +195,8 @@ export class ShipUI {
     if (gun) { this.btnFire.style.display = 'block'; this.reticle.style.display = 'block'; }
 
     let hint = 'E stand';
-    if (id === 'captain') hint = 'W/S go · mouse or A/D steer · Space up · C down · Shift boost · L land · V view · M mode · click or F fire · E stand';
-    else if (id === 'pilot') hint = 'W/S go · mouse or A/D steer · Space up · C down · Shift boost · L land · V view · M mode · N course · E stand';
+    if (id === 'captain') hint = 'W/S go · mouse or A/D steer · Space up · C down · Shift boost · L land · V view · M mode · click or F fire · P free flight · E stand';
+    else if (id === 'pilot') hint = 'W/S go · mouse or A/D steer · Space up · C down · Shift boost · L land · V view · M mode · N course · P free flight · E stand';
     else if (id === 'gun_dorsal' || id === 'gun_ventral') hint = 'mouse aims · click or F fire · E stand';
     else if (id === 'engineer') hint = 'route power with the panel · E stand';
     else if (id === 'nav') hint = 'range button cycles the map · N course · E stand';

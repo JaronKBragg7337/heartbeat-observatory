@@ -1262,7 +1262,7 @@ window.addEventListener('keydown', (e) => {
     view.mode = view.mode === 'first' ? 'third' : 'first';
     document.getElementById('set-view').value = view.mode;
   }
-  if (e.code === 'KeyE') {
+  if (e.code === 'KeyE' && !space?.ffUI?.eIsRoll()) {   // FREEFLIGHT: in flight E is roll; X stands (freeflightUI.js)
     const va = vehicles?.contextAction();
     if (va && !e.repeat) { const r = va.run(); if (r && r.then) r.then((x) => { if (x && x.msg) flash(x.msg); }); else if (r && r.msg) flash(r.msg); hudAccum = 1; }
     else if (va) { /* held: one action per press */ }
