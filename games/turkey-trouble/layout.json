@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "about": "Turkey Trouble: the one map both the Blender scene and the game read. Meters. x = east, z = south, y = up (three.js). rotY is three.js rotation.y. Models face +z at rotY 0. Never hard-code a position in code: read it here.",
+  "bounds": { "minX": -70, "maxX": 70, "minZ": -70, "maxZ": 112 },
+  "arena": { "minX": -36, "maxX": 36, "minZ": -62, "maxZ": 0, "about": "the farmstead: modes 1, 2 and 3 are played inside this fence" },
+  "spawns": {
+    "player": { "x": -2, "z": -5, "rotY": 3.14159 },
+    "turkeyHunted": { "x": 6, "z": -22, "rotY": 0 },
+    "escapeStart": { "x": 17, "z": -33.5, "rotY": 0 }
+  },
+  "colliders": [
+    { "id": "farmhouse", "type": "box", "x": -19, "z": -42, "w": 11, "d": 8.5, "rotY": 0, "h": 7.5 },
+    { "id": "porch", "type": "box", "x": -19, "z": -36.4, "w": 11, "d": 2.7, "rotY": 0, "h": 3 },
+    { "id": "barn_west", "type": "box", "x": 11.2, "z": -44, "w": 0.5, "d": 17, "rotY": 0, "h": 7 },
+    { "id": "barn_east", "type": "box", "x": 22.8, "z": -44, "w": 0.5, "d": 17, "rotY": 0, "h": 7 },
+    { "id": "barn_back", "type": "box", "x": 17, "z": -41.2, "w": 11.6, "d": 0.5, "rotY": 0, "h": 7, "about": "inner wall: the first 6 m inside the south door can be walked into" },
+    { "id": "barn_front_w", "type": "box", "x": 12.9, "z": -35.6, "w": 3.8, "d": 0.5, "rotY": 0, "h": 7 },
+    { "id": "barn_front_e", "type": "box", "x": 21.1, "z": -35.6, "w": 3.8, "d": 0.5, "rotY": 0, "h": 7 },
+    { "id": "silo", "type": "circle", "x": 26.5, "z": -54, "r": 2.7, "h": 11 },
+    { "id": "shed_north", "type": "box", "x": 25, "z": -25.1, "w": 7, "d": 0.4, "rotY": 0, "h": 3.4 },
+    { "id": "shed_south", "type": "box", "x": 25, "z": -14.9, "w": 7, "d": 0.4, "rotY": 0, "h": 3.4 },
+    { "id": "shed_east", "type": "box", "x": 28.3, "z": -20, "w": 0.4, "d": 10.4, "rotY": 0, "h": 3.4 },
+    { "id": "coop", "type": "box", "x": -28, "z": -22, "w": 4, "d": 3, "rotY": 0.12, "h": 2.6 },
+    { "id": "woodpile", "type": "box", "x": -26.6, "z": -36, "w": 1.2, "d": 4.2, "rotY": 0, "h": 1.4 },
+    { "id": "pickup_parked", "type": "box", "x": -7, "z": -31, "w": 2.1, "d": 5.6, "rotY": 0.35, "h": 1.9 },
+    { "id": "tractor_parked", "type": "box", "x": 14, "z": -25, "w": 2.4, "d": 4.2, "rotY": -0.5, "h": 2.8 },
+    { "id": "bale_a", "type": "circle", "x": 3, "z": -14, "r": 0.95, "h": 1.5 },
+    { "id": "bale_b", "type": "circle", "x": 5.1, "z": -13.1, "r": 0.95, "h": 1.5 },
+    { "id": "bale_c", "type": "circle", "x": 4.3, "z": -15.8, "r": 0.95, "h": 1.5 },
+    { "id": "bale_stack", "type": "box", "x": 9.4, "z": -37, "w": 2.6, "d": 1.4, "rotY": 0, "h": 1.6 },
+    { "id": "oak", "type": "circle", "x": -9, "z": -15, "r": 0.75, "h": 12 },
+    { "id": "windmill", "type": "box", "x": -1, "z": -53, "w": 2.4, "d": 2.4, "rotY": 0.78, "h": 12 },
+    { "id": "trough", "type": "box", "x": 3.2, "z": -50.5, "w": 2.6, "d": 0.9, "rotY": 0.1, "h": 0.7 },
+    { "id": "yard_pole", "type": "circle", "x": -0.5, "z": -30, "r": 0.22, "h": 8 },
+    { "id": "scarecrow", "type": "circle", "x": 30, "z": -11, "r": 0.3, "h": 2.2 },
+    { "id": "shock_a", "type": "circle", "x": 27, "z": -6, "r": 0.8, "h": 2 },
+    { "id": "shock_b", "type": "circle", "x": 33.2, "z": -8.6, "r": 0.8, "h": 2 },
+    { "id": "shock_c", "type": "circle", "x": 31.6, "z": -5, "r": 0.8, "h": 2 },
+    { "id": "wheelbarrow", "type": "box", "x": -25, "z": -7, "w": 0.8, "d": 1.6, "rotY": 0.6, "h": 0.8 },
+    { "id": "mailbox", "type": "circle", "x": 2.4, "z": 32.6, "r": 0.2, "h": 1.3 },
+    { "id": "dummy_house", "type": "box", "x": 0, "z": 102, "w": 7.5, "d": 6, "rotY": 0, "h": 5 },
+    { "id": "dummy_sign", "type": "circle", "x": 3.4, "z": 94.5, "r": 0.15, "h": 1.6 }
+  ],
+  "fences": [
+    { "id": "north_w", "x1": -36, "z1": -62, "x2": 29.5, "z2": -62 },
+    { "id": "north_e", "x1": 33.5, "z1": -62, "x2": 36, "z2": -62 },
+    { "id": "east", "x1": 36, "z1": -62, "x2": 36, "z2": 0 },
+    { "id": "south_e", "x1": 36, "z1": 0, "x2": 3, "z2": 0 },
+    { "id": "south_w", "x1": -3, "z1": 0, "x2": -36, "z2": 0 },
+    { "id": "west_s", "x1": -36, "z1": 0, "x2": -36, "z2": -24 },
+    { "id": "west_n", "x1": -36, "z1": -28, "x2": -36, "z2": -62 }
+  ],
+  "exits": [
+    { "id": "woods_gap", "x": -36, "z": -26, "r": 2.2, "about": "gap in the west fence toward the woods" },
+    { "id": "silo_gap", "x": 31.5, "z": -62, "r": 2.2, "about": "gap in the north fence behind the silo" },
+    { "id": "south_gate", "x": 0, "z": 0, "r": 3, "about": "the open gate to the driveway" }
+  ],
+  "hides": [
+    { "id": "bales", "x": 4.2, "z": -14.6, "rotY": 1.2, "kind": "between", "peek": { "x": 2.2, "z": -12.4 }, "about": "between the three round bales" },
+    { "id": "barn", "x": 13.2, "z": -39.6, "rotY": 0.7, "kind": "inside", "peek": { "x": 15.5, "z": -37.5 }, "about": "the dark corner just inside the barn door" },
+    { "id": "under_truck", "x": -7.6, "z": -32.8, "rotY": 0.35, "kind": "behind", "peek": { "x": -9.4, "z": -34.2 }, "about": "behind the parked pickup, by the back wheel" },
+    { "id": "woodpile", "x": -28, "z": -36.6, "rotY": 1.57, "kind": "behind", "peek": { "x": -28.4, "z": -33.6 }, "about": "behind the woodpile at the house" },
+    { "id": "coop", "x": -30.6, "z": -22.6, "rotY": 1.4, "kind": "behind", "peek": { "x": -30.4, "z": -20 }, "about": "behind the chicken coop" },
+    { "id": "shed", "x": 26.6, "z": -23.4, "rotY": -1.2, "kind": "inside", "peek": { "x": 24.5, "z": -21.5 }, "about": "the back corner of the open machine shed" },
+    { "id": "tractor", "x": 15.6, "z": -26.8, "rotY": -0.5, "kind": "behind", "peek": { "x": 16.8, "z": -24.6 }, "about": "behind the big back wheel of the tractor" },
+    { "id": "shocks", "x": 31.4, "z": -7.2, "rotY": 2.6, "kind": "between", "peek": { "x": 29.6, "z": -6.4 }, "about": "between the corn shocks" },
+    { "id": "scarecrow", "x": 30.6, "z": -12.2, "rotY": 2.9, "kind": "behind", "peek": { "x": 31.4, "z": -10.6 }, "about": "behind the scarecrow, standing very still" },
+    { "id": "silo", "x": 29.6, "z": -55.6, "rotY": -1.9, "kind": "behind", "peek": { "x": 28.6, "z": -51.4 }, "about": "behind the silo" },
+    { "id": "windmill", "x": -2.6, "z": -55.4, "rotY": 0.4, "kind": "behind", "peek": { "x": -3.6, "z": -52.6 }, "about": "behind the windmill legs" },
+    { "id": "pumpkins", "x": -29.4, "z": -9.6, "rotY": 2.2, "kind": "among", "peek": { "x": -27.6, "z": -8.4 }, "about": "sitting low among the pumpkins" },
+    { "id": "oak", "x": -10.4, "z": -16, "rotY": 1.1, "kind": "behind", "peek": { "x": -10.2, "z": -13.8 }, "about": "behind the oak tree" },
+    { "id": "porch_end", "x": -25.6, "z": -35.6, "rotY": 0.2, "kind": "behind", "peek": { "x": -25.8, "z": -33.4 }, "about": "at the west end of the porch, by the steps" }
+  ],
+  "lamps": [
+    { "id": "yard", "x": 1, "y": 7.6, "z": -30, "color": "#ffb061", "reach": 20, "power": 1.0 },
+    { "id": "porch", "x": -19, "y": 2.7, "z": -35.4, "color": "#ffc98a", "reach": 10, "power": 0.7 },
+    { "id": "barn_door", "x": 17, "y": 5.4, "z": -35.1, "color": "#ffd9a0", "reach": 13, "power": 0.8 },
+    { "id": "barn_inside", "x": 17, "y": 3.6, "z": -38.6, "color": "#ffcf8f", "reach": 8, "power": 0.6 },
+    { "id": "shed", "x": 24.4, "y": 2.8, "z": -20, "color": "#ffd9a0", "reach": 8, "power": 0.6 },
+    { "id": "highway_w", "x": -15, "y": 8.4, "z": 61, "color": "#ffb061", "reach": 24, "power": 1.0 },
+    { "id": "highway_e", "x": 15, "y": 8.4, "z": 73, "color": "#ffb061", "reach": 24, "power": 1.0 },
+    { "id": "dummy_porch", "x": 0, "y": 2.5, "z": 98.6, "color": "#ffcf90", "reach": 10, "power": 0.8 }
+  ],
+  "surfaces": [
+    { "kind": "yard_dirt", "minX": -36, "maxX": 36, "minZ": -62, "maxZ": 0 },
+    { "kind": "gravel", "minX": -2.6, "maxX": 2.6, "minZ": 0, "maxZ": 34 },
+    { "kind": "grass", "minX": -70, "maxX": 70, "minZ": 0, "maxZ": 6 }
+  ],
+  "sizes": {
+    "about": "footprints for the rules (w across, l along its heading). A log's length is drawn between lMin and lMax.",
+    "turkey": { "w": 0.6, "l": 0.9, "h": 1.0 },
+    "person": { "w": 0.5, "l": 0.5, "h": 1.76 },
+    "dog": { "w": 0.4, "l": 1.0, "h": 0.7 },
+    "pickup": { "w": 2.0, "l": 5.6, "h": 1.9 },
+    "tractor_wagon": { "w": 2.4, "l": 9.6, "h": 2.7 },
+    "grain_truck": { "w": 2.5, "l": 9.2, "h": 3.2 },
+    "log": { "w": 0.9, "lMin": 3.2, "lMax": 4.6, "h": 0.5 }
+  },
+  "escape": {
+    "about": "Mode 4. The turkey starts in the barn door and goes south. Vehicles drive along x. A lane's speed is its base speed times the game's speed-up. Vehicles spawn outside the corridor and are recycled.",
+    "corridor": { "minX": -30, "maxX": 30 },
+    "spawnX": 62,
+    "farmer": { "person": "walter", "patrol": [ { "x": -12, "z": -20 }, { "x": 9, "z": -9 }, { "x": 2, "z": -3 }, { "x": -14, "z": -8 } ], "speed": 2.1, "sees": 10, "netReach": 1.5 },
+    "dog": { "home": { "x": -14, "z": -32 }, "wakes": 9, "speed": 5.2, "givesUpZ": 2 },
+    "lanes": [
+      { "id": "yard", "kind": "yard", "z0": -34, "z1": 0, "about": "cross the farmyard past the farmer and the dog; leave by the south gate (x -3..3)" },
+      { "id": "farmlane", "kind": "lane", "z0": 6, "z1": 12, "sublanes": [ { "z": 9, "dir": 1, "speed": 3.2, "vehicle": "tractor_wagon", "gapMin": 24, "gapMax": 38 } ] },
+      { "id": "creek", "kind": "creek", "z0": 18, "z1": 28, "about": "water: ride the drifting logs, or use the stones at the ford. Falling in puts the turkey back on the north bank.",
+        "sublanes": [ { "z": 20.6, "dir": 1, "speed": 1.6, "vehicle": "log", "gapMin": 2.4, "gapMax": 4.6 }, { "z": 23, "dir": 1, "speed": 2.3, "vehicle": "log", "gapMin": 2.8, "gapMax": 5.2 }, { "z": 25.4, "dir": 1, "speed": 1.9, "vehicle": "log", "gapMin": 2.4, "gapMax": 4.8 } ],
+        "stones": [ { "x": -22, "z": 19.6 }, { "x": -21.2, "z": 21.4 }, { "x": -22.4, "z": 23.1 }, { "x": -21.4, "z": 24.9 }, { "x": -22.2, "z": 26.6 } ] },
+      { "id": "gravel", "kind": "road", "z0": 34, "z1": 40, "sublanes": [ { "z": 35.5, "dir": -1, "speed": 7.5, "vehicle": "pickup", "gapMin": 14, "gapMax": 26 }, { "z": 38.5, "dir": 1, "speed": 8.2, "vehicle": "pickup", "gapMin": 14, "gapMax": 26 } ] },
+      { "id": "stubble", "kind": "field", "z0": 44, "z1": 58, "sublanes": [ { "z": 51, "dir": -1, "speed": 2.4, "vehicle": "tractor_wagon", "gapMin": 30, "gapMax": 46 } ] },
+      { "id": "highway", "kind": "road", "z0": 62, "z1": 72, "sublanes": [ { "z": 64, "dir": 1, "speed": 11, "vehicle": "pickup", "gapMin": 16, "gapMax": 30 }, { "z": 67, "dir": -1, "speed": 12.5, "vehicle": "pickup", "gapMin": 16, "gapMax": 30 }, { "z": 70, "dir": 1, "speed": 9.5, "vehicle": "grain_truck", "gapMin": 32, "gapMax": 48 } ] },
+      { "id": "lastroad", "kind": "road", "z0": 80, "z1": 86, "sublanes": [ { "z": 81.5, "dir": -1, "speed": 14, "vehicle": "pickup", "gapMin": 20, "gapMax": 34 }, { "z": 84.5, "dir": 1, "speed": 15, "vehicle": "pickup", "gapMin": 20, "gapMax": 34 } ] }
+    ],
+    "finish": { "door": { "x": 0, "z": 98.3, "rotY": 0 }, "signText": "The Dummy's House", "signAt": { "x": 3.4, "z": 94.5 }, "path": [ { "x": 0, "z": 88 }, { "x": 0, "z": 98.3 } ] }
+  }
+}

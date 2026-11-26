@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#140d09" />
+<meta name="description" content="Turkey Trouble: a Thanksgiving night on the farm. Find the turkey, run from it, chase it, then help it escape. Plays on a phone." />
+<title>Turkey Trouble - Heartbeat Observatory</title>
+<!-- hb:no-phone -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" />
+<link rel="stylesheet" href="./style.css" />
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"
+} }
+</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<div id="app">
+  <canvas id="c" aria-label="Turkey Trouble game view"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="hurt" id="hurt" aria-hidden="true"></div>
+
+  <!-- HUD: only what the moment needs -->
+  <header class="hud" id="hud" hidden>
+    <div class="pill" id="hudPill"><span id="hudLabel">Find the Turkey</span><b id="hudTime">0:00</b></div>
+    <div class="hud-mid">
+      <div class="heart" id="heart" hidden aria-label="Heartbeat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.4.7-1.2 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg><span id="bpm">60</span></div>
+      <div class="hearts" id="hearts" hidden aria-label="Hearts left"></div>
+      <div class="woods" id="woods" hidden><span class="arrow" id="woodsArrow" aria-hidden="true">&#x2191;</span>WOODS</div>
+    </div>
+    <div class="corner">
+      <button class="mini" id="btnMute" aria-label="Sound on" title="Sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path id="sndWaves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="mini" id="btnPause" aria-label="Pause" title="Pause">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="stamina" id="stamina" hidden><i id="staminaBar"></i></div>
+  <button class="action" id="btnAction" hidden aria-label="Action">Dive</button>
+  <div class="toast" id="toast" aria-live="polite"></div>
+  <div class="hint" id="hint" hidden></div>
+  <div class="dev" id="dev" hidden></div>
+
+  <!-- loading -->
+  <div class="screen" id="loading">
+    <div class="card">
+      <h1 class="title">Turkey Trouble</h1>
+      <div class="bar"><i id="loadBar"></i></div>
+      <p class="small" id="loadMsg">Setting the table&hellip;</p>
+    </div>
+  </div>
+
+  <!-- title -->
+  <div class="screen" id="title" hidden>
+    <div class="card wide" role="dialog" aria-modal="true" aria-labelledby="ttl">
+      <h1 class="title" id="ttl">Turkey Trouble</h1>
+      <p class="lede">Thanksgiving night. The turkey is loose on the farm.</p>
+      <div class="modes" id="modes">
+        <button class="mode story" data-mode="story"><b>Story</b><span>All four, in order</span></button>
+        <button class="mode" data-mode="find"><b>Find the Turkey</b><span>Follow the gobble</span></button>
+        <button class="mode" data-mode="hunted"><b>It Hunts You</b><span>Last 75 seconds</span></button>
+        <button class="mode" data-mode="hunt"><b>You Hunt It</b><span>Catch it before it gets out</span></button>
+        <button class="mode" data-mode="escape"><b>Escape the Farm</b><span>You are the turkey. Get to the woods</span></button>
+      </div>
+      <p class="who">Who are you tonight?</p>
+      <div class="people" id="people" role="radiogroup" aria-label="Who are you tonight?"></div>
+      <p class="tiny" id="controlsHint">Left thumb walks (push to the edge to run). Right side looks around.</p>
+    </div>
+  </div>
+
+  <!-- between story chapters -->
+  <div class="screen dim" id="between" hidden>
+    <div class="card">
+      <p class="chapter" id="betweenLine"></p>
+      <button class="btn-big" id="btnBetween">Keep going</button>
+    </div>
+  </div>
+
+  <!-- results -->
+  <div class="screen dim" id="result" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+      <h2 class="title small-title" id="resTitle">Found it!</h2>
+      <p class="lede" id="resText"></p>
+      <p class="small" id="resBest"></p>
+      <button class="btn-big" id="btnNext">Play again</button>
+      <button class="btn-ghost" id="btnRetry" hidden>Try again</button>
+      <button class="btn-ghost" id="btnHome">Back to the farm</button>
+    </div>
+  </div>
+
+  <!-- pause -->
+  <div class="screen dim" id="pause" hidden>
+    <div class="card">
+      <h2 class="title small-title">Paused</h2>
+      <button class="btn-big" id="btnResume">Keep playing</button>
+      <button class="btn-ghost" id="btnRestart">Start this over</button>
+      <button class="btn-ghost" id="btnQuit">Back to the farm</button>
+    </div>
+  </div>
+
+  <!-- the ending card: three lines and nothing else (buttons arrive later, below it) -->
+  <div class="screen ending" id="ending" hidden>
+    <div class="ending-card"><p class="eline" id="e1"></p><p class="eline" id="e2"></p><p class="eline" id="e3"></p></div>
+    <div class="ending-buttons" id="endingButtons" hidden>
+      <button class="btn-small" id="btnFaster">Run again (faster)</button>
+      <button class="btn-small" id="btnFarm">Back to the farm</button>
+    </div>
+  </div>
+
+  <!-- the graphics went away -->
+  <div class="screen dim" id="glLost" hidden>
+    <div class="card"><h2 class="title small-title">The picture went dark.</h2><p class="small">The phone took the graphics back. It happens.</p><button class="btn-big" id="btnReload">Tap to reload</button></div>
+  </div>
+  <noscript><div class="screen"><div class="card"><p>Turkey Trouble needs JavaScript.</p></div></div></noscript>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

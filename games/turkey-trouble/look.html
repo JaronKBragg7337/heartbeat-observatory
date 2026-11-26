@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Turkey Trouble: look check (not the game)</title>
+<!-- hb:no-phone -->
+<style>html,body{margin:0;height:100%;background:#07090d;overflow:hidden}canvas{display:block;width:100vw;height:100dvh;touch-action:none}#i{position:fixed;left:8px;top:8px;color:#e8d8b8;font:12px system-ui;background:rgba(0,0,0,.5);padding:4px 8px;border-radius:6px;white-space:pre}</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="c"></canvas><div id="i">loading</div>
+<script type="module">
+// A walk-around camera for judging the look. ?cam=yard|barn|house|highway|dummy|creek|gate  ?q=low|mid|high  ?still=1
+import { createStage } from './src/render/stage.js';
+const info = document.getElementById('i'), P = new URLSearchParams(location.search);
+const CAMS = { yard: [-3.5, 1.9, -3.5, 1, 2.6, -36], barn: [8.5, 1.6, -24.5, 17, 2.6, -37], house: [-10, 1.6, -27, -19, 2.8, -38], highway: [-3, 1.5, 57.5, 2, 1.2, 100],
+  dummy: [-4.5, 1.5, 91, 1.5, 1.6, 100], creek: [-10, 2.2, 14, 6, 0.2, 26], gate: [0, 1.7, 6, 0, 1.4, 40], west: [10, 1.7, -20, -40, 4, -24], lamp: [6, 1.2, -22, 1, 0.2, -30], actors: [5.6, 1.25, -23.2, 3.0, 0.8, -27.0], close: [3.9, 0.9, -25.4, 2.4, 0.62, -26.6] };
+try {
+  const stage = await createStage({ canvas: document.getElementById('c'), quality: P.get('q') || 'auto', onProgress: (p) => { info.textContent = 'loading ' + Math.round(p * 100) + '%'; } });
+  const { THREE, camera } = stage;
+  const c = CAMS[P.get('cam')] || CAMS.yard;
+  camera.position.set(c[0], c[1], c[2]);
+  let yaw = Math.atan2(c[3] - c[0], c[5] - c[2]), pitch = Math.atan2(c[4] - c[1], Math.hypot(c[3] - c[0], c[5] - c[2]));
+  const keys = {};
+  addEventListener('keydown', (e) => { keys[e.code] = true; });
+  addEventListener('keyup', (e) => { keys[e.code] = false; });
+  let drag = null;
+  addEventListener('pointerdown', (e) => { drag = [e.clientX, e.clientY]; });
+  addEventListener('pointerup', () => { drag = null; });
+  addEventListener('pointermove', (e) => { if (!drag) return; yaw -= (e.clientX - drag[0]) * 0.004; pitch = Math.max(-1.3, Math.min(1.3, pitch - (e.clientY - drag[1]) * 0.004)); drag = [e.clientX, e.clientY]; });
+  addEventListener('resize', () => stage.resize());
+  if (P.get('turkey')) { const t = await stage.loadModel('turkey'); t.position.set(2.3, 0, -26.6); t.rotation.y = 0.9; stage.dynamic.add(t); window.__turkey = t; }
+  if (P.get('truck')) { const t = await stage.loadModel('pickup'); t.position.set(-7, 0, -31); t.rotation.y = 0.35; stage.dynamic.add(t); }
+  if (P.get('person')) { const p = await stage.loadPerson(P.get('person')); p.root.position.set(4.3, 0, -28.2); p.root.rotation.y = 0.5; stage.dynamic.add(p.root); if (p.actions.Idle) p.actions.Idle.play(); window.__person = p; }
+  let last = performance.now(), frames = 0, acc = 0, fps = 0;
+  stage.renderer.info.autoReset = false;
+  window.__look = { stage, ready: true };
+  stage.renderer.setAnimationLoop((now) => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const sp = (keys.ShiftLeft ? 18 : 5) * dt, f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), u = (keys.KeyE ? 1 : 0) - (keys.KeyQ ? 1 : 0);
+    camera.position.x += (Math.sin(yaw) * f - Math.cos(yaw) * s) * sp; camera.position.z += (Math.cos(yaw) * f + Math.sin(yaw) * s) * sp; camera.position.y += u * sp;
+    camera.lookAt(camera.position.x + Math.sin(yaw) * Math.cos(pitch), camera.position.y + Math.sin(pitch), camera.position.z + Math.cos(yaw) * Math.cos(pitch));
+    if (window.__person) window.__person.mixer.update(dt);
+    stage.update(P.get('still') ? 0 : dt, { x: camera.position.x, z: camera.position.z });
+    stage.renderer.info.reset();
+    stage.render();
+    frames += 1; acc += dt;
+    if (P.get('shot') && !window.__shot && (window.__n = (window.__n || 0) + 1) > 40) {
+      window.__shot = 'sending';
+      stage.renderer.domElement.toBlob((b) => { fetch('http://127.0.0.1:8767/save?name=' + encodeURIComponent(P.get('shot')), { method: 'POST', body: b }).then(() => { window.__shot = 'saved'; }).catch((e) => { window.__shot = 'failed: ' + e; }); }, 'image/png');
+    }
+    if (acc > 1) { fps = Math.round(frames / acc); frames = 0; acc = 0; const r = stage.renderer.info.render; info.textContent = `${fps} fps  ${stage.quality}  ${r.calls} draws  ${Math.round(r.triangles / 1000)}k tris\n${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`; window.__look.fps = fps; window.__look.calls = r.calls; window.__look.tris = r.triangles; }
+  });
+} catch (e) { info.textContent = 'ERROR: ' + (e && e.stack ? e.stack : e); console.error(e); window.__look = { error: String(e && e.message ? e.message : e) }; }
+</script>
+</body>
+</html>
