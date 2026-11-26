@@ -650,7 +650,13 @@ export function makeShipMaterials(o = {}) {
   // and reflected only the dim sky, so the stern block and engine housings rendered as solid black boxes (Jaron's phone, 11/26).
   // Now: a dark grey paint over the hull's own panel texture (lines, rivets, wear), mostly dielectric, so shade reads as shade.
   mats.hullDark = plain(0x8a9299, 1, 0.35);
-  if (tex.hull) { mats.hullDark.map = tex.hull.albedo; mats.hullDark.normalMap = tex.hull.normal; mats.hullDark.roughnessMap = tex.hull.orm; mats.hullDark.metalnessMap = tex.hull.orm; mats.hullDark.normalScale = new THREE.Vector2(0.9, 0.9); }
+  // Panels about 6x the default tiling (repeat 0.16: the kit UVs of these small boxes tile the 8 m sheet far more often than the big hull skin does, so 0.16 brings them to the main hull's panel size) and quieter seams, so the dark plates read as big hull plating, not a brick wall.
+  if (tex.hull) {
+    const big = (t) => { const c = t.clone(); c.repeat.set(0.16, 0.16); c.needsUpdate = true; return c; };
+    const orm = big(tex.hull.orm);
+    mats.hullDark.map = big(tex.hull.albedo); mats.hullDark.normalMap = big(tex.hull.normal); mats.hullDark.roughnessMap = orm; mats.hullDark.metalnessMap = orm;
+    mats.hullDark.normalScale = new THREE.Vector2(0.5, 0.5);
+  }
   else { mats.hullDark.color.setHex(0x5a6168); mats.hullDark.roughness = 0.6; }
   mats.hullAccent = plain(0xc8632c, 0.5, 0.35);
   mats.hullStripe = plain(0xe0a83c, 0.5, 0.3);
