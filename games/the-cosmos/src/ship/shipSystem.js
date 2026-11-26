@@ -940,6 +940,10 @@ export class ShipSystem {
     return { c, diag };
   }
 
+  /** FIGHTVIEW: where the guns point, world (active-frame) axes: the camera's forward, which is what _gunFrame and the shared world's
+   *  fire-gun request fire along. The fight HUD draws the reticle and the lead mark from this. */
+  aimWorldDir(out = this._aimOut || (this._aimOut = new THREE.Vector3())) { return out.set(0, 0, -1).applyQuaternion(this.engine.camera.quaternion); }
+
   _placeCamera(dt = 1 / 60) {
     const f = this.flight;
     let at = this.eyeLocal, pitchAdd = 0, camQ = f.quaternion, eye = null;
@@ -954,7 +958,9 @@ export class ShipSystem {
       if (q.angleTo(f.quaternion) > 1.2) q.copy(f.quaternion); else q.slerp(f.quaternion, 1 - Math.exp(-Math.min(dt, 0.1) * 4));
       const L = this._ffL || (this._ffL = new THREE.Quaternion());
       L.setFromEuler((this._ffE || (this._ffE = new THREE.Euler())).set(this.camPitch, -this.camYaw, 0, 'YXZ'));
-      const off = (this._ffV || (this._ffV = new THREE.Vector3())).set(0, h, d).applyQuaternion(L).applyQuaternion(q);
+      // FIGHTVIEW: a hostile near the aim line lifts the camera (its place only: the pitch below is the same, so the aim does not move)
+      const fk = this._fightK = (this._fightK || 0) + ((this.fightFrame ? 1 : 0) - (this._fightK || 0)) * (1 - Math.exp(-Math.min(dt, 0.1) * 1.6));
+      const off = (this._ffV || (this._ffV = new THREE.Vector3())).set(0, h + d * 0.22 * fk, d).applyQuaternion(L).applyQuaternion(q);
       const aim = (this._ffV2 || (this._ffV2 = new THREE.Vector3())).set(A.c.x, A.c.y, A.c.z).applyQuaternion(f.quaternion);
       eye = this._eye; eye.x = f.pos.x + aim.x + off.x; eye.y = f.pos.y + aim.y + off.y; eye.z = f.pos.z + aim.z + off.z;
       camQ = q; pitchAdd = -Math.atan2(h, d) - 0.035; at = null;
@@ -965,7 +971,11 @@ export class ShipSystem {
       // FREEFLIGHT VIEW: on an upright phone the picture is narrow, so the camera stands further back and looks a little more down: the whole
       // hull sits in the middle, clear of the flying buttons in the bottom corners
       const pk = uprightPhone() ? 1.5 : 1;
-      const T = { x: -f.yawRate * 4.5, y: (12 + 3 * kk) * pk, z: (54 + 16 * kk + (f.boosting ? 6 : 0)) * pk };
+      // FIGHTVIEW: while a hostile is near the aim line (src/ship/fightHud.js sets fightFrame) the camera rises and comes a little closer, so
+      // the target shows above our own hull instead of behind it. Only the camera's place moves, never its direction: the guns fire along
+      // the camera's forward, so the aim is the same, and the reticle is drawn at the true aim point. Eased in and out over about a second.
+      const fk = this._fightK = (this._fightK || 0) + ((this.fightFrame ? 1 : 0) - (this._fightK || 0)) * (1 - Math.exp(-Math.min(dt, 0.1) * 1.6));
+      const T = { x: -f.yawRate * 4.5, y: (12 + 3 * kk + (pk > 1 ? 14 : 10) * fk) * pk, z: (54 + 16 * kk + (f.boosting ? 6 : 0) - 6 * fk) * pk };
       const a = 1 - Math.exp(-Math.min(dt, 0.1) * 3.2), c = this._chase;
       c.x += (T.x - c.x) * a; c.y += (T.y - c.y) * a; c.z += (T.z - c.z) * a;
       at = c; pitchAdd = pk > 1 ? -0.2 : -0.11;

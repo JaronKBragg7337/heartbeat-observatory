@@ -37,6 +37,7 @@ import { DebugLayer } from './dev/debugLayer.js';
 import { ShipSystem } from './ship/shipSystem.js';
 import { hasShipType, DEFAULT_SHIP_TYPE } from './ships/registry.js';
 import { ShipUI } from './ship/shipUI.js';
+import { FightHUD } from './ship/fightHud.js';     // FIGHTVIEW: brackets, lead mark and hit flash on hostiles; the honest reticle
 import { createPortSite, PADS } from './port/portSpec.js';
 import { PortSystem } from './port/portSystem.js';
 import { makePortTour } from './port/portTour.js';
@@ -407,10 +408,11 @@ const voice = new VoiceSystem({ camera: engine.camera, base: new URL('../assets/
 ship.stations.onNote = (msg) => { if (!ship.voiceQuiet) voice.onNote(msg); };
 let chat = null, voiceUI = null;
 bindVoiceSettings(voice);
-let shipUI = null;
+let shipUI = null, fightHud = null;
 try {
   ship.build();
   shipUI = new ShipUI(ship, { isTouch });
+  fightHud = new FightHUD({ ship, engine, mp: () => multiplayer });
   // Start the player looking at the ship.
   walker.yaw = portSite.heading + Math.atan2(10,38);
 } catch (err) {
@@ -1211,6 +1213,7 @@ engine.addUpdater((dt) => {
   if (crewUI) crewUI.update(dt);
   if (inMarsFrame) portPeople.tick(dt,walker.worldPos);
   if(multiplayer) multiplayer.tick(dt); else worldBridge.tick(dt);
+  if (fightHud) { try { fightHud.update(dt); } catch (e) { if (!fightHud.err) { fightHud.err = String(e); console.warn('fight HUD', e); } } }
   if (chat) { chat.tick(dt); voiceUI.update(); }
   economyUI.tick(dt);
   repair?.tick(dt);
@@ -1464,7 +1467,7 @@ if (devMode) window.cosmos = {
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
-  ship, shipUI, engine, body, walker, patch, registry, debugLayer, view, people, cinema,
+  ship, shipUI, get fightHud() { return fightHud; }, engine, body, walker, patch, registry, debugLayer, view, people, cinema,
   get crew() { return crew; }, get crewUI() { return crewUI; }, playerPerson, suitGroup,
   groundDetail,
   report: () => debugLayer.reportAt(walker),
