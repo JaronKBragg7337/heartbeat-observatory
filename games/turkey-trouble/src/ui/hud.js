@@ -12,7 +12,7 @@ export function createHud() {
     woods: $('woods'), woodsArrow: $('woodsArrow'), stamina: $('stamina'), staminaBar: $('staminaBar'), action: $('btnAction'),
     toast: $('toast'), hint: $('hint'), dev: $('dev'), hurt: $('hurt'), mute: $('btnMute'),
   };
-  let toastT = 0, hintT = 0, lastTime = '', lastHearts = -1, lastStam = -1, lastArrow = 1e9;
+  let toastT = 0, hintT = 0, lastTime = -1, lastHearts = -1, lastStam = -1, lastArrow = 1e9;
   const screens = ['loading', 'title', 'between', 'result', 'pause', 'ending', 'glLost'];
 
   const hud = {
@@ -28,12 +28,12 @@ export function createHud() {
       el.action.hidden = !game.hud.action;
       if (game.hud.action) el.action.textContent = game.hud.action;
       el.stamina.hidden = game.kind === 'escape';
-      lastTime = ''; lastHearts = -1; lastStam = -1; lastArrow = 1e9;
+      lastTime = -1; lastHearts = -1; lastStam = -1; lastArrow = 1e9;
       if (game.kind === 'hunted') { el.hearts.innerHTML = ''; for (let i = 0; i < game.hud.hearts; i++) el.hearts.appendChild(document.createElement('i')); }
     },
     update(game, dt, camYaw) {
       const h = game.hud;
-      const t = fmtTime(h.time); if (t !== lastTime) { el.time.textContent = t; lastTime = t; }
+      const sec = Math.floor(h.time); if (sec !== lastTime) { el.time.textContent = fmtTime(h.time); lastTime = sec; }
       if (game.kind === 'find') el.bpm.textContent = Math.round(h.bpm);
       if (game.kind === 'hunted' && h.hearts !== lastHearts) {
         [...el.hearts.children].forEach((c, i) => c.classList.toggle('gone', i >= h.hearts)); lastHearts = h.hearts;

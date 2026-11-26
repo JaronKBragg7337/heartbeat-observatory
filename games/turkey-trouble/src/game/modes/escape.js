@@ -102,9 +102,12 @@ export function createEscape(layout, opts = {}) {
     const fp = esc.finish.path;
     ending.path.n = 0;
     for (const p of fp) { const q = ending.path.pts[ending.path.n++]; q.x = p.x; q.z = p.z; }
-    // stop a beak's length short of the door so the knock lands on it, not through it
+    // stand at the door point, but never so close that the beak goes into the house: back off to a beak's reach
     const door = esc.finish.door, last = ending.path.pts[ending.path.n - 1], ry = door.rotY || 0;
-    last.x = door.x - Math.sin(ry) * E.knockGap; last.z = door.z - Math.cos(ry) * E.knockGap;
+    const fx = Math.sin(ry), fz = Math.cos(ry);
+    const wall = world.raycast(door.x, door.z, door.x + fx * 2, door.z + fz * 2, 0) * 2;
+    const back = Math.max(0, E.knockReach - wall);
+    last.x = door.x - fx * back; last.z = door.z - fz * back;
     ending.path.i = 0; ending.t = 0; ending.stage = 'walk';
     // already past a point of the path? skip ahead (never walk backward)
     const P = ending.path;

@@ -179,11 +179,15 @@ bpy.context.view_layer.objects.active = keep[0]
 path = os.path.join(ASSETS, 'world.glb')
 kw = dict(filepath=path, export_format='GLB', use_selection=True, export_extras=True, export_apply=True, export_yup=True,
           export_cameras=False, export_lights=False, export_animations=False)
-try:
-    bpy.ops.export_scene.gltf(**kw, export_image_format='WEBP', export_image_quality=82)
-except Exception as e:
-    say('webp export failed, default images:', repr(e))
-    bpy.ops.export_scene.gltf(**kw)
+draco = dict(export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=6, export_draco_position_quantization=14,
+             export_draco_normal_quantization=10, export_draco_texcoord_quantization=15, export_draco_color_quantization=10, export_draco_generic_quantization=12)
+for extra in (dict(export_image_format='WEBP', export_image_quality=82, **draco), dict(export_image_format='WEBP', export_image_quality=82), dict()):
+    try:
+        bpy.ops.export_scene.gltf(**kw, **extra)
+        say('exported with', 'draco' if 'export_draco_mesh_compression_enable' in extra else 'no draco', '+ webp' if extra else '')
+        break
+    except Exception as e:
+        say('export retry:', repr(e)[:200])
 say('exported', path, round(os.path.getsize(path) / 1048576, 2), 'MB')
 
 # ground pictures for the game's own ground shader

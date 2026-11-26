@@ -93,6 +93,9 @@ export async function createView(cast, game, { personId, debug } = {}) {
   cast.hideAll();
   const kind = game.kind;
   const T = cast.turkey, rootT = T.root;
+  // where the creek's logs and ford stones sit (the look decides; layout.json carries the numbers)
+  const creekLane = (((game.layout || stage.layout || {}).escape || {}).lanes || []).find((l) => l.kind === 'creek') || {};
+  const CK = { logY: creekLane.logY ?? -0.05, rideY: creekLane.rideY ?? 0.42, stoneY: creekLane.stoneY ?? 0.16 };
   rootT.visible = true; rootT.rotation.set(0, 0, 0); rootT.scale.setScalar(1);
   const player = kind === 'escape' ? null : await cast.person(personId);
   if (player) { player.holder.visible = true; player.holder.rotation.set(0, 0, 0); }
@@ -168,7 +171,7 @@ export async function createView(cast, game, { personId, debug } = {}) {
     {
       const x = lerp(prev.tx, TU.x, k), z = lerp(prev.tz, TU.z, k);
       let y = gh(x, z) + (TU.y || 0);
-      if (kind === 'escape') { if (TU.onLog) y += 0.42 + Math.sin(time * 2 + TU.onLog.id) * 0.03; else if (TU.onStone) y += 0.16; }
+      if (kind === 'escape') { if (TU.onLog) y += CK.rideY + Math.sin(time * 2 + TU.onLog.id) * 0.03; else if (TU.onStone) y += CK.stoneY; }
       rootT.position.set(x, y, z); rootT.rotation.y = TU.heading;
       extras.knock = knockPulse();
       T.rig.update(dt, TU.anim, TU.animT, TU.speed, extras);
@@ -203,7 +206,7 @@ export async function createView(cast, game, { personId, debug } = {}) {
         m.root.visible = near;
         if (!near) continue;
         if (v.kind === 'log') {
-          m.root.position.set(vx, gh(vx, v.z) - 0.05 + Math.sin(time * 1.6 + i) * 0.03, v.z);
+          m.root.position.set(vx, gh(vx, v.z) + CK.logY + Math.sin(time * 1.6 + i) * 0.03, v.z);
           m.root.rotation.set(Math.sin(time * 1.1 + i) * 0.03, Math.PI / 2, 0);
           m.root.scale.set(1, 1, v.l / (m.size.l || 4));
         } else {

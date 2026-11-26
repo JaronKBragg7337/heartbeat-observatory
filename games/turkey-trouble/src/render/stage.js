@@ -4,10 +4,12 @@
 // The API is the contract in ../../CONTRACT.md.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { PLACEHOLDERS, node } from './placeholders.js';
 import { Post } from './post.js';
+import { createFx, streakTexture } from './fx.js';
 
 const BASE = new URL('../../', import.meta.url);
 const A = (f) => new URL('assets/' + f, BASE).href;
@@ -20,9 +22,10 @@ function pickQuality() {
   return mem <= 3 || cores <= 4 ? 'low' : 'mid';
 }
 const QUALITY = {
-  low: { dpr: 1.25, msaa: 0, bloom: 3, half: true, aniso: 2 },
-  mid: { dpr: 1.6, msaa: 2, bloom: 4, half: false, aniso: 4 },
-  high: { dpr: 2.0, msaa: 4, bloom: 5, half: false, aniso: 8 },
+  // half = half-size lightmaps everywhere; groundHalf = only the two big ground ones; skyHalf = the 2K sky (phones)
+  low: { dpr: 1.25, msaa: 0, bloom: 3, half: true, groundHalf: true, skyHalf: true, aniso: 2 },
+  mid: { dpr: 1.6, msaa: 2, bloom: 4, half: false, groundHalf: true, skyHalf: true, aniso: 4 },
+  high: { dpr: 2.0, msaa: 4, bloom: 5, half: false, groundHalf: false, skyHalf: false, aniso: 8 },
 };
 
 // ---------------------------------------------------------------- shared uniforms: the lamp field
@@ -77,10 +80,40 @@ function patchLit(mat) {
   mat.customProgramCacheKey = () => 'tt-lit';
   return mat;
 }
+// Baked scenery already carries the lamps' light. What it still needs is what moves: the torch, headlamps, lightning.
+const MOVING_LIT = /* glsl */`
+{
+  vec3 ttMove = vec3( 0.0 );
+  for ( int i = 0; i < ${MOVING}; i ++ ) {
+    vec3 lv = uMovePos[ i ] - vTTWorld; float d2 = dot( lv, lv ) + 1.0;
+    ttMove += uMoveCol[ i ] * ( ( 1.0 - smoothstep( 14.0, 30.0, sqrt( d2 ) ) ) / d2 );
+  }
+  ttMove += uFlash * vec3( 0.4, 0.45, 0.6 );
+  TT_TARGET += ttMove * TT_COLOR;
+}
+`;
+function patchBakedMatte(mat) {
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    WORLD_VERT(sh);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + LAMP_PARS)
+      .replace('#include <aomap_fragment>', MOVING_LIT.replace('TT_TARGET', 'reflectedLight.indirectDiffuse').replace('TT_COLOR', 'vec3( 1.0 )') + '\n#include <aomap_fragment>');
+  };
+  mat.customProgramCacheKey = () => 'tt-baked-matte';
+  return mat;
+}
 // Baked but shiny things (wet roofs, tin, glass): the lightmap is their diffuse light, the sky only reflects in them.
 const MAPS_NO_SKY_DIFFUSE = THREE.ShaderChunk.lights_fragment_maps.replace('iblIrradiance += getIBLIrradiance( geometryNormal );', '');
 function patchBakedShiny(mat) {
-  mat.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_maps>', MAPS_NO_SKY_DIFFUSE); };
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    WORLD_VERT(sh);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + LAMP_PARS)
+      .replace('#include <lights_fragment_maps>', MAPS_NO_SKY_DIFFUSE)
+      .replace('#include <lights_fragment_end>', MOVING_LIT.replace('TT_TARGET', 'reflectedLight.directDiffuse').replace('TT_COLOR', 'material.diffuseColor') + '\n#include <lights_fragment_end>');
+  };
   mat.customProgramCacheKey = () => 'tt-baked-shiny';
   return mat;
 }
@@ -187,6 +220,29 @@ function groundMaterial(tex, lightMap, range) {
   return m;
 }
 
+
+// ---------------------------------------------------------------- light you can see in the damp air
+// A soft cone of mist under a pole lamp or ahead of a headlamp: brightest seen through its middle, gone at its edge.
+function beamMaterial(color, strength) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color(color).multiplyScalar(strength) } },
+    vertexShader: /* glsl */`
+      varying vec3 vN; varying vec3 vV; varying float vH;
+      void main() {
+        vec4 wp = modelMatrix * vec4( position, 1.0 );
+        vN = normalize( mat3( modelMatrix ) * normal ); vV = normalize( cameraPosition - wp.xyz ); vH = uv.y;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: /* glsl */`
+      varying vec3 vN; varying vec3 vV; varying float vH; uniform vec3 uColor;
+      void main() {
+        float through = pow( abs( dot( normalize( vN ), normalize( vV ) ) ), 2.4 );
+        gl_FragColor = vec4( uColor * through * ( 0.08 + vH * vH * 0.92 ), 1.0 );
+      }`,
+    blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false,
+  });
+}
+
 // ---------------------------------------------------------------- the sky
 function skyDome(tex, range) {
   const mat = new THREE.ShaderMaterial({
@@ -219,19 +275,24 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(58, 1, 0.12, 700);
   const texLoader = new THREE.TextureLoader(), gltfLoader = new GLTFLoader();
+  gltfLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/libs/draco/'));
+  // a phone on a weak signal drops a file now and then: every file gets three tries before the game gives up
+  const texLoad = texLoader.loadAsync.bind(texLoader), gltfLoad = gltfLoader.loadAsync.bind(gltfLoader);
+  const again = (fn, tries = 3) => fn().catch((e) => (tries > 1 ? new Promise((r) => setTimeout(r, 600)).then(() => again(fn, tries - 1)) : Promise.reject(e)));
+  const loadTex = (url) => again(() => texLoad(url)), loadGltf = (url) => again(() => gltfLoad(url));
   let loaded = 0; const total = 20;
   const tick = (v) => { loaded += 1; onProgress(Math.min(0.98, loaded / total)); return v; };
-  const colorTex = (f) => texLoader.loadAsync(A(f)).then((t) => { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = Q.aniso; return tick(t); });
+  const colorTex = (f) => loadTex(A(f)).then((t) => { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = Q.aniso; return tick(t); });
   // wrap = false is for the two ground masks: they are read with the ground's own (exported) UVs, so no flip
-  const dataTex = (f, wrap = true) => texLoader.loadAsync(A(f)).then((t) => { t.colorSpace = THREE.NoColorSpace; if (wrap) t.wrapS = t.wrapT = THREE.RepeatWrapping; else t.flipY = false; t.anisotropy = Q.aniso; return tick(t); });
-  const lmTex = (f) => texLoader.loadAsync(A(Q.half ? f.replace('_lm.webp', '_lm_half.webp') : f)).then((t) => { t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; t.channel = 1; return tick(t); });
+  const dataTex = (f, wrap = true) => loadTex(A(f)).then((t) => { t.colorSpace = THREE.NoColorSpace; if (wrap) t.wrapS = t.wrapT = THREE.RepeatWrapping; else t.flipY = false; t.anisotropy = Q.aniso; return tick(t); });
+  const lmTex = (f) => loadTex(A(Q.half || (Q.groundHalf && f.startsWith('ground_')) ? f.replace('_lm.webp', '_lm_half.webp') : f)).then((t) => { t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; t.channel = 1; return tick(t); });
 
   const [layout, meta, gltf, env, sky] = await Promise.all([
-    fetch(new URL('layout.json', BASE)).then((r) => r.json()),
-    fetch(A('world.json')).then((r) => r.json()),
-    gltfLoader.loadAsync(A('world.glb')).then(tick),
-    new RGBELoader().loadAsync(A('sky_env.hdr')).then(tick),
-    texLoader.loadAsync(A(Q.half ? 'sky_half.webp' : 'sky.webp')).then((t) => { t.colorSpace = THREE.NoColorSpace; t.wrapS = THREE.RepeatWrapping; return tick(t); }),
+    again(() => fetch(new URL('layout.json', BASE)).then((r) => r.json())),
+    again(() => fetch(A('world.json')).then((r) => r.json())),
+    loadGltf(A('world.glb')).then(tick),
+    again(() => new RGBELoader().loadAsync(A('sky_env.hdr'))).then(tick),
+    loadTex(A(Q.skyHalf ? 'sky_half.webp' : 'sky.webp')).then((t) => { t.colorSpace = THREE.NoColorSpace; t.wrapS = THREE.RepeatWrapping; return tick(t); }),
   ]);
   const gt = {};
   [gt.splat, gt.wet, gt.mud, gt.gravel, gt.grass, gt.asphalt, gt.stubble, gt.nrmSoft, gt.nrmHard, gt.nrmGravel] = await Promise.all([
@@ -277,13 +338,14 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
       const lm = lightmaps.get(src.userData.lm), intensity = src.userData.lmRange * Math.PI;
       if (!made.has(key)) {
         if (SHINY.test(m.name)) { const c = m.clone(); c.lightMap = lm; c.lightMapIntensity = intensity; c.envMapIntensity = 1.0; made.set(key, patchBakedShiny(c)); }
-        else made.set(key, new THREE.MeshBasicMaterial({ name: m.name, map: m.map, color: m.color, lightMap: lm, lightMapIntensity: intensity }));
+        else made.set(key, patchBakedMatte(new THREE.MeshBasicMaterial({ name: m.name, map: m.map, color: m.color, lightMap: lm, lightMapIntensity: intensity })));
       }
       o.material = made.get(key);
     } else if (kind === 'water') {
       // the creek after the storm: mostly a mirror for the sky, running east
       const wm = new THREE.MeshStandardMaterial({ color: new THREE.Color().setRGB(0.16, 0.19, 0.23), roughness: 0.09, metalness: 0.82, envMapIntensity: 1.25, normalMap: gt.nrmSoft.clone(), normalScale: new THREE.Vector2(0.5, 0.5) });
       wm.normalMap.repeat.set(0.16, 0.42); wm.normalMap.needsUpdate = true;
+      wm.emissiveMap = streakTexture(); wm.emissiveMap.repeat.set(0.045, 0.2); wm.emissive = new THREE.Color().setRGB(0.20, 0.24, 0.30);
       o.material = wm; water = wm;
     } else if (kind === 'glow') {
       if (m.emissiveMap || (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.01)) {
@@ -301,6 +363,15 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
   }
   for (const s of spinners) { s.traverse((c) => { c.matrixAutoUpdate = true; }); }
   scene.add(world);
+  // mist cones under the three pole lamps
+  const lampBeam = beamMaterial('#ffb061', 0.07);
+  for (const L of meta.lamps) {
+    if (!/^(yard|highway_)/.test(L.id)) continue;
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(L.y * 0.85, L.y, 24, 1, true), lampBeam);
+    cone.position.set(L.x, L.y / 2, L.z); cone.renderOrder = 4; cone.name = 'beam_' + L.id; world.add(cone);
+  }
+  const headBeam = beamMaterial('#fff1d6', 0.16);
+  const headGeo = new THREE.ConeGeometry(1.5, 11, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 5.5);      // tip at the lamp, opening forward (+z)
   const dynamic = new THREE.Group(); dynamic.name = 'dynamic'; scene.add(dynamic);
   const flashlight = new THREE.Object3D(); flashlight.visible = false; flashlight.intensity = 0; flashlight.target = new THREE.Object3D();
 
@@ -308,9 +379,7 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
   const roots = new Map();
   for (const file of ['models.glb', 'turkey.glb']) {
     try {
-      const head = await fetch(A(file), { method: 'HEAD' });
-      if (!head.ok) continue;
-      const g = await gltfLoader.loadAsync(A(file));
+      const g = await loadGltf(A(file));
       g.scene.traverse((o) => {
         if (o.isMesh) {
           const m = o.material;
@@ -343,6 +412,7 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
   onProgress(1);
 
   const post = new Post(renderer, Q);
+  const fx = createFx(scene, camera);
   const tmp = new THREE.Vector3();
   let lightning = 0, nextBolt = 14 + Math.random() * 20;
 
@@ -363,10 +433,14 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
         copy.traverse((o) => { if (o.isMesh) patchLit(o.material); });
       }
       if (!copy.userData.size) { const b = new THREE.Box3().setFromObject(copy), s = b.getSize(tmp); copy.userData.size = { w: s.x, h: s.y, l: s.z }; }
+      for (const side of ['headlight_l', 'headlight_r']) {                  // every moving vehicle throws two beams into the mist
+        const hl = copy.getObjectByName(side);
+        if (hl && !hl.getObjectByName('beam')) { const beam = new THREE.Mesh(headGeo, headBeam); beam.name = 'beam'; beam.renderOrder = 4; beam.rotation.x = 0.06; hl.add(beam); }
+      }
       return copy;
     },
     async loadPerson(id) {
-      if (!personCache.has(id)) personCache.set(id, gltfLoader.loadAsync(`/homes/people/${id}.glb`));
+      if (!personCache.has(id)) personCache.set(id, loadGltf(`/homes/people/${id}.glb`).catch((e) => { personCache.delete(id); throw e; }));
       const g = await personCache.get(id);
       const inner = SkeletonUtils.clone(g.scene);
       // the site's people are already in metres, feet on the ground (a skinned mesh's box cannot be trusted to rescale it)
@@ -378,12 +452,13 @@ export async function createStage({ canvas, quality = 'auto', onProgress = () =>
     },
     groundHeight(x, z) { return 0; },
     fx: {
-      splash(x, z) {}, feathers(x, y, z, n = 8) {}, dust(x, z) {},
+      splash(x, z) { fx.splash(x, z, -0.05); }, feathers(x, y, z, n = 8) { fx.feathers(x, y, z, n); }, dust(x, z) { fx.dust(x, z); },
       lightning() { lightning = 1; },
     },
     update(dt, focus) {
       U.uTime.value += dt;
-      if (water) { water.normalMap.offset.x -= dt * 0.11; water.normalMap.offset.y += dt * 0.012; }
+      if (water) { water.normalMap.offset.x -= dt * 0.11; water.normalMap.offset.y += dt * 0.012; water.emissiveMap.offset.x -= dt * 0.055; }
+      fx.update(dt);
       for (const s of spinners) s.rotation.z += dt * 0.9;
       nextBolt -= dt;
       if (nextBolt <= 0) { lightning = 1; nextBolt = 18 + Math.random() * 30; }

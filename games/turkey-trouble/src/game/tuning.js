@@ -51,7 +51,7 @@ export const ESCAPE = {
   speedPerLane: 0.07, speedPerRun: 0.15, speedCap: 1.75,
   logPadZ: 0.3, logPadX: 0.15, stoneR: 0.75,
   nearMissZ: 1.6, nearMissX: 0.6,
-  endWalk: 1.7, knockGap: 0.55, knock1: 0.55, knock2: 1.15, cardAt: 2.3,
+  endWalk: 1.7, knockReach: 0.7, knock1: 0.55, knock2: 1.15, cardAt: 2.7,
 };
 
 export const ENDING_LINES = ['Knock knock.', "Who's there?", 'The turkey.'];

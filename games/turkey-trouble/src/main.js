@@ -63,6 +63,7 @@ async function boot() {
   for (const ev of ['pointerdown', 'keydown', 'touchend']) addEventListener(ev, () => audio.unlock(), { passive: true });
   wireButtons();
   if (MODE_Q && (MODE_NAMES[MODE_Q])) start(MODE_Q);
+  else if (DIRECTOR) start('story');
   else showTitle();
   requestAnimationFrame(frame);
 }
@@ -298,7 +299,7 @@ function frame(now) {
     if (atDoor) {
       // a side view from the side away from the sign, so nothing stands between the camera and the knock
       const fin = stage.layout.escape.finish, side = fin.signAt && fin.signAt.x > door.x ? -1 : 1;
-      cam.setShot({ from: { x: door.x + side * 4.4, y: 1.2, z: door.z - 1.9 }, at: { x: door.x, y: 0.8, z: door.z - 0.3 }, rate: 1.4 });
+      cam.setShot({ from: { x: door.x + side * 3.6, y: 1.25, z: door.z - 2.2 }, at: { x: P.x + side * 0.15, y: 0.75, z: P.z + 0.25 }, rate: 2.2 });
     }
     else { cam.setShot(null); cam.yaw = 0; cam.pitch = 0.3; cam.lookIdle = 0; }
   } else if (app.director) directorCam(dt, g);

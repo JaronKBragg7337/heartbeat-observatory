@@ -79,7 +79,12 @@ def material(name, color=(0.5, 0.5, 0.5), rough=0.8, metal=0.0, albedo=None, nor
     b.inputs['Metallic'].default_value = metal
     if albedo is not None:
         n = nt.nodes.new('ShaderNodeTexImage'); n.image = albedo
-        nt.links.new(n.outputs['Color'], b.inputs['Base Color'])
+        if tuple(color) == (1, 1, 1):
+            nt.links.new(n.outputs['Color'], b.inputs['Base Color'])
+        else:                                              # a picture times a tint (exported as texture plus colour factor)
+            mx = nt.nodes.new('ShaderNodeMix'); mx.data_type = 'RGBA'; mx.blend_type = 'MULTIPLY'; mx.inputs[0].default_value = 1.0
+            nt.links.new(n.outputs['Color'], mx.inputs[6]); mx.inputs[7].default_value = (*color, 1)
+            nt.links.new(mx.outputs[2], b.inputs['Base Color'])
     if rough_img is not None:
         n = nt.nodes.new('ShaderNodeTexImage'); n.image = rough_img
         nt.links.new(n.outputs['Color'], b.inputs['Roughness'])

@@ -280,7 +280,7 @@ def bark(rng):
 def hay(rng):
     a = stretch(S, 6, 220, rng) * 0.5 + stretch(S, 14, 120, rng) * 0.5
     b = fbm(S, 6, 4, rng)
-    alb = mix(col(0.24, 0.20, 0.11)[None, None], col(0.50, 0.45, 0.28)[None, None], a * 0.8 + b * 0.2)
+    alb = mix(col(0.34, 0.29, 0.16)[None, None], col(0.68, 0.61, 0.40)[None, None], a * 0.8 + b * 0.2)
     alb = mix(alb, col(0.07, 0.06, 0.035)[None, None], smooth(0.3, 0.1, a) * 0.8)
     alb = mix(alb, col(0.22, 0.21, 0.19)[None, None], smooth(0.55, 0.8, b) * 0.35)
     return alb, a, np.full((S, S), 0.85, np.float32)

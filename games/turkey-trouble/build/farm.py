@@ -74,6 +74,7 @@ M = {
     'brick': tm('brick', 'brick', 0.6, 0.75),
     'bark': tm('bark', 'bark', 0.8, 0.8),
     'hay': tm('hay', 'hay', 0.55, 0.85),
+    'twine': material('twine', (0.05, 0.04, 0.03), rough=0.8),
     'trim': material('trim', (0.62, 0.61, 0.57), rough=0.45),
     'glass': material('glass', (0.012, 0.016, 0.02), rough=0.05),
     'iron': material('iron', (0.045, 0.045, 0.05), rough=0.45, metal=0.85),
@@ -245,7 +246,7 @@ def build_ground():
         out.append(ob)
     # the creek's water, and the far rim that closes the horizon
     w = Mesh('water')
-    w.box(M['water'], (0, -(creek['z0'] + creek['z1']) / 2, -0.33), (BND['maxX'] - BND['minX'], creek['z1'] - creek['z0'] - 0.5, 0.04))
+    w.box(M['water'], (0, -(creek['z0'] + creek['z1']) / 2, -0.10), (BND['maxX'] - BND['minX'], creek['z1'] - creek['z0'] - 0.3, 0.04))      # the creek runs high after the storm
     wo = w.finish(); wo['kind'] = 'water'
     GLOW.append(wo)
     skirt = Mesh('far_fields')                              # dark land beyond the map, out to the fog
@@ -819,7 +820,9 @@ def props():
         p = B(c['x'], c['z'])
         a = rnd.uniform(0, math.pi)
         dx, dy = 0.62 * math.cos(a), 0.62 * math.sin(a)
-        m.cyl(M['hay'], (p.x - dx, p.y - dy, 0.78), (p.x + dx, p.y + dy, 0.78), 0.78, segs=18)
+        m.cyl(M['hay'], (p.x - dx, p.y - dy, 0.76), (p.x + dx, p.y + dy, 0.76), 0.78, segs=20)
+        for f in (-0.62, 0.0, 0.62):                                 # twine round the bale
+            m.cyl(M['twine'], (p.x + dx * (f - 0.03), p.y + dy * (f - 0.03), 0.76), (p.x + dx * (f + 0.03), p.y + dy * (f + 0.03), 0.76), 0.79, segs=20)
     c = COL['bale_stack']
     p = B(c['x'], c['z'])
     for k, (ox, oz) in enumerate(((-0.6, 0.24), (0.6, 0.24), (0, 0.72), (-0.62, 0.24 + 0.0), (0.05, 1.2))):

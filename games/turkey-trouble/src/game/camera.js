@@ -32,7 +32,9 @@ export function makeFollowCam(camera, world) {
     } else if (c.lookIdle > 1.3 && speed > 0.6) {
       // walking toward the camera must not spin it around: only recentre when heading roughly away from it
       let d = heading - c.yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
-      if (Math.abs(d) < 2.0) c.yaw = angDamp(c.yaw, heading, 0.85 * Math.min(1, speed / 2.6), dt);
+      // (and only when going mostly forward: a sideways push would otherwise walk you in a circle)
+      const off = Math.abs(d);
+      if (off < 1.1) c.yaw = angDamp(c.yaw, heading, 0.9 * (1 - off / 1.1) * Math.min(1, speed / 2.6), dt);
     }
     const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
     c.fx = fx; c.fz = fz;
