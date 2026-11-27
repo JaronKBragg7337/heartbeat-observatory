@@ -284,6 +284,49 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
       }
       await page.setViewportSize(vp); await showOnly([]);
     });
+    // TOP BOX FOLD (11/26): the status box folds to ONE line with a 40 px+ fold button; the choice survives a reload; default is open.
+    await record(scope, 'TOP BOX: opens by default, folds to one line on one tap of the fold, and stays folded after a reload', async () => {
+      await page.goto(base + '&opening=off&tier=low', { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await page.waitForFunction(() => window.cosmos?.setHudGoal && window.cosmos?.engine?.frameCount >= 2, null, { timeout: 90000 });
+      await page.evaluate(() => { try { localStorage.removeItem('cosmos.hudFolded'); } catch {} });
+      await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.cosmos?.setHudGoal && window.cosmos?.engine?.frameCount >= 2, null, { timeout: 90000 });
+      await page.evaluate(() => { cosmos.setHudGoal('Step 3 of 4: take off. Hold LIFT and she rises (the ramp folds away first). Let go and she hovers by herself.'); });
+      await page.waitForTimeout(400);
+      const hudH = () => page.evaluate(() => { const r = document.getElementById('hud').getBoundingClientRect(); return { h: r.height, fold: !!document.querySelector('#hud .next-fold') }; });
+      const open = await hudH(); assert.equal(open.fold, false, 'a new player must see the box open'); assert.ok(open.h > 70, 'the open box is taller than one line: ' + open.h);
+      const fb = await page.locator('#hud-fold').boundingBox(); assert.ok(fb && fb.width >= 40 && fb.height >= 40, 'the fold button is a 40 px tap target: ' + JSON.stringify(fb));
+      await realTap('#hud-fold'); await page.waitForTimeout(500);
+      const folded = await hudH(); assert.ok(folded.fold && folded.h < 56, 'folded height is one line: ' + JSON.stringify(folded));
+      assert.match(await page.locator('#hud .next-fold').innerText(), /NEXT\s+Step 3 of 4: take off\./);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => window.cosmos?.setHudGoal && window.cosmos?.engine?.frameCount >= 2, null, { timeout: 90000 });
+      await page.evaluate(() => cosmos.setHudGoal('Step 3 of 4: take off. Hold LIFT and she rises.')); await page.waitForTimeout(500);
+      assert.ok((await hudH()).fold, 'the folded choice was not remembered after a reload');
+      await realTap('#hud .next-fold'); await page.waitForTimeout(500);
+      assert.equal((await hudH()).fold, false, 'a tap on the folded line should open it');
+      await page.evaluate(() => { localStorage.removeItem('cosmos.hudFolded'); cosmos.setHudGoal(''); });
+    });
+    // TOP BOX with no NEXT step: the fold still works (one line = the first detail line), a tap opens it, the choice is remembered.
+    await record(scope, 'TOP BOX (no NEXT step): the fold button shows, folds to one detail line, a tap opens it, and it stays folded after a reload', async () => {
+      await page.goto(base + '&opening=off&tier=low', { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await page.waitForFunction(() => window.cosmos?.setHudGoal && window.cosmos?.engine?.frameCount >= 2, null, { timeout: 90000 });
+      await page.evaluate(() => { try { localStorage.removeItem('cosmos.hudFolded'); } catch {} });
+      await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.cosmos?.setHudGoal && window.cosmos?.engine?.frameCount >= 2, null, { timeout: 90000 });
+      await page.evaluate(() => { cosmos.setHudGoal('-'); });
+      await page.waitForTimeout(500);
+      const st = () => page.evaluate(() => { const r = document.getElementById('hud').getBoundingClientRect(); return { h: r.height, fold: !!document.querySelector('#hud .next-fold'), txt: document.querySelector('#hud .next-fold')?.textContent || '' }; });
+      const open = await st(); assert.equal(open.fold, false, 'open by default'); assert.ok(open.h > 60, 'the open box has several lines: ' + open.h);
+      const fb = await page.locator('#hud-fold').boundingBox(); assert.ok(fb && fb.width >= 40 && fb.height >= 40, 'the fold button shows with no step: ' + JSON.stringify(fb));
+      await realTap('#hud-fold'); await page.waitForTimeout(600);
+      const folded = await st(); assert.ok(folded.fold && folded.h < 56 && folded.txt.trim().length > 3 && !/NEXT/.test(folded.txt), 'folded = one detail line: ' + JSON.stringify(folded));
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => window.cosmos?.setHudGoal && window.cosmos?.engine?.frameCount >= 2, null, { timeout: 90000 });
+      await page.evaluate(() => cosmos.setHudGoal('-')); await page.waitForTimeout(600);
+      assert.ok((await st()).fold, 'still folded after a reload');
+      await realTap('#hud .next-fold'); await page.waitForTimeout(500);
+      assert.equal((await st()).fold, false, 'a tap on the folded line opens it');
+      await page.evaluate(() => { localStorage.removeItem('cosmos.hudFolded'); cosmos.setHudGoal(''); });
+    });
     // FREEFLIGHT: manual flight anywhere on a phone. The player sits in the pilot seat of a ship in orbit (a harness puts her there: solo has no authority
     // to refuse it), then every control is a real touch: the bar's buttons are tapped, THRUST is a held finger, and nothing may overlap in any phone shape.
     await record(scope, 'FREEFLIGHT: real taps on the free-flight bar, a held THRUST burns the drive, the stick turns the ship, no overlaps in four viewports', async () => {

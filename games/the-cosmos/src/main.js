@@ -857,15 +857,39 @@ window.addEventListener('keydown', (e) => {
 /** FIX-R3: the status card plus, for a new pilot, the one plain next step (RepairChain.nextGoal).
  *  Phone comfort (11/23): the step folds to three lines so the card does not cover the world; a tap unfolds it (and folds it again). While the count card of a
  *  tally run is up it steps aside altogether: the card says what to do, and the player needs the screen to count. */
-let nextOpen = '', nextSig = '';
+let devGoalText = '', nextOpen = '', nextSig = '', lastGoalText = '', pulseUntil = 0;
+const HUD_FOLD_KEY = 'cosmos.hudFolded';
+let hudFolded = false; try { hudFolded = localStorage.getItem(HUD_FOLD_KEY) === '1'; } catch { /* storage may be blocked */ }
 const hudNext = document.createElement('div'); hudNext.id = 'hud-next'; hudRoot.prepend(hudNext);       // stays put: the readings under it are rewritten five times a second, this is not
+/** Phone: a 40+ px fold button (its own tap target) folds the whole status box to ONE line, the NEXT step's first sentence; the choice is remembered. */
+const hudFoldBtn = document.createElement('button'); hudFoldBtn.id = 'hud-fold'; hudFoldBtn.type = 'button'; hudFoldBtn.hidden = true; hudRoot.appendChild(hudFoldBtn);
+function setHudFolded(v) { hudFolded = v; try { localStorage.setItem(HUD_FOLD_KEY, v ? '1' : '0'); } catch { /* storage may be blocked */ } refreshHud(); }
+hudFoldBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setHudFolded(true); });
+for (const ev of ['pointerdown', 'pointerup', 'touchstart']) hudFoldBtn.addEventListener(ev, (e) => e.stopPropagation());
+const esc1 = (t) => t.replace(/[<>&]/g, '');
+const firstSentence = (t) => {       // the step itself, not the lead-in: from "Step 3 of 4:" or "Next:" when the text has one
+  const k = /Step \d+ of \d+/.exec(t), n = /\bNext: /.exec(t);
+  if (k) t = t.slice(k.index); else if (n) { t = t.slice(n.index + n[0].length); t = t.charAt(0).toUpperCase() + t.slice(1); }
+  const m = /^.*?[.!?](?=\s|$)/.exec(t); return m ? m[0] : t; };
 function refreshHud() {
   refreshHudBase();
-  const goal = tallyUI && tallyUI.shown ? null : repair?.nextGoal(ship.ready && ship.aboard);
-  const text = goal ? goal.text.replace(/[<>&]/g, '') : '', open = !!text && nextOpen === text, sig = text + '|' + open + '|' + hudRoot.clientWidth;
+  const goal = devGoalText === '-' ? null : devGoalText ? { text: devGoalText } : tallyUI && tallyUI.shown ? null : repair?.nextGoal(ship.ready && ship.aboard);
+  const text = goal ? goal.text.replace(/[<>&]/g, '') : '';
+  const firstLine = text ? '' : (hud.innerHTML.split(/<br\s*\/?>/i)[0] || '').replace(/<[^>]*>/g, '').trim();       // no step: the folded line is the first detail line (ship and seat, or the place)
+  const folded = isTouch && hudFolded && !!(text || firstLine) && !document.documentElement.classList.contains('ff-fly'), open = !!text && !folded && nextOpen === text;
+  if (text && text !== lastGoalText && lastGoalText && folded) pulseUntil = performance.now() + 1300;       // the step moved on while folded: one calm pulse, no sound
+  if (text) lastGoalText = text;
+  const pulse = folded && performance.now() < pulseUntil, sig = text + '|' + firstLine + '|' + open + '|' + folded + '|' + pulse + '|' + hudRoot.clientWidth;
   if (sig !== nextSig) {
     nextSig = sig;
-    if (!text) hudNext.innerHTML = '';
+    hudRoot.classList.toggle('hud-folded', folded);
+    hudFoldBtn.hidden = !isTouch;
+    hudFoldBtn.textContent = '▲'; hudFoldBtn.setAttribute('aria-label', 'Fold the status box to one line');
+    hudRoot.classList.toggle('has-fold', isTouch && !folded);
+    hudRoot.classList.toggle('no-step', !text);
+    if (folded && !text) hudNext.innerHTML = `<div class="next-fold" role="button" aria-label="Open the status box"><span class="nf-t">${esc1(firstLine)}</span><span class="nf-c">▼</span></div>`;
+    else if (!text) hudNext.innerHTML = '';
+    else if (folded) hudNext.innerHTML = `<div class="next-fold${pulse ? ' pulse' : ''}" role="button" aria-label="Open the status box"><span class="nf-t"><b>NEXT</b> ${firstSentence(text)}</span><span class="nf-c">▼</span></div>`;
     else {
       hudNext.innerHTML = `<div class="next-goal${open ? ' open' : ''}"><b>NEXT</b> ${text}</div>`;
       const el = hudNext.firstElementChild;
@@ -873,15 +897,17 @@ function refreshHud() {
       else el.classList.add('whole');
     }
   }
+  if (pulse) setTimeout(refreshHud, 1350);       // lets the pulse end on its own even if nothing else redraws
   document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`);
 }
 hudNext.addEventListener('click', (e) => {
+  if (hudNext.querySelector('.next-fold')) { e.preventDefault(); e.stopPropagation(); setHudFolded(false); return; }       // folded: a tap anywhere on the line opens it
   const el = hudNext.querySelector('.next-goal'); if (!el || el.classList.contains('whole')) return;
   e.preventDefault(); e.stopPropagation();
   const text = el.textContent.replace(/^NEXT\s*/, '');
   nextOpen = nextOpen === text ? '' : text; refreshHud();
 });
-for (const ev of ['pointerdown', 'pointerup', 'touchstart']) hudNext.addEventListener(ev, (e) => { if (hudNext.querySelector('.next-more')) e.stopPropagation(); });       // a press on it is not a look-around drag
+for (const ev of ['pointerdown', 'pointerup', 'touchstart']) hudNext.addEventListener(ev, (e) => { if (hudNext.querySelector('.next-more, .next-fold')) e.stopPropagation(); });       // a press on it is not a look-around drag
 function refreshHudBase() {
   const g = walker.geodetic;
   const load = carriedMass();
@@ -1459,6 +1485,7 @@ engine.start();
 // without guessing from pixels.
 if (devMode) window.cosmos = {
   buildId: BUILD_VERSION,
+  setHudGoal: (t) => { devGoalText = t || ''; refreshHud(); },       // test hook: a NEXT step without an authority (solo has none); '-' = no step at all
   opening,
   buildVersion:BUILD_VERSION,
   multiplayer, vehicles, voice, get chat() { return chat; }, get tallyUI() { return tallyUI; }, keepWalking,
