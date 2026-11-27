@@ -1,0 +1,1181 @@
+{
+  "date": "2026-11-27",
+  "title": "Heartbeat News — Friday, November 27, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/wire/2026-11-27-top",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-27-top.md"
+    },
+    {
+      "name": "watch/claude/2026-11-27",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-27.md"
+    },
+    {
+      "name": "watch/codex/2026-11-27",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-27.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-27",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-27.md"
+    },
+    {
+      "name": "watch/perplexity/2026-11-27",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-27.md"
+    },
+    {
+      "name": "watch/grok/2026-11-27",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-27.md"
+    },
+    {
+      "name": "watch/grok/2026-11-27-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-27-gaps.md"
+    },
+    {
+      "name": "watch/msi/2026-11-27",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-27.md"
+    },
+    {
+      "name": "watch/wire/2026-11-27",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-27.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Verge headlines (Google onn. camera, Google video patent, WhatsApp scheduling, Fairphone, peptide parties)",
+      "source": "codex, msi",
+      "why": "headline-only; linked pages did not open; shopping and gadget items"
+    },
+    {
+      "item": "Aaron Rodgers released by Steelers; Cairo tanker crash driver detained; Iowa toxic dust fears; birthright and ABC rulings as separate stories",
+      "source": "wire must-air",
+      "why": "aired Thursday; only today's new developments covered (Iowa EPA update, judges in a short line)"
+    },
+    {
+      "item": "Brazil IPCA-15, Ibovespa, Trabuco, FTSE close; Tshwane mayor; Ukraine crypto bill; Greenland and Denmark advisories; Ethiopia prisoner labour; Lithuania",
+      "source": "grok, deepseek, perplexity",
+      "why": "narrow or regional detail with no clear wide audience today; Lithuania only in one line"
+    },
+    {
+      "item": "Polymarket resolution pages; Bitcoin ETF flow detail beyond one line",
+      "source": "codex",
+      "why": "for traders; not news"
+    },
+    {
+      "item": "Nvidia shipment halt to Southeast Asia; SpaceX one million satellites approval; FinCEN offline (partial)",
+      "source": "deepseek, perplexity",
+      "why": "single-outlet claims or aired yesterday; FinCEN mentioned as a claim, others dropped"
+    },
+    {
+      "item": "Turkey Mecca defence pact; UN peacekeepers leaving south Lebanon; Costa Rica bars UN rapporteur; North Korea closes Swiss office; South Korea returns fishermen; Japan A.I. guidelines; Natural England; Iraq-Kurdistan oil feud; Tula/Nevinnomyssk detail",
+      "source": "wire",
+      "why": "SHOULD AIR or single-outlet items cut for room; no safety word"
+    },
+    {
+      "item": "Zelenskyy's Hungary children coalition; Chinese Taiwan landing drills; Australia sanctions Iranian agents; Saudi Ras Tanura satellite claim (one line only)",
+      "source": "wire, deepseek",
+      "why": "lower priority, one outlet each"
+    },
+    {
+      "item": "Kushner/Putin nuclear explainer, nuclear-armed satellite fallout",
+      "source": "wire must-air",
+      "why": "Kushner's line aired; Guardian explainer is analysis, not news"
+    }
+  ],
+  "ticker": [
+    "TWO ITALIANS REPORTEDLY KILLED BY DRONE DEBRIS IN KUWAIT; IRAN DENIES",
+    "HOUTHI ATTACK ON SAUDI JAZAN REFINERY KILLS NEPALI WORKER",
+    "COALITION SAYS IT HIT 50 HOUTHI TARGETS ACROSS YEMEN",
+    "ZELENSKYY WARNS OF MAJOR RUSSIAN STRIKE ON POWER GRID",
+    "EU LEADERS END BUDGET SUMMIT WITHOUT A DEAL; TALKS DEC. 17",
+    "SPAIN'S DE COS TO LEAD EUROPEAN CENTRAL BANK",
+    "NEW U.S. TARIFFS ON 14 TRADING PARTNERS",
+    "TRUMP CALLS REVISED 4.3% G.D.P. FIGURE 'FAKE'",
+    "E.P.A.: ZERO AIRBORNE LEAD SO FAR AFTER IOWA BLAST",
+    "563,000 CUSTOMERS WITHOUT POWER AFTER THANKSGIVING STORM",
+    "MACY'S PARADE MOVED TO SATURDAY",
+    "CONGO EBOLA OUTBREAK PASSES 12,000 CONFIRMED CASES",
+    "FIFA SAYS CYBERATTACK TARGETED PERSONAL AND BUSINESS DATA",
+    "DEPARDIEU TO STAND TRIAL IN FRANCE",
+    "SAP REPORTEDLY WEIGHING 10,000 JOB CUTS"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Two Italians killed in Kuwait, Houthi strikes on Saudi Arabia, and a warning from Kyiv",
+        "bullets": [
+          "Kuwait: two Italians killed; Iran denies",
+          "Houthi strike on Saudi refinery",
+          "Zelenskyy warns of grid attack",
+          "EU budget talks end with no deal",
+          "Tariffs, G.D.P. dispute, storm aftermath"
+        ]
+      },
+      "sources": null,
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Friday, November twenty-seventh. Black Friday, for those who shop it. Wall Street opens today, but only until one o'clock Eastern."
+        },
+        {
+          "who": "vex",
+          "text": "Overseas, drone debris in Kuwait reportedly killed two Italians, and Iran denies involvement. Houthi attacks hit a Saudi refinery. Ukraine warns of a major Russian strike on its power grid. And European leaders left Brussels without a budget deal."
+        },
+        {
+          "who": "joe",
+          "text": "At home: new tariffs, a fight over the G.D.P. numbers, and the Thanksgiving storm cleanup. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "kuwait",
+      "kind": "breaking",
+      "strap": "TWO ITALIANS KILLED IN KUWAIT; IRAN DENIES",
+      "headline": "Drone debris in Kuwait, and two accounts of who is to blame",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "KUWAIT",
+        "title": "Two Italians reportedly killed by drone debris in Kuwait",
+        "stats": [
+          {
+            "label": "Killed",
+            "value": "2 Italians (reported)"
+          },
+          {
+            "label": "Injured",
+            "value": "At least 4"
+          },
+          {
+            "label": "Kuwait / reports",
+            "value": "Iranian drones"
+          },
+          {
+            "label": "Iran",
+            "value": "Denies; offers joint probe"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC News",
+          "url": "https://www.bbc.co.uk/news/articles/c39w9y5dx4k5o"
+        },
+        {
+          "name": "Al Jazeera (report)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/two-italians-killed-after-iranian-drones-strike-facility-says-kuwait"
+        },
+        {
+          "name": "Al Jazeera live blog (Araghchi, Trump)",
+          "url": "https://www.aljazeera.com/news/liveblog/2026/11/27/iran-war-live-irans-araghchi-calls-deadly-kuwait-attack-suspicious?update=5189879"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Debris from Iranian drones reportedly killed two Italians in Kuwait and wounded at least four other people. That is the account from the BBC and Al Jazeera, which cite Kuwait. Al Jazeera says a facility was struck."
+        },
+        {
+          "who": "joe",
+          "text": "Iran's side: Tehran denies involvement and has offered a joint investigation. Al Jazeera's live blog says Foreign Minister Araghchi called the deadly attack suspicious. So Kuwait says Iranian drones. Iran says it was not them, and wants to look together."
+        },
+        {
+          "who": "vex",
+          "text": "Those are two claims, and neither has been independently confirmed in today's captures."
+        }
+      ]
+    },
+    {
+      "id": "trumpiran",
+      "kind": "story",
+      "strap": "TRUMP ON IRAN: NUCLEAR WARNING AND A CHEMICAL CLAIM",
+      "headline": "What Trump said, and what Israeli sources say he declined",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IRAN WAR",
+        "title": "Trump's warnings, and a claim about Iran's alleged chemical program"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera live blog (nuclear holocaust remark)",
+          "url": "https://www.aljazeera.com/news/liveblog/2026/11/27/iran-war-live-irans-araghchi-calls-deadly-kuwait-attack-suspicious?update=5189879"
+        },
+        {
+          "name": "Al Jazeera (Trump downplays Russia, China support)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/trump-downplays-russia-china-support-for-iran-during-talks-with-us-troops"
+        },
+        {
+          "name": "Apprised digest (chemical-weapons claim)",
+          "url": "https://apprised.news/digest/2026-11-27"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Talking with U.S. troops, President Trump warned that failure to secure Middle East peace could lead to a nuclear holocaust. He also said Iran has missiles able to reach Europe. That is from Al Jazeera's live blog."
+        },
+        {
+          "who": "vex",
+          "text": "Al Jazeera also reports that he downplayed Russian and Chinese support for Iran. Those are his statements to the troops, and the outlet's reading of them."
+        },
+        {
+          "who": "joe",
+          "text": "And a separate claim, from one outlet. Apprised News cites Israeli diplomatic sources saying Trump resisted an Israeli push for action over Iran's alleged chemical weapons program. Israel alleges that program. Iran has denied it in earlier captures. We have only the sources' word on what was said in private."
+        },
+        {
+          "who": "vex",
+          "text": "A related arrest: Germany has detained two Iraqis over alleged plots against synagogues. C.B.S. and the Times of Israel link them to Iran, according to the headlines. Iran's response was not in today's captures."
+        }
+      ]
+    },
+    {
+      "id": "gulf",
+      "kind": "story",
+      "strap": "HOUTHI STRIKE ON SAUDI REFINERY; COALITION HITS BACK",
+      "headline": "Jazan refinery, fifty targets in Yemen, and the Strait",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "GULF",
+        "title": "Houthi attacks on Saudi Arabia, and the coalition's reply",
+        "stats": [
+          {
+            "label": "Jazan refinery",
+            "value": "1 worker killed"
+          },
+          {
+            "label": "Coalition",
+            "value": "50 Houthi targets hit"
+          },
+          {
+            "label": "Brent",
+            "value": "About $96"
+          },
+          {
+            "label": "U.K.M.T.O. 223",
+            "value": "Projectile, east of Khasab"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC News (Jazan refinery)",
+          "url": "https://www.bbc.co.uk/news/articles/c6ly7jgv7jzdo"
+        },
+        {
+          "name": "Al Jazeera (Jazan refinery)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/attack-on-saudi-aramcos-jazan-refinery-kills-worker-disrupts-operations"
+        },
+        {
+          "name": "Anadolu morning briefing (coalition, fifty targets)",
+          "url": "https://f.aa.com.tr/en/world/morning-briefing-nov-27-2026/4139900"
+        },
+        {
+          "name": "Reuters via Deepseek capture (tankers, mines)",
+          "url": "https://www.reuters.com/world/china/global-markets-global-markets-2026-11-27/"
+        },
+        {
+          "name": "U.K.M.T.O.",
+          "url": "https://www.ukmto.org/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Houthi attacks reportedly struck Saudi Aramco's Jazan refinery. A Nepali worker was killed, and operations were disrupted. BBC and Al Jazeera report it. Brent crude moved above ninety-six dollars a barrel."
+        },
+        {
+          "who": "joe",
+          "text": "The Saudi-led coalition says it answered by destroying fifty Houthi military targets across three Yemeni provinces. That is the coalition's statement, via Anadolu. Separately, the Houthis reportedly claimed strikes on Ras Tanura, with satellite imagery showing a large smoke plume. That is a claim."
+        },
+        {
+          "who": "vex",
+          "text": "At sea, U.K.M.T.O. logged attack two twenty-three on November twenty-fifth. An outbound tanker, eighteen nautical miles east of Khasab, Oman, was struck by an unknown projectile. The crew is accounted for. Reuters separately reports two tankers reportedly struck mines. Projectile and mines are different accounts. We do not know yet if they describe the same ships."
+        },
+        {
+          "who": "joe",
+          "text": "Brent is headed for about a three point nine percent weekly gain, per Reuters, on supply worries."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "ZELENSKYY WARNS OF MAJOR STRIKE ON POWER GRID",
+      "headline": "Kyiv warns of a mass strike; Moscow's side was not in the captures",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Ukraine warns of a coming Russian strike on its energy system",
+        "stats": [
+          {
+            "label": "Past day (Ukraine)",
+            "value": "10 dead, 58 injured"
+          },
+          {
+            "label": "Kyiv strike",
+            "value": "7 wounded"
+          },
+          {
+            "label": "Mykolaiv blackouts",
+            "value": "85 settlements"
+          },
+          {
+            "label": "Tula governor",
+            "value": "No infrastructure damage"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Zelenskyy warns)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/zelenskyy-warns-of-major-russian-attack-as-trump-urges-putin-to-pull-back"
+        },
+        {
+          "name": "AP (Zelenskyy; General Staff; Kushner)",
+          "url": "https://apnews.com/article/122f7f187eea20d4d2b659692b4c4f1e"
+        },
+        {
+          "name": "Zelenskyy on X",
+          "url": "https://x.com/ZelenskyyUa/status/2125912479754518845"
+        },
+        {
+          "name": "Kyiv Independent (daily toll, Efremov)",
+          "url": "https://kyivindependent.com/russian-attacks-kill-10-injure-58-across-ukraine-over-past-day-strike-kyiv-with-ballistic-missiles/"
+        },
+        {
+          "name": "Kyiv Independent (Tula Oblast)",
+          "url": "https://kyivindependent.com/explosions-reported-at-power-plant-synthetic-rubber-factory-in-russias-tula-oblast-following-drone-attack/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "President Zelenskyy says Ukrainian intelligence shows Russia is finishing preparations for a new mass strike on energy, logistics and life-support sites. He says repair crews are still restoring power after earlier strikes, with Dnipro and Pavlohrad especially hard. His top need, he says, is Patriot and NASAMS interceptors."
+        },
+        {
+          "who": "vex",
+          "text": "The past day, by Ukrainian authorities' count: ten dead and fifty-eight injured. Overnight ballistic missiles hit Kyiv, and the mayor says seven were wounded at a shopping center. In Mykolaiv Oblast, local authorities say attacks caused temporary blackouts in eighty-five settlements."
+        },
+        {
+          "who": "joe",
+          "text": "Ukraine's side of the war. Its General Staff says it struck the Efremov rubber plant and a thermal power plant in Russia's Tula region. It describes the rubber plant as making material for Iskander rocket fuel. The Tula governor says four drones were downed and no infrastructure damage was recorded. The paper could not verify either."
+        },
+        {
+          "who": "vex",
+          "text": "Also a one-outlet report that Ukraine hit a chemical plant and a power station at Nevinnomyssk, causing fires. Unverified."
+        },
+        {
+          "who": "joe",
+          "text": "Russia's account of these strikes was not in today's captures."
+        }
+      ]
+    },
+    {
+      "id": "diplomacy",
+      "kind": "story",
+      "strap": "TRUMP URGES PUTIN TO STOP; KUSHNER'S 'RESTRAINT' LINE",
+      "headline": "Washington's words to Moscow, and Pyongyang's pause",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "DIPLOMACY",
+        "title": "Trump, Kushner, and a reported North Korean pause"
+      },
+      "sources": [
+        {
+          "name": "France 24 (Trump urges Putin)",
+          "url": "https://www.france24.com/en/trump-urges-putin-to-end-military-aggression-in-europe"
+        },
+        {
+          "name": "Anadolu morning briefing",
+          "url": "https://f.aa.com.tr/en/world/morning-briefing-nov-27-2026/4139900"
+        },
+        {
+          "name": "AP (Kushner)",
+          "url": "https://apnews.com/article/122f7f187eea20d4d2b659692b4c4f1e"
+        },
+        {
+          "name": "Japan Times (North Korea aid)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/27/asia-pacific/ukraine-north-korea-missiles/"
+        },
+        {
+          "name": "PBS NewsHour (Kim Jong Un)",
+          "url": "https://www.pbs.org/newshour/show/november-26-2026-pbs-news-hour-full-episode"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "President Trump says he urged Vladimir Putin to end what he called military aggression in Europe. Germany called for concrete ceasefire measures in the Black Sea. No ceasefire or meeting date appears in today's captures."
+        },
+        {
+          "who": "joe",
+          "text": "U.S. envoy Jared Kushner told AP that Putin showed restraint by agreeing not to use nuclear weapons. That is Kushner's claim. Russia's own statement on it was not in the captures."
+        },
+        {
+          "who": "vex",
+          "text": "Ukrainian intelligence says North Korea has paused military aid to Russia. That is Ukraine's claim, and one outlet adds that the partnership is under strain."
+        },
+        {
+          "who": "joe",
+          "text": "Meanwhile, Kim Jong Un vowed to expand North Korea's nuclear weapons program after rejecting a U.S. overture, per PBS."
+        }
+      ]
+    },
+    {
+      "id": "eu",
+      "kind": "story",
+      "strap": "EU BUDGET TALKS END WITHOUT A DEAL; SPAIN'S DE COS FOR ECB",
+      "headline": "Brussels fails on the budget, picks a central banker",
+      "category": "WORLD",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "European leaders: no budget deal, but a new central bank chief"
+      },
+      "sources": [
+        {
+          "name": "Euronews (summit preview)",
+          "url": "https://www.euronews.com/2026/11/26/eu-summit-leaders-ready-to-spar-over-new-budget-and-ukraine-aid"
+        },
+        {
+          "name": "Guardian (EU budget talks)",
+          "url": "https://www.theguardian.com/world/2026/nov/26/eu-leaders-braced-for-clashes-over-ukraine-aid-at-budget-talks"
+        },
+        {
+          "name": "Al Jazeera (EU budget)",
+          "url": "https://www.aljazeera.com/economy/2026/11/26/eu-leaders-struggle-to-agree-on-long-term-budget-more-money-for-ukraine"
+        },
+        {
+          "name": "Guardian (de Cos)",
+          "url": "https://www.theguardian.com/business/2026/nov/26/spain-pablo-hernandez-de-cos-next-ecb-president"
+        },
+        {
+          "name": "ABC News (de Cos)",
+          "url": "https://abcnews.com/International/wireStory/leaders-choose-spains-former-central-bank-head-european-138468703"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Almost fourteen hours of talks in Brussels, and no budget. The Friday session was cancelled. Talks are expected to resume on December seventeenth, per Euronews. Council president Costa said Slovakia, Hungary and the Czech Republic did not back the forty-five billion euro Ukraine loan. Bulgaria joins only the civilian part."
+        },
+        {
+          "who": "vex",
+          "text": "The leaders, in their own words. Macron: December thirty-first is the absolute limit. Meloni: we are light years away from a solution. Merz pointed to interest of over one hundred fifty billion euros on existing joint borrowing."
+        },
+        {
+          "who": "joe",
+          "text": "One decision did land. Euro-area leaders chose Spain's Pablo Hernández de Cos, a former central bank head, to succeed Christine Lagarde as president of the European Central Bank. The Guardian and ABC both report it."
+        },
+        {
+          "who": "vex",
+          "text": "Also: Estonia says it is closing its land borders with Russia to keep out spies, per Al Jazeera's headline."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "GAZA STRIKES KILL EIGHT; ISRAELI POLITICS SHIFT",
+      "headline": "Gaza, the West Bank, and a coalition deal in Israel",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ISRAEL AND GAZA",
+        "title": "Gaza strikes, settler attacks, and an Israeli coalition deal"
+      },
+      "sources": [
+        {
+          "name": "BBC (Gaza strikes)",
+          "url": "https://www.bbc.co.uk/news/articles/cqvg2n4mzl1jo"
+        },
+        {
+          "name": "Guardian (Gaza ministry, children)",
+          "url": "https://www.theguardian.com/world/2026/nov/26/gaza-ministry-schoolchildren-killed-this-month-israel-strikes"
+        },
+        {
+          "name": "Al Jazeera (West Bank)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/israeli-settlers-damage-palestinian-familys-homes-in-west-bank-attack"
+        },
+        {
+          "name": "Times of Israel (settlers, IDF)",
+          "url": "https://www.timesofisrael.com/settlers-demolish-palestinian-home-in-west-bank-village-idf-a-serious-criminal-act/"
+        },
+        {
+          "name": "France 24 (Eisenkot)",
+          "url": "https://www.france24.com/en/middle-east/20261127-israel-s-eisenkot-agrees-to-coalition-deal-with-left-wing-democrats"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Eight Palestinians were killed in Israeli strikes on Gaza, including a Hamas political official and his wife, per the BBC. The Guardian cites Gaza's health ministry on schoolchildren killed this month. Israel's side of these strikes was not in the captures."
+        },
+        {
+          "who": "joe",
+          "text": "In the West Bank, Al Jazeera reports Israeli settlers damaged a Palestinian family's homes. The Times of Israel reports settlers demolished a home in a village, and quotes the I.D.F. calling it a serious criminal act."
+        },
+        {
+          "who": "vex",
+          "text": "In Israeli politics, Gadi Eisenkot's party announced a coalition deal with the left-wing Democrats, per France twenty-four and the Times of Israel."
+        },
+        {
+          "who": "joe",
+          "text": "And a football match between Turkish and Israeli clubs, Besiktas and Hapoel Beer-Sheva, was halted after clashes over a Palestinian flag. Reuters and A.P. report the stoppage."
+        }
+      ]
+    },
+    {
+      "id": "tariffs",
+      "kind": "story",
+      "strap": "NEW TARIFFS ON 14 PARTNERS; TRUMP CALLS G.D.P. 'FAKE'",
+      "headline": "Tariffs announced; a data fight at home",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ECONOMY",
+        "title": "Tariffs on fourteen trading partners, and a fight over G.D.P.",
+        "stats": [
+          {
+            "label": "Tariffs",
+            "value": "14 trading partners"
+          },
+          {
+            "label": "Q3 G.D.P. (revised)",
+            "value": "4.3% annualized"
+          },
+          {
+            "label": "Prior estimate",
+            "value": "3.4%"
+          },
+          {
+            "label": "Trump",
+            "value": "Calls data 'fake'"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera Inside Story (tariffs)",
+          "url": "https://www.aljazeera.com/video/inside-story/2026/11/26/what-will-trumps-latest-tariffs-mean-for-the-world"
+        },
+        {
+          "name": "Guardian (Taiwan, tariffs)",
+          "url": "https://www.theguardian.com/world/2026/nov/27/threat-from-china-looms-large-over-taiwan-local-elections"
+        },
+        {
+          "name": "AP (G.D.P. claim)",
+          "url": "https://apnews.com/article/4fd800b44005ae11f950f96ff62f876e"
+        },
+        {
+          "name": "CNBC (G.D.P.)",
+          "url": "https://www.cnbc.com/2026/11/26/trump-gdp-revision-investigation.html"
+        },
+        {
+          "name": "Al Jazeera (Argentina)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/argentina-bars-central-bank-from-printing-money-to-fund-government-spending"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Trump administration announced new tariffs on imports from fourteen trading partners, including China, Japan, Taiwan and the European Union. Al Jazeera says partners are pushing back. Rates and start dates were not in today's captures."
+        },
+        {
+          "who": "joe",
+          "text": "On the numbers: the revised third-quarter G.D.P. estimate is four point three percent annualized, up from three point four. President Trump called the figure fake and demanded an investigation. AP says he accused Commerce of intentionally issuing incorrect numbers. That is his claim. No evidence was reported in the captures."
+        },
+        {
+          "who": "vex",
+          "text": "In Argentina, a new rule bars the central bank from printing money to fund government spending, per Al Jazeera and A.P."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "ASIA RALLIES; WALL STREET OPENS FOR HALF A DAY",
+      "headline": "Markets: Asia up, oil firm, bitcoin ETFs bleeding",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Markets: Asia higher, Wall Street half-day, record bitcoin ETF outflows",
+        "stats": [
+          {
+            "label": "Nikkei",
+            "value": "+2.0%"
+          },
+          {
+            "label": "Kospi",
+            "value": "+4.2%"
+          },
+          {
+            "label": "Brent",
+            "value": "About $96"
+          },
+          {
+            "label": "Bitcoin ETFs, Nov.",
+            "value": "-$5.39B"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (Asian shares, oil)",
+          "url": "https://apnews.com/article/c7ef10c1dbc5fa09668bd4fe0729c613"
+        },
+        {
+          "name": "NYSE hours",
+          "url": "https://www.nyse.com/trade/hours-calendars"
+        },
+        {
+          "name": "Reuters global markets",
+          "url": "https://www.reuters.com/world/china/global-markets-global-markets-2026-11-27/"
+        },
+        {
+          "name": "Trading Notified (bitcoin ETFs)",
+          "url": "https://tradingnotified.com/markets/bitcoin-etfs-record-monthly-outflows-november/"
+        },
+        {
+          "name": "Anadolu / UOB (Bank of Korea)",
+          "url": "https://uobkh.com.hk/en/research/wealth-daily-27112026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Wall Street was closed Thursday. Today it reopens for a short day, closing at one p.m. Eastern. In Asia, A.P. reports the Nikkei up two percent, South Korea's Kospi up four point two, and Hong Kong's Hang Seng up two point one."
+        },
+        {
+          "who": "vex",
+          "text": "Oil: A.P. had Brent at ninety-seven dollars thirty-one cents on Thursday. Reuters has it near ninety-six, on pace for a three point nine percent weekly gain. The Bank of Korea raised its policy rate a quarter point to three point two five percent. Tokyo core inflation hit two point nine percent."
+        },
+        {
+          "who": "joe",
+          "text": "Reuters also reports S&P put Nvidia's credit rating on watch for a possible downgrade, over worries about A.I.-related borrowing."
+        },
+        {
+          "who": "vex",
+          "text": "Bitcoin: Trading Notified, citing Coinbase data, had it near sixty thousand five hundred dollars Thursday. U.S. spot bitcoin funds posted a record monthly outflow of five point four billion dollars through November twenty-fifth, with seven straight days of outflows."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "ALTRIA EYES IMPERIAL; SAP WEIGHS 10,000 JOB CUTS",
+      "headline": "Deals and layoffs",
+      "category": "BUSINESS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "A tobacco mega-deal, A.I. job cuts, and an Australian gas rule"
+      },
+      "sources": [
+        {
+          "name": "Guardian (Altria, Imperial)",
+          "url": "https://www.theguardian.com/business/2026/nov/26/marlboro-maker-altria-considering-takeover-bid-for-imperial-brands"
+        },
+        {
+          "name": "Japan Times (Imperial)",
+          "url": "https://www.japantimes.co.jp/business/2026/11/27/companies/japan-tobacco-considers-imperial-acquisition/"
+        },
+        {
+          "name": "CNBC (SAP)",
+          "url": "https://www.cnbc.com/2026/11/27/sap-job-cuts-ai-restructuring.html"
+        },
+        {
+          "name": "Guardian (Australia gas)",
+          "url": "https://www.theguardian.com/australia-news/2026/nov/26/coalition-to-team-up-with-labor-to-pass-20-gas-reservation-scheme-for-australias-largest-exporters"
+        },
+        {
+          "name": "Japan Times (OPEC+)",
+          "url": "https://www.japantimes.co.jp/business/2026/11/27/opec-2027-output-talks/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Marlboro maker Altria is reportedly exploring a takeover of Imperial Brands, in what the Guardian calls a Big Tobacco mega-deal. The Japan Times says Japan Tobacco is also considering an Imperial bid. Reports, not confirmed offers."
+        },
+        {
+          "who": "joe",
+          "text": "German software company SAP is reportedly weighing cutting at least ten thousand jobs in an A.I. push, per CNBC and Reuters. The company has not confirmed it in the captures."
+        },
+        {
+          "who": "vex",
+          "text": "Australia's parliament passed a scheme requiring big liquefied natural gas exporters to reserve up to twenty percent of production for domestic use, starting in twenty twenty-eight. And O.P.E.C. plus is likely to roll over its first-quarter output targets as capacity disputes continue, sources told Reuters."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "FIFA CYBERATTACK; A.I. TOOLS IN HACKERS' HANDS",
+      "headline": "Cyber: FIFA, Microsoft, Switzerland, FinCEN",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "A FIFA data theft and warnings on A.I.-driven attacks"
+      },
+      "sources": [
+        {
+          "name": "Guardian (FIFA)",
+          "url": "https://www.theguardian.com/football/2026/nov/26/fifa-cyberattack-hack-personal-information"
+        },
+        {
+          "name": "Al Jazeera (FIFA)",
+          "url": "https://www.aljazeera.com/sports/2026/11/26/fifa-says-personal-and-business-information-stolen-in-cyberattack"
+        },
+        {
+          "name": "A.I. Beat (Microsoft ARTEX)",
+          "url": "https://aibeatnews.com/digest/day/2026-11-27/tech/"
+        },
+        {
+          "name": "Toolsift (Swiss cyber office)",
+          "url": "https://toolsift.ai/agent-news/2026-11-27/"
+        },
+        {
+          "name": "Philstar (outages)",
+          "url": "https://www.philstar.com/the-freeman/cebu-business/2026/11/27/2572992/what-hell-going-on-technology-outages-offer-preview-infrastructures-risky-future/amp/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "FIFA says a cyberattack targeted what it calls a limited set of personal and business information. Al Jazeera's headline says that information was stolen. FIFA has not said how many people are affected."
+        },
+        {
+          "who": "vex",
+          "text": "Microsoft described a framework called ARTEX, used by state-backed and criminal hackers to automate attacks. Switzerland's cybersecurity office reported A.I. agents used against critical-infrastructure operators and small businesses."
+        },
+        {
+          "who": "joe",
+          "text": "And a claim from one outlet: FinCEN took some systems offline while investigating unauthorized access. We have no detail on that yet."
+        },
+        {
+          "who": "vex",
+          "text": "A caution on recent outages at Chase, Apple and an N.S.A. network. One column attributes them largely to updates, faulty technology and human error, not cyberattacks."
+        }
+      ]
+    },
+    {
+      "id": "iowa",
+      "kind": "story",
+      "strap": "IOWA: EPA SEES ZERO AIRBORNE LEAD SO FAR",
+      "headline": "Iowa detonation: air monitors clean, soil results due",
+      "category": "US",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "IOWA",
+        "title": "Iowa detonation aftermath: monitors show no airborne lead so far"
+      },
+      "sources": [
+        {
+          "name": "AP (EPA update)",
+          "url": "https://apnews.com/article/bc178961a973a39834cbe249fd19183b"
+        },
+        {
+          "name": "EPA",
+          "url": "https://www.epa.gov/newsreleases/epa-provides-update-sampling-following-yesterdays-controlled-detonation-iowa-army"
+        },
+        {
+          "name": "Guardian (Army calls it a success)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/26/iowa-chemical-lead-bomb-detonation-toxic-dust-fears"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Update on the Army's controlled detonation of lead azide in Iowa. The Army calls it a success. The E.P.A. says real-time monitors kept showing zero airborne lead."
+        },
+        {
+          "who": "joe",
+          "text": "The key word is real-time. Lab results from samples taken after the blast are due to begin arriving today. Until they do, the question of contamination on the ground is open. We will report what the E.P.A. says."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "STORM AFTERMATH: OUTAGES, FLOODING; PARADE SATURDAY",
+      "headline": "Thanksgiving storm: the damage count",
+      "category": "US",
+      "status": "observed",
+      "graphic": {
+        "kicker": "STORM",
+        "title": "Thanksgiving storm leaves hundreds of thousands without power",
+        "stats": [
+          {
+            "label": "Customers without power",
+            "value": "563,000 (Axios, Thu 11 a.m.)"
+          },
+          {
+            "label": "Flights delayed/cancelled",
+            "value": "1,300+"
+          },
+          {
+            "label": "California waves",
+            "value": "Nearly 9 m"
+          },
+          {
+            "label": "Macy's parade",
+            "value": "Saturday, Nov. 28"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "Axios (outages, flights)",
+          "url": "https://www.axios.com/2026/11/26/thanksgiving-power-outages-noreaster-winter-storm"
+        },
+        {
+          "name": "AP (flooding, wind)",
+          "url": "https://apnews.com/article/e8bc9bc454c933dacffe89b1139c4d3c"
+        },
+        {
+          "name": "Al Jazeera (nearly a million)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/thanksgiving-storms-leave-nearly-a-million-without-power-across-the-us"
+        },
+        {
+          "name": "France 24 (California king tides)",
+          "url": "https://www.france24.com/en/video/20261126-king-tide-waves-batter-california-coast-soaking-san-francisco"
+        },
+        {
+          "name": "NBC News (parade)",
+          "url": "https://www.nbcnews.com/nightly-news/video/performers-and-marching-bands-scramble-after-macy-s-thanksgiving-day-parade-delay-274245189694"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Axios counted five hundred sixty-three thousand utility customers without power Thursday at eleven a.m. Eastern, more than a million people. Al Jazeera's headline says nearly a million were without power. More than thirteen hundred flights were delayed or cancelled."
+        },
+        {
+          "who": "joe",
+          "text": "Flooding covered tracks at a New Jersey rail terminal. High winds closed East Coast bridges. Baltimore closed waterfront streets after storm-surge flooding. The wind advisories ran from northern Georgia up to southern New England."
+        },
+        {
+          "who": "vex",
+          "text": "On the West Coast, exceptional tides and waves of nearly nine meters hit California, per France twenty-four."
+        },
+        {
+          "who": "joe",
+          "text": "And Macy's postponed its parade for the first time ever. It is planned for Saturday. Marching bands and performers are scrambling to adjust."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "EBOLA OUTBREAK PASSES 12,000 CONFIRMED CASES",
+      "headline": "Ebola in Congo; Kenyan court rules on quarantine site",
+      "category": "HEALTH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Congo Ebola outbreak: 12,021 confirmed cases"
+      },
+      "sources": [
+        {
+          "name": "AP (Congo health ministry)",
+          "url": "https://apnews.com/article/0a0bc05d76d3278319472178a16be14b"
+        },
+        {
+          "name": "E.C.D.C.",
+          "url": "https://www.ecdc.europa.eu/en/public-health-events/2026-eip-00026/2026-11-26"
+        },
+        {
+          "name": "AP (Kenyan court)",
+          "url": "https://apnews.com/article/9faf3d71819a9708b42c57e1a55aaa16"
+        },
+        {
+          "name": "Al Jazeera (Kenya court)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/kenya-govt-violated-constitution-with-ebola-quarantine-site-court-says"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Congo's health ministry puts the Ebola outbreak at twelve thousand twenty-one confirmed cases and five thousand nine hundred four deaths. The European C.D.C. records the same total, through November twenty-fourth. Fighting is disrupting the response."
+        },
+        {
+          "who": "joe",
+          "text": "In Kenya, a court ruled that a U.S.-backed Ebola quarantine center violated the constitution. The fifty-bed site at a military base in Laikipia had prompted deadly protests from residents."
+        }
+      ]
+    },
+    {
+      "id": "courts",
+      "kind": "story",
+      "strap": "DEPARDIEU TO STAND TRIAL; UK TRAIN ATTACKER GUILTY",
+      "headline": "Courts and verdicts",
+      "category": "WORLD",
+      "status": "observed",
+      "graphic": {
+        "kicker": "COURTS",
+        "title": "Depardieu trial ordered; a train attacker convicted; Myanmar defies the I.C.J."
+      },
+      "sources": [
+        {
+          "name": "BBC (Depardieu)",
+          "url": "https://www.bbc.co.uk/news/articles/cmlyd76kyx44o"
+        },
+        {
+          "name": "CBS News (Depardieu)",
+          "url": "https://www.cbsnews.com/news/gerard-depardieu-trial-alleged-rape-paris/"
+        },
+        {
+          "name": "Guardian (train attack)",
+          "url": "https://www.theguardian.com/uk-news/2026/nov/26/anthony-williams-guilty-attempted-murder-lner-train"
+        },
+        {
+          "name": "BBC (Myanmar, I.C.J.)",
+          "url": "https://www.bbc.co.uk/news/articles/c61wr87wyg5wo"
+        },
+        {
+          "name": "Al Jazeera (ABC licences)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/us-judge-blocks-trumps-fcc-attempt-to-target-disneys-abc-stations"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "A French court ruled that actor Gérard Depardieu will stand trial for the alleged rape of an actress in twenty eighteen. BBC and C.B.S. report it. A trial date was not in the captures."
+        },
+        {
+          "who": "vex",
+          "text": "In Britain, a man with schizophrenia was found guilty of attempted murder of fourteen people, including ten on a London-bound train, per the Guardian and A.B.C. News."
+        },
+        {
+          "who": "joe",
+          "text": "Myanmar says it will not comply with parts of the International Court of Justice's genocide ruling, per the BBC."
+        },
+        {
+          "who": "vex",
+          "text": "A follow-up from this week: a federal judge blocked the F.C.C. from reviewing ABC station licences early, and another blocked the latest birthright citizenship order, per Al Jazeera."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "NFL THANKSGIVING SCORES; BRONCOS AT STEELERS TODAY",
+      "headline": "Football: three close finishes, one game today",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Thanksgiving football results and today's game"
+      },
+      "sources": [
+        {
+          "name": "NFL gamebook: Chiefs-Bills",
+          "url": "https://static.www.nfl.com/image/upload/v1795753954/gamecenter/abbf321b-4feb-11f1-abca-2c54536568a9.pdf"
+        },
+        {
+          "name": "NFL gamebook: Bears-Lions",
+          "url": "https://static.www.nfl.com/image/upload/v1795729166/gamecenter/abbf2c16-4feb-11f1-abca-2c54536568a9.pdf"
+        },
+        {
+          "name": "NFL gamebook: Eagles-Cowboys",
+          "url": "https://static.www.nfl.com/image/upload/v1795743510/gamecenter/abbf2f12-4feb-11f1-abca-2c54536568a9.pdf"
+        },
+        {
+          "name": "NFL week twelve preview",
+          "url": "https://media.nfl.com/football-information/2026/weekly-preview---capsules-/week-12-nfl-preview---capsules-"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "NFL gamebooks, Thursday. Bears thirty-nine, Lions thirty-five. Eagles thirty-nine, Cowboys thirty-eight. Bills thirteen, Chiefs ten, in Orchard Park, in rain, thirty-three degrees and a nineteen mile-per-hour wind."
+        },
+        {
+          "who": "joe",
+          "text": "Three games, three finishes inside a touchdown. Today the Broncos visit the Steelers at three p.m. Eastern."
+        }
+      ]
+    },
+    {
+      "id": "world",
+      "kind": "story",
+      "strap": "NIGER, INDIA, SERBIA AND NEW ZEALAND",
+      "headline": "Elsewhere in the world",
+      "category": "WORLD",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Niger attack, India recalls Parliament, Serbia and New Zealand vote"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Niger)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/at-least-13-niger-soldiers-killed-in-sanam-armed-attack"
+        },
+        {
+          "name": "The Hindu (Parliament)",
+          "url": "https://www.thehindu.com/news/national/government-to-reconvene-parliament-from-november-30-to-december-3-kiren-rijiju/article71747089.ece"
+        },
+        {
+          "name": "ABC News (Serbia)",
+          "url": "https://abcnews.com/International/wireStory/serbia-sets-presidential-election-dec-27-after-students-won-parliamentary-vote-138465505"
+        },
+        {
+          "name": "BBC (New Zealand)",
+          "url": "https://www.bbc.co.uk/news/articles/c670278qk879o"
+        },
+        {
+          "name": "LRT (Lithuania, Taiwan office)",
+          "url": "https://www.lrt.lt/en/news-in-english/19/3126108/lithuanian-mp-assures-there-s-no-plan-to-close-down-taiwanese-office"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Niger's Defence Ministry says an attack on a National Guard compound in Sanam killed at least thirteen soldiers and wounded twenty."
+        },
+        {
+          "who": "joe",
+          "text": "India: Parliament will reconvene. Lok Sabha sits from November thirtieth, and both houses end December third. The Hindu says the government is likely to table an amended bill on redrawing seats. Opposition leaders called it an assault on the Constitution. The government's side of the bill is described by sources only."
+        },
+        {
+          "who": "vex",
+          "text": "Serbia sets a presidential election for December twenty-seventh. New Zealand's final count leaves neither bloc with a majority. The governing coalition needs the centrist Opportunity party, per the BBC."
+        },
+        {
+          "who": "joe",
+          "text": "And Lithuania: its president said Vilnius could make unilateral decisions on the Taiwanese office there. A foreign affairs committee chair says there is no goal to abolish it. Two statements, side by side."
+        }
+      ]
+    },
+    {
+      "id": "quick",
+      "kind": "story",
+      "strap": "ALSO TODAY",
+      "headline": "Quick hits",
+      "category": "TODAY",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "Also today"
+      },
+      "sources": [
+        {
+          "name": "Japan Times (Bangkok)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/26/asia-pacific/bangkok-oil-facility-explosion/"
+        },
+        {
+          "name": "Guardian (Strobe Talbott)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/26/strobe-talbott-time-secretary-of-state-dead"
+        },
+        {
+          "name": "Al Jazeera (Mexico, SpaceX)",
+          "url": "https://www.aljazeera.com/news/2026/11/26/mexico-seeks-us-talks-about-suspected-spacex-debris"
+        },
+        {
+          "name": "Guardian (Rosebank)",
+          "url": "https://www.theguardian.com/politics/2026/nov/26/labour-split-over-rosebank-oilfield-exposed-by-letter-from-nearly-100-mps"
+        },
+        {
+          "name": "Al Jazeera (Bangladesh)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/26/bangladesh-garment-workers-clash-with-police-over-low-wages"
+        },
+        {
+          "name": "BBC (Ibiza tanker)",
+          "url": "https://www.bbc.co.uk/news/articles/c9gklryvj24do"
+        },
+        {
+          "name": "Guardian (BBC inquiry)",
+          "url": "https://www.theguardian.com/media/2026/nov/26/antisemitism-adviser-to-launch-inquiry-into-hostile-work-environment-at-bbc"
+        },
+        {
+          "name": "France 24 (Bardella)",
+          "url": "https://www.france24.com/en/tv-shows/press-review/20261126-french-media-publish-fresh-claims-of-far-right-leader-bardella-s-anti-semitic-torrent"
+        },
+        {
+          "name": "Adobe via AP (online spending)",
+          "url": "https://apnews.com/article/21e10113de5d5941024b3220bec29433"
+        },
+        {
+          "name": "Farm Bureau (Thanksgiving cost)",
+          "url": "https://www.fb.org/intel/markets/thanksgiving-dinner-cost-ticks-upward-in-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "An explosion and fire at a major Bangkok oil facility injured at least nine people. Nearby residents briefly evacuated. A diesel tanker capsized off Ibiza, killing one."
+        },
+        {
+          "who": "joe",
+          "text": "Strobe Talbott, the Time magazine reporter who became deputy U.S. secretary of state, has died at eighty."
+        },
+        {
+          "who": "vex",
+          "text": "Mexico wants talks with the United States about suspected SpaceX debris. Nearly one hundred Labour M.P.s signed a letter opposing the Rosebank oil field. Police used tear gas on garment workers protesting low wages in Bangladesh."
+        },
+        {
+          "who": "joe",
+          "text": "In Britain, an antisemitism adviser will open an inquiry into a hostile work environment at the B.B.C. And in France, the far-right leader Jordan Bardella faces fresh allegations of antisemitic comments, per France twenty-four and the Times of Israel."
+        },
+        {
+          "who": "vex",
+          "text": "Shopping: A.P. says Americans spent eighty-two point five billion dollars online from November first to twenty-second, up nine percent. The Farm Bureau says a Thanksgiving dinner for ten cost fifty-eight dollars sixty-three cents, up six percent."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines from the wire",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "Live headlines"
+      },
+      "sources": null,
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Sign-off",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "GOODNIGHT",
+        "title": "That's Heartbeat News"
+      },
+      "sources": null,
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News for Friday. A new show every day by morning. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Two Italians killed in Kuwait, and Iran says it was not them. A refinery hit in Saudi Arabia. A budget stalled in Brussels. Two sides in every account. We will tell you what happened, and who said it. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
