@@ -850,7 +850,7 @@ export class ShipSystem {
    * FLIGHTFEEL: what the thumbs, keys and mouse mean when a person flies by hand (src/ship/flightAssist.js).
    *   stick up/down (W/S): go / back        stick left/right (A/D): turn        drag the right half or the mouse: steer the nose (yaw, pitch)
    *   SPACE / UP button: climb              C, Ctrl / DOWN button: descend (and the landing assist, low)        SHIFT / BOOST: boost
-   *   arrows left/right: slide              L / LAND: landing assist           R: hold the nose where it is (it eases back to the horizon otherwise)
+   *   arrows left/right: slide              L / LAND: landing assist           R, a resting right thumb or a held FIRE: hold the nose where it is (it eases back to the horizon otherwise)
    */
   _handFly(dt, inp, lift) {
     const k = inp.keys, key = (c) => (k && k.has(c) ? 1 : 0), l = inp.look || { dx: 0, dy: 0 };
@@ -860,7 +860,9 @@ export class ShipSystem {
     this._sy += (wantYaw - this._sy) * Math.min(1, 16 * dt); this._sp += (wantPitch - this._sp) * Math.min(1, 16 * dt);
     const fwd = clamp(inp.moveNorth || 0, -1, 1), yaw = clamp((inp.moveEast || 0) + this._sy, -1, 1), pitch = clamp(this._sp, -1, 1);
     const strafe = key('ArrowRight') - key('ArrowLeft'), boost = key('ShiftLeft') || key('ShiftRight') || this.uiBoost ? 1 : 0;
-    const level = key('KeyR') ? 0 : 1;
+    // THUMBSTEER: R holds the nose. On a phone a thumb resting on the right half holds it too (a finger cannot keep moving the way a mouse
+    // can), and so does a held FIRE: you aim with the drag, slide to FIRE, and the nose stays on the target instead of easing back level.
+    const level = key('KeyR') || inp.lookHeld || this.fireHeld || inp.fire || key('KeyF') ? 0 : 1;
     const acting = Math.abs(fwd) > 0.15 || Math.abs(lift) > 0.05 || strafe !== 0;
     if (acting && this.landAssist) this.landAssist = false;          // a hand on the stick takes the ship back from the landing assist
     if (this.flight.landed) this.landAssist = false;

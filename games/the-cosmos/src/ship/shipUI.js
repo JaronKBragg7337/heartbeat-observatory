@@ -139,6 +139,13 @@ export class ShipUI {
     hold(this.btnLift, () => { ship.uiLift = 1; }, () => { if (ship.uiLift > 0) ship.uiLift = 0; });
     hold(this.btnSink, () => { ship.uiLift = -1; }, () => { if (ship.uiLift < 0) ship.uiLift = 0; });
     hold(this.btnFire, () => { ship.fireHeld = true; }, () => { ship.fireHeld = false; });
+    // THUMBSTEER: FIRE is also an aim pad. A phone has two thumbs: the left one is on the stick, so the right one, holding FIRE, slides to
+    // keep the nose on the target (the same as a drag on the right half; the button keeps the finger while it slides off it).
+    { let last = null;
+      this.btnFire.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') last = { id: e.pointerId, x: e.clientX, y: e.clientY }; });
+      this.btnFire.addEventListener('pointermove', (e) => { if (!last || e.pointerId !== last.id) return; e.preventDefault();
+        if (this.onAimDrag) this.onAimDrag(e.clientX - last.x, e.clientY - last.y); last.x = e.clientX; last.y = e.clientY; });
+      for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) this.btnFire.addEventListener(t, (e) => { if (last && e.pointerId === last.id) last = null; }); }
     hold(this.btnBoost, () => { ship.uiBoost = 1; }, () => { ship.uiBoost = 0; });
     // FLIGHTFEEL: the flight chips. A tap, not a hold.
     const tap = (el, fn) => { el.addEventListener('pointerup', (e) => { e.preventDefault(); e.stopPropagation(); fn(); this._flyChips(); }); el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); }); };
@@ -202,6 +209,9 @@ export class ShipUI {
     else if (id === 'nav') hint = 'range button cycles the map · N course · E stand';
     else if (id === 'comms') hint = 'E stand';
     this._showHint(hint);
+    // THUMBSTEER: a phone has no key hint, so the first few times in a flying chair the toast says what the thumbs do
+    if (flying && this.isTouch) { let n = 0; try { n = +localStorage.getItem('cosmos.thumbFlyTip') || 0; localStorage.setItem('cosmos.thumbFlyTip', String(n + 1)); } catch { /* private mode */ }
+      if (n < 3) this.ship.note('Left thumb: go and turn. Right thumb: drag to aim. Hold FIRE, slide it to aim.'); }
 
     if (flying) {
       P.style.display = 'block'; P.className = 'fly';

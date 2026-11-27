@@ -82,6 +82,9 @@ export class TouchControls {
 
     c.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse') return;     // mouse uses pointer lock
+      // THUMBSTEER: a mouse locked the pointer, then a finger came (a touch laptop): under the lock the finger reads 0,0, so let go
+      // of the lock and take the touch from the next one
+      if (document.pointerLockElement) { try { document.exitPointerLock?.(); } catch {} if (!e.clientX && !e.clientY) return; }
       const leftHalf = e.clientX < window.innerWidth * 0.5;
 
       if (leftHalf && !this._stick) {
@@ -167,6 +170,9 @@ export class TouchControls {
     document.addEventListener('gesturestart', (e) => e.preventDefault());
   }
 
+  /** THUMBSTEER: is a thumb down on the look half right now (moving or resting)? */
+  get lookHeld() { return !!this._look; }
+
   /** Read and clear per-frame look deltas. */
   consumeLook() {
     const d = { dx: this.lookDX, dy: this.lookDY };
@@ -202,7 +208,11 @@ export class DesktopControls {
     window.addEventListener('keyup', (e) => { this.keys.delete(e.code); this.held.delete(e.code); });
     window.addEventListener('blur', () => { this.keys.clear(); this.held.clear(); });
 
-    canvas.addEventListener('click', () => { if (!this.locked) { try { const r = canvas.requestPointerLock?.(); if (r && r.catch) r.catch(() => {}); } catch { /* the browser refuses a lock asked for too often: ask again on the next click */ } } });
+    // THUMBSTEER: only a MOUSE click locks the pointer. A finger's tap also sends a click; locking on it froze every later touch
+    // (under a lock the browser reports a finger at 0,0), so the left thumb stick never moved and the look drag died with it.
+    let downType = 'mouse';
+    canvas.addEventListener('pointerdown', (e) => { downType = e.pointerType || 'mouse'; }, true);
+    canvas.addEventListener('click', (e) => { const t = e.pointerType || downType; if (t && t !== 'mouse') return; if (!this.locked) { try { const r = canvas.requestPointerLock?.(); if (r && r.catch) r.catch(() => {}); } catch { /* the browser refuses a lock asked for too often: ask again on the next click */ } } });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
     });

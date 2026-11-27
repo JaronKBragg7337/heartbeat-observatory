@@ -412,6 +412,7 @@ let shipUI = null, fightHud = null;
 try {
   ship.build();
   shipUI = new ShipUI(ship, { isTouch });
+  shipUI.onAimDrag = (dx, dy) => { touch.lookDX += dx * touch.lookSensitivity; touch.lookDY += dy * touch.lookSensitivity; };      // THUMBSTEER: a slide on FIRE aims like a right-half drag
   fightHud = new FightHUD({ ship, engine, mp: () => multiplayer });
   // Start the player looking at the ship.
   walker.yaw = portSite.heading + Math.atan2(10,38);
@@ -1161,6 +1162,7 @@ engine.addUpdater((dt) => {
     moveNorth: touch.moveNorth || desktop.moveNorth,
     run: touch.run || desktop.run,
     jump: touch.consumeJump() || desktop.consumeJump(),
+    lookHeld: touch.lookHeld,      // THUMBSTEER: a thumb resting on the right half (in the pilot's chair it holds the nose)
   };
   // Keep walking: on a long walk the walker runs on the way the view faces with no thumb on the stick (ui/keepWalking.js)
   keepWalking.update({ dt, onFoot: !(ship.ready && ship.aboard), modal: !!document.querySelector('#phone-ui.modal'), speed: Math.hypot(walker.velocity.x, walker.velocity.y, walker.velocity.z), goalId: missions ? missions.goalId : null });
