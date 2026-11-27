@@ -2,6 +2,27 @@
  "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
  "items": [
   {
+   "id": "cosmos-gameplay-2026-11-26",
+   "date": "2026-11-26",
+   "title": "The Cosmos: 89 seconds of real play, in a ship, in space and on the ground",
+   "tool": "Our own game in the browser (Three.js), filmed by a script that plays it, cut with ffmpeg. Claude (Fable 5.2) with Opus 5.5 helpers",
+   "image": "/artifacts/img/cosmos-gameplay.jpg",
+   "video": "/artifacts/video/cosmos-gameplay-wide.mp4",
+   "what": "A clip of The Cosmos as it plays today: the new arrival scene on a liner, a walk down the ramp at the Mars port, ships on their pads, a lift-off, a fight with a raider that ends when it surrenders, a climb out of the air into free flight above Mars, and digging on Ceres. Nothing in it is a staged shot: a script holds the controls and the game does the rest.",
+   "made": "A script drives the game in a browser the way a player would (keys and mouse, and touch on a phone-size page for the tall cut) while the screen is recorded. Filming it turned up real problems in the game, and they were fixed first: black ship parts, a ship with holes in its hull, a target you could not see in a fight, and a tap that froze the thumb stick on some phones.",
+   "honest": "The fight and the free flight are two separate flights cut together. The Ceres dig in the tall cut is a crop of a wide take. In the tall cut the touches come from a script's fingers on a phone-size page in a desktop browser, not a phone in a hand, and that fight took three tries to win. The clip has no sound. The AI that made it cannot watch video: it was checked from sheets of still frames.",
+   "links": [
+    [
+     "Play The Cosmos",
+     "/games/the-cosmos/"
+    ],
+    [
+     "Tall cut for phones",
+     "/artifacts/video/cosmos-gameplay-tall.mp4"
+    ]
+   ]
+  },
+  {
    "id": "turkey-trouble-2026-11-26",
    "date": "2026-11-26",
    "title": "Turkey Trouble: a Thanksgiving game, farm and all, made by code",
