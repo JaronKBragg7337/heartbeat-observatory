@@ -1,0 +1,975 @@
+{
+  "date": "2026-11-28",
+  "title": "Heartbeat News — Saturday, November 28, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/wire/2026-11-28-top",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-28-top.md"
+    },
+    {
+      "name": "watch/claude/2026-11-28",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-28.md"
+    },
+    {
+      "name": "watch/codex/2026-11-28",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-28.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-28",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-28.md"
+    },
+    {
+      "name": "watch/perplexity/2026-11-28",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-28.md"
+    },
+    {
+      "name": "watch/grok/2026-11-28-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-28-gaps.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-28",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-28.md"
+    },
+    {
+      "name": "watch/msi/2026-11-28",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-28.md"
+    },
+    {
+      "name": "watch/wire/2026-11-28",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-28.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Shopping deals (Oura Ring, streaming discounts); Verge headlines (Netflix, Android developer address, GTA VI union vote)",
+      "source": "wire, codex, msi",
+      "why": "shopping or headline-only; linked pages did not open"
+    },
+    {
+      "item": "Costa Rica/Albanese and Mexico DEA complaint beyond one line; Canary boat; Florida shooting",
+      "source": "wire must-air",
+      "why": "covered in Quick Hits only; small"
+    },
+    {
+      "item": "Brazil stock detail, Macquarie, Neuren, WiseTech, Australia gas bill, Suzuki batteries, Japan AI and LDP proposals, CPTPP, Indonesia fuel, Fitzroys, NSW budget",
+      "source": "kimi, deepseek",
+      "why": "narrow regional or sector detail; Brazil covered in markets"
+    },
+    {
+      "item": "Polymarket resolution pages and box-office markets; Bitcoin ETF detail beyond one line",
+      "source": "codex, deepseek",
+      "why": "for traders; not news"
+    },
+    {
+      "item": "Princess Kate documentary details; Mamdani surgery detail; Bulgarian protests after Marseille match violence; Ferrari/Verstappen F1; pregnant inmate escape; Alaska propeller death; Kenneth Law beyond one line",
+      "source": "wire",
+      "why": "light or single-angle items cut for room; Kate, Mamdani and Law get one line"
+    },
+    {
+      "item": "Kushner restraint remark, Saudi travel advisory, Peru helicopter crash, Puerto Rico protest, USC band, Guinea-Bissau election delay, Karachi collapse, Syria Deir ez-Zor attack, UK airbase drones FT report, North Korea laundering, Rheinmetall Ukraine plant, Russia Arctic strategy",
+      "source": "codex, kimi, deepseek, perplexity",
+      "why": "one-outlet or lower-priority items; Kushner in one line; Peru and Puerto Rico not aired for time"
+    },
+    {
+      "item": "Seoul-Kim visit watch, Poland graffiti arrests, Lufthansa job cuts, UFB bank failure",
+      "source": "deepseek, perplexity",
+      "why": "single aggregator or headline-only; unverified"
+    }
+  ],
+  "ticker": [
+    "U.S. DISABLES SHIP AT IRAN BLOCKADE; IRAN VOWS TO BREAK IT",
+    "RUSSIA LAUNCHES 155 DRONES AT UKRAINE; 110 DOWNED",
+    "UKRAINE OFFERS BLACK SEA CEASEFIRE; AWAITS RUSSIA",
+    "M.S.F. SAYS ISRAELI STRIKE KILLED 2 CLINIC WATCHMEN; ISRAEL SAYS HAMAS",
+    "REPORTED AIR FORCE CLOUD ONE HACK; PENTAGON SAYS SYSTEMS SECURE",
+    "U.K. D.W.P. SYSTEMS OFFLINE AFTER CYBER INCIDENT",
+    "EAST COAST OUTAGES DOWN TO ABOUT 230,000",
+    "S&P 500 UP 1.6%; BEST WEEK SINCE APRIL 2025",
+    "NORSE ATLANTIC FILES FOR BANKRUPTCY",
+    "TAIWAN VOTES IN LOCAL ELECTIONS",
+    "SPAIN VOTES THIS WEEKEND",
+    "SUPREME COURT TO REVIEW ASYLUM SUSPENSION",
+    "KENYAN CULT LEADER GUILTY OF MANSLAUGHTER",
+    "MALININ SETS SHORT PROGRAM WORLD RECORD"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "A disabled ship at the Iran blockade, a drone barrage on Ukraine, and a reported Air Force hack",
+        "bullets": [
+          "Blockade: U.S. disables a ship; Iran vows to break it",
+          "Ukraine: 155 drones overnight",
+          "Air Force hack report; Pentagon says secure",
+          "Taiwan and Spain vote",
+          "East Coast storm cleanup"
+        ]
+      },
+      "sources": null,
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Saturday, November twenty-eighth. Taiwan votes today, and Spain votes this weekend."
+        },
+        {
+          "who": "vex",
+          "text": "The U.S. says it disabled a ship trying to breach its blockade of Iranian ports. Iran says it will break the blockade. Russia sent one hundred fifty-five drones at Ukraine overnight."
+        },
+        {
+          "who": "joe",
+          "text": "At home, a reported hack of an Air Force computing platform, with the Pentagon saying its systems are secure. And the storm cleanup on the East Coast. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "blockade",
+      "kind": "breaking",
+      "strap": "U.S. DISABLES SHIP AT IRAN BLOCKADE; IRAN VOWS TO BREAK IT",
+      "headline": "A merchant ship disabled, and two sides with two stories",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IRAN BLOCKADE",
+        "title": "U.S. disables a ship it says tried to breach the blockade",
+        "stats": [
+          {
+            "label": "Ship",
+            "value": "Pacific Archer (Palau flag)"
+          },
+          {
+            "label": "Crew",
+            "value": "Unharmed (U.S.)"
+          },
+          {
+            "label": "Iran",
+            "value": "Vows to break blockade"
+          },
+          {
+            "label": "Hormuz",
+            "value": "Iran: stays closed"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/11/27/us-military-says-it-disabled-merchant-ship-trying-to-breach-iran-blockade"
+        },
+        {
+          "name": "Straits Times",
+          "url": "https://www.straitstimes.com/world/while-you-were-sleeping-5-stories-you-might-have-missed-nov-28-2026"
+        },
+        {
+          "name": "SBS Korea",
+          "url": "http://news.sbs.co.kr/english/newsSection.do?sectionType=07&pageDate=20261128"
+        },
+        {
+          "name": "U.K.M.T.O.",
+          "url": "https://www.ukmto.org/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "U.S. Central Command says its aircraft disabled the propulsion of the Palau-flagged Pacific Archer. The ship had left Bandar Abbas and, the U.S. says, tried to breach the blockade of Iranian ports. Central Command says the civilian crew was unharmed."
+        },
+        {
+          "who": "joe",
+          "text": "Iran's side. Tehran vows to break the U.S. naval blockade. An Iranian adviser says the Strait of Hormuz will stay closed. Iran also claims two tankers used an unauthorised route through Hormuz, and that one of them hit a mine."
+        },
+        {
+          "who": "vex",
+          "text": "Separately, Iran rejects U.S. allegations that it is developing biological or chemical weapons. That is one reported line from today's scout, and it is a claim on both ends."
+        },
+        {
+          "who": "joe",
+          "text": "So Washington says it enforced a blockade. Tehran says it will not honor one. And a U.K. maritime safety notice from November twenty-sixth reports a cargo vessel and military forces in the Gulf of Oman, with no ship name and no damage given."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "RUSSIA LAUNCHES 155 DRONES AT UKRAINE OVERNIGHT",
+      "headline": "Drones, power outages, and a Black Sea offer",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "155 drones overnight; Kyiv offers a Black Sea ceasefire",
+        "stats": [
+          {
+            "label": "Drones launched",
+            "value": "155"
+          },
+          {
+            "label": "Intercepted",
+            "value": "110"
+          },
+          {
+            "label": "Hit sites",
+            "value": "27"
+          },
+          {
+            "label": "Casualties (A.P.)",
+            "value": "1 killed, 6 hurt"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "A.P.",
+          "url": "https://apnews.com/article/russia-ukraine-war-zelenskyy-trump-putin-d891149b4cbd6521b83096a32bd5e53d"
+        },
+        {
+          "name": "Kyiv Independent (outages)",
+          "url": "https://kyivindependent.com/russian-attacks-kill-6-injure-25-across-ukraine-over-past-day-power-outages-across-6-oblasts/"
+        },
+        {
+          "name": "Kyiv Independent (Kremenchuk)",
+          "url": "https://kyivindependent.com/russian-drone-attack-on-kremenchuk-injures-4-including-3-children/"
+        },
+        {
+          "name": "Kyiv Independent (Tula)",
+          "url": "https://kyivindependent.com/explosions-reported-at-power-plant-synthetic-rubber-factory-in-russias-tula-oblast-following-drone-attack/"
+        },
+        {
+          "name": "Kyiv Independent (Rostov)",
+          "url": "https://kyivindependent.com/fire-reported-near-oil-refinery-in-russias-rostov-oblast-amid-ukrainian-drone-attack/"
+        },
+        {
+          "name": "France 24 (Black Sea offer)",
+          "url": "https://www.france24.com/en/europe/20261127-ukraine-submits-black-sea-ceasefire-offer-awaits-russian-response"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ukraine's air force says Russia launched one hundred fifty-five drones overnight, and Ukraine intercepted one hundred ten. Hits were recorded at twenty-seven locations, with attacks on energy and rail sites across nine regions. A.P. reports at least one person killed and six wounded."
+        },
+        {
+          "who": "joe",
+          "text": "Six regions lost power for a time, according to the Kyiv Independent. A drone strike on Kremenchuk injured four people, including three children, the regional governor says."
+        },
+        {
+          "who": "vex",
+          "text": "On the other side, Russian governors report drones shot down. In Tula, the governor says four drones were downed and no infrastructure damage was recorded. Ukraine's General Staff says it hit the Efremov rubber plant. Near Novoshakhtinsk, the governor claims more than fifty drones were downed, and a fire was reported. Neither side's account has been independently verified."
+        },
+        {
+          "who": "joe",
+          "text": "On diplomacy: Ukraine's foreign minister says Kyiv sent partners a Black Sea ceasefire proposal so food exports can move. He says a Russian request to include oil would be considered only within a broader energy ceasefire. Ukraine's prime minister also says Russian attacks hit two foreign grain ships near Odesa. Those are claims."
+        }
+      ]
+    },
+    {
+      "id": "diplo",
+      "kind": "story",
+      "strap": "ZELENSKYY ON TRUMP'S 'MY FRIEND'; PUTIN'S NEW SUBMARINE",
+      "headline": "Words about Putin, a nuclear sub, and a Libya dispute",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "DIPLOMACY",
+        "title": "Zelenskyy, Putin and a dispute over Libya"
+      },
+      "sources": [
+        {
+          "name": "Times of Israel",
+          "url": "https://www.timesofisrael.com/zelensky-trump-calling-putin-his-friend-like-calling-hitler-a-friend/"
+        },
+        {
+          "name": "Al Jazeera (submarine)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/putin-unveils-new-russian-nuclear-powered-submarine-with-hypersonic-weapons"
+        },
+        {
+          "name": "Japan Times (Reuters)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/28/world/russian-military-flotilla-libya-turns-around/"
+        },
+        {
+          "name": "Kyiv Independent (Libya)",
+          "url": "https://kyivindependent.com/zelensky-says-ukraine-aligns-naval-strikes-with-partners-italy-denies-coordination-over-libya-attack/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Zelenskyy compared Trump calling Putin his friend to people viewing Hitler as a friend during World War Two. That is how Times of Israel and CBS report it."
+        },
+        {
+          "who": "joe",
+          "text": "From Moscow, Putin commissioned a nuclear-powered submarine carrying hypersonic weapons. Al Jazeera and France Twenty-Four report it. Putin said Russia's navy will receive five more by twenty thirty."
+        },
+        {
+          "who": "vex",
+          "text": "On Libya: Reuters, via the Japan Times, says a Russian military flotilla bound for Libya turned around after a warship was sunk on November twenty-second. The sources are unnamed. And there is a dispute over who knew what. Zelenskyy says Ukraine's operation in Libya was not coordinated with European partners. Italy's foreign minister, Antonio Tajani, says nobody was informed, and that what Zelenskyy said is not true. The captures do not settle it."
+        },
+        {
+          "who": "joe",
+          "text": "Also today, Kushner said Putin has shown restraint by not using nuclear weapons in Ukraine. That is one outlet's account."
+        }
+      ]
+    },
+    {
+      "id": "gaza",
+      "kind": "story",
+      "strap": "ISRAELI STRIKE ON M.S.F. CLINIC IN GAZA KILLS TWO",
+      "headline": "Two watchmen killed, and two accounts",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "GAZA",
+        "title": "Strike on a Doctors Without Borders clinic"
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (M.S.F. clinic)",
+          "url": "https://www.aljazeera.com/news/2026/11/28/israeli-strike-on-doctors-without-borders-clinic-in-gaza-kills-two-staff"
+        },
+        {
+          "name": "Al Jazeera (al-Hayya's son)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/israel-kills-four-in-gaza-as-hamas-chief-al-hayyas-son-survives-strike"
+        },
+        {
+          "name": "Al Jazeera (Eisenkot)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/israels-eisenkot-accuses-netanyahus-party-of-stalling-coalition-talks"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Doctors Without Borders says an Israeli direct hit on a clearly marked clinic in Gaza City killed two watchmen. The group says the military knew where the clinic was."
+        },
+        {
+          "who": "joe",
+          "text": "Israel's side: the Israeli military says the two were Hamas members. The report we reviewed does not include evidence for that claim."
+        },
+        {
+          "who": "vex",
+          "text": "Elsewhere in Gaza, Al Jazeera reports Israel killed four people, and that the Hamas chief al-Hayya's son survived a strike. In Israeli politics, Gadi Eisenkot accuses Netanyahu's party of stalling coalition talks."
+        }
+      ]
+    },
+    {
+      "id": "gulf",
+      "kind": "story",
+      "strap": "HOUTHI MISSILE AT RIYADH; PACT ALLIES MEET",
+      "headline": "Saudi Arabia, the Houthis and the Mecca pact",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "SAUDI / YEMEN",
+        "title": "Houthi missile toward Riyadh; strike in Taiz"
+      },
+      "sources": [
+        {
+          "name": "X (@marketsday)",
+          "url": "https://x.com/marketsday/status/2126560926052884750"
+        },
+        {
+          "name": "Al Jazeera (Mecca pact)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/mecca-pact-allies-condemn-heinous-houthi-attacks-on-saudi-arabia"
+        },
+        {
+          "name": "Al Jazeera (Taiz)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/saudi-strike-kills-11-civilians-in-yemens-taiz-houthi-media"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Saudi-led forces say they intercepted a Houthi cruise missile fired toward Riyadh. That comes from a single post on X, and it is a claim."
+        },
+        {
+          "who": "joe",
+          "text": "Pakistan, Saudi Arabia and Turkey met in Islamabad and reaffirmed support for Saudi security under the Mecca defense pact. Pakistan's foreign minister announced no new troop deployment."
+        },
+        {
+          "who": "vex",
+          "text": "The other side of the ledger: Houthi media says a Saudi strike killed eleven civilians in Taiz, Yemen. That is a Houthi claim, reported by A.B.C. and Al Jazeera."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "REPORTED HACK OF AIR FORCE PLATFORM; U.S. SAYS SYSTEMS SECURE",
+      "headline": "A hack report and a denial",
+      "category": "TECH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "Air Force Cloud One: hackers say yes, military says secure"
+      },
+      "sources": [
+        {
+          "name": "N.B.C. News",
+          "url": "https://www.nbcnews.com/news/us-news/hackers-attack-penetrate-air-forces-computing-platform-rcna611559"
+        },
+        {
+          "name": "C.B.S. News",
+          "url": "https://www.cbsnews.com/news/u-s-air-force-cloud-platform-breached-by-hackers/"
+        },
+        {
+          "name": "France 24",
+          "url": "https://www.france24.com/en/live-news/20261128-us-military-says-cyber-systems-secure-after-reports-of-air-force-hack"
+        },
+        {
+          "name": "Guardian (D.W.P.)",
+          "url": "https://www.theguardian.com/politics/2026/nov/27/dwp-cyber-incident-pensions-benefits-systems-offline"
+        },
+        {
+          "name": "ThinkPlus (Switzerland)",
+          "url": "https://www.thinkplus-ai.com/news/2026-11-28-switzerland-confirms-ai-agent-attacks"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "N.B.C. and C.B.S., citing Reuters sources, report that hackers breached the U.S. Air Force's Cloud One computing platform and may have exposed sensitive military and personnel information."
+        },
+        {
+          "who": "joe",
+          "text": "The other side: the U.S. military says its cyber systems are secure. France Twenty-Four reports that. The Air Force did not confirm or deny an intrusion in the earlier C.B.S. report, and one summary says an investigation continues. The reports conflict."
+        },
+        {
+          "who": "vex",
+          "text": "In Britain, the Guardian says a serious cyber incident took almost all of the Department for Work and Pensions systems offline, disrupting pension, disability and Universal Credit services."
+        },
+        {
+          "who": "joe",
+          "text": "And in Switzerland, the cyber agency says A.I. agents attacked five organisations and compromised four, including critical-infrastructure operators. One scout line also says Microsoft reports Chinese and North Korean hackers using an A.I. testing tool. Those two come from one aggregator page."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "STORM CLEANUP ON THE EAST COAST",
+      "headline": "Outages fall, flood warnings stay",
+      "category": "WEATHER",
+      "status": "claim",
+      "graphic": {
+        "kicker": "STORM",
+        "title": "East Coast cleanup after the Thanksgiving storm",
+        "stats": [
+          {
+            "label": "Peak outages",
+            "value": "900,000+"
+          },
+          {
+            "label": "Late Friday",
+            "value": "~230,000"
+          },
+          {
+            "label": "Warnings",
+            "value": "N.J. to Va."
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "A.P. (storm)",
+          "url": "https://apnews.com/article/weather-storm-macys-flooding-thanksgiving-bbf9dad3076a69b9bd18b7c0c80490ad"
+        },
+        {
+          "name": "Al Jazeera (cleanup)",
+          "url": "https://www.aljazeera.com/news/2026/11/28/parts-of-us-clean-up-after-thanksgiving-storm-lashes-east-coast"
+        },
+        {
+          "name": "N.Y.C. street closures",
+          "url": "https://www.nyc.gov/assets/cecm/downloads/pdf/thanksgiving-standard-street-closures-2026-SAT-parade.pdf"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A.P. says rain and flooding eased Friday, but coastal-flood warnings remain from New Jersey to Virginia. Power outages fell from a Thursday peak above nine hundred thousand to about two hundred thirty thousand late Friday. The storm is expected to clear Saturday morning."
+        },
+        {
+          "who": "joe",
+          "text": "The Macy's Thanksgiving Day Parade was postponed to today, and the city's street-closure notice covers Saturday, November twenty-eighth. On the West Coast, high tides and flooding led Amtrak to cancel or shorten more than a dozen Pacific Surfliner trains."
+        },
+        {
+          "who": "vex",
+          "text": "One light note. Wind blew part of the tarp off the Kennedy Center, according to Forbes, showing the building without the president's name on it."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "WALL STREET CLOSES UP; CHINA STOCKS SURGE",
+      "headline": "Stocks, inflation numbers and oil",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Stocks jump in a shortened session",
+        "stats": [
+          {
+            "label": "S&P 500",
+            "value": "+1.6%, 7,297.49"
+          },
+          {
+            "label": "Nasdaq",
+            "value": "+2.3%"
+          },
+          {
+            "label": "Dow",
+            "value": "+1.2%"
+          },
+          {
+            "label": "Bitcoin",
+            "value": "~$59,864"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "name": "A.P. (Wall Street)",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-04dab6079cf7f3dfe7285a3cc1f240a2"
+        },
+        {
+          "name": "Xinhua (Tokyo CPI)",
+          "url": "https://english.news.cn/asiapacific/20261127/c25bd1c7846f4077bcb8de20bdacc6c9/c.html"
+        },
+        {
+          "name": "Kitco / Reuters (OPEC+)",
+          "url": "https://www.kitco.com/news/off-the-wire/2026-11-27/opec-set-keep-oil-production-targets-steady-sources-say"
+        },
+        {
+          "name": "UOL (Brazil close)",
+          "url": "https://economia.uol.com.br/cotacoes/noticias/redacao/2026/11/27/dolar-ibovespa-fechamento-27-novembro-2026.htm"
+        },
+        {
+          "name": "Binance",
+          "url": "https://www.binance.com/en/price/bitcoin"
+        },
+        {
+          "name": "Fipereconomyhub",
+          "url": "https://fipereconomyhub.com/en/category/economy/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A.P. says the S&P five hundred rose one point six percent to seventy-two ninety-seven in Friday's shortened session. The Nasdaq gained two point three percent. The Dow rose one point two percent. The S&P gained five point six percent on the week, its biggest weekly gain since April twenty twenty-five."
+        },
+        {
+          "who": "joe",
+          "text": "In China, C.N.B.C. reports the STAR index surged fourteen percent after a State Council statement pledging stronger support. Tokyo core inflation rose to two point nine percent, a sixteen-month high. One aggregator says U.S. core P.C.E. inflation was three point three percent and markets price a December Fed hike. That is a single-site claim."
+        },
+        {
+          "who": "vex",
+          "text": "Oil: three sources told Reuters that OPEC Plus will leave first-quarter production targets unchanged at Sunday's meeting. That is a forecast until ministers announce. In Brazil, the dollar fell almost four percent on the day after Lula named banker Luiz Carlos Trabuco as finance minister from twenty twenty-seven."
+        },
+        {
+          "who": "joe",
+          "text": "Bitcoin sat near fifty-nine thousand, eight hundred sixty-four dollars on Binance. Provisional data shows about sixty-two million dollars flowing out of U.S. spot Bitcoin funds on Friday."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "NORSE ATLANTIC FILES FOR BANKRUPTCY",
+      "headline": "Airline collapse, a lawsuit, and job cuts",
+      "category": "BUSINESS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Norse Atlantic bankrupt; OpenAI countersues Apple"
+      },
+      "sources": [
+        {
+          "name": "Guardian (Norse)",
+          "url": "https://www.theguardian.com/business/2026/nov/27/norse-atlantic-airways-files-for-bankruptcy-cancels-all-future-flights"
+        },
+        {
+          "name": "Al Jazeera (OpenAI)",
+          "url": "https://www.aljazeera.com/economy/2026/11/27/openai-countersues-apple-over-trade-secrets-as-ai-race-heats-up"
+        },
+        {
+          "name": "Explorineer (SAP)",
+          "url": "https://explorineer.com/en/brief/2026-11-28"
+        },
+        {
+          "name": "Fipereconomyhub (Sanofi)",
+          "url": "https://fipereconomyhub.com/en/category/companies/"
+        },
+        {
+          "name": "New Straits Times (AirAsia)",
+          "url": "https://www.nst.com.my/amp/business/corporate/2026/11/1587029/airasia-delays-staff-salary-payments-end-month-internal-email"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Norse Atlantic Airways filed for bankruptcy and cancelled all future flights and ticket sales, according to the Guardian and Al Jazeera."
+        },
+        {
+          "who": "joe",
+          "text": "OpenAI filed counterclaims against Apple, accusing it of taking trade secrets and pressuring hardware suppliers. Al Jazeera and Reuters report it. These are allegations in a lawsuit, not court findings."
+        },
+        {
+          "who": "vex",
+          "text": "SAP is reported to be preparing at least ten thousand job cuts as part of an A.I. strategy, and SAP said it detected suspicious activity but found no evidence customer data was accessed. Sanofi is reported to be buying Insmed for forty-one billion dollars in cash. Those two come from a single aggregator each."
+        },
+        {
+          "who": "joe",
+          "text": "And AirAsia told staff in Malaysia that pay moves to month-end, while a pilots' union filed a strike notice after ninety pilots were let go. That is from an internal email report."
+        }
+      ]
+    },
+    {
+      "id": "elections",
+      "kind": "story",
+      "strap": "TAIWAN VOTES; SPAIN VOTES THIS WEEKEND",
+      "headline": "Ballots on three continents",
+      "category": "POLITICS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ELECTIONS",
+        "title": "Taiwan, Spain, New Zealand, Victoria"
+      },
+      "sources": [
+        {
+          "name": "A.B.C. (Taiwan)",
+          "url": "https://abcnews.com/International/wireStory/taiwan-holds-elections-choose-mayors-local-leaders-138489345"
+        },
+        {
+          "name": "Al Jazeera (Sanchez)",
+          "url": "https://www.aljazeera.com/news/2026/11/27/spains-pedro-sanchez-bets-on-left-wing-voting-surge-to-defy-election-polls"
+        },
+        {
+          "name": "Nine (Victoria)",
+          "url": "https://www.nine.com.au/australia-news/vic/victorian-election-2026-results-latest-politics-news-headlines-20261128-p61hux.html"
+        },
+        {
+          "name": "A.P. (New Zealand)",
+          "url": "https://apnews.com/article/new-zealand-election-results-a19a838d8256a0762703ff0572aca3e6"
+        },
+        {
+          "name": "Guardian (Quebec)",
+          "url": "https://www.theguardian.com/world/2026/nov/27/canadas-top-court-upholds-quebec-law-barring-public-sector-workers-from-wearing-religious-symbols"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Polls opened across Taiwan for local elections, choosing mayors, county chiefs and councillors, with Beijing watching closely. No results yet."
+        },
+        {
+          "who": "joe",
+          "text": "Spain votes this weekend. Prime Minister Pedro Sanchez is betting on a left-wing surge to defy the polls, per Al Jazeera and France Twenty-Four. The final debate was dominated by housing and immigration."
+        },
+        {
+          "who": "vex",
+          "text": "In Australia, polls have closed in Victoria, where Labor's Ben Carroll is trying to hold on against Jess Wilson's Coalition. Early counts do not show a winner. In New Zealand, the final count leaves neither bloc with a majority. The party Opportunity holds the balance, and no coalition deal has been reached."
+        },
+        {
+          "who": "joe",
+          "text": "And Canada's Supreme Court largely upheld Quebec's ban on religious symbols for public servants, per the B.B.C. and the Guardian."
+        }
+      ]
+    },
+    {
+      "id": "uspol",
+      "kind": "story",
+      "strap": "SUPREME COURT TO REVIEW ASYLUM SUSPENSION",
+      "headline": "Courts, Congress and a December deadline",
+      "category": "POLITICS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "U.S. POLITICS",
+        "title": "Asylum case, a shutdown deadline, voter lists"
+      },
+      "sources": [
+        {
+          "name": "Tremorwire",
+          "url": "https://tremorwire.com/?section=us-politics"
+        },
+        {
+          "name": "A.P. (tariffs)",
+          "url": "https://apnews.com/article/trump-tariffs-republicans-congress-a438d0649e3b905804eafb63e9803bb3"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Supreme Court agreed to review whether a president can suspend asylum access without congressional authorization."
+        },
+        {
+          "who": "joe",
+          "text": "A federal judge vacated a Justice Department policy that required states to hand over unredacted voter lists. In Georgia, a judge paused an order that Fulton County release twenty twenty election records while the county appeals."
+        },
+        {
+          "who": "vex",
+          "text": "Congress faces a December eleventh shutdown deadline, tied to funding for the Iran war, per one aggregator. And A.P. says some congressional Republicans may review parts of the proposed tariffs after election losses, though a broad curb on presidential tariff power is uncertain."
+        }
+      ]
+    },
+    {
+      "id": "africa",
+      "kind": "story",
+      "strap": "KENYAN CULT LEADER GUILTY IN 123 STARVATION DEATHS",
+      "headline": "Verdicts and attacks in Africa",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "AFRICA",
+        "title": "Mackenzie guilty of manslaughter; Niger attack"
+      },
+      "sources": [
+        {
+          "name": "B.B.C. (Mackenzie)",
+          "url": "https://www.bbc.co.uk/news/articles/cmy49de4xx1zo"
+        },
+        {
+          "name": "A.B.C. (Niger)",
+          "url": "https://abcnews.com/International/wireStory/armed-group-kills-13-soldiers-western-niger-attack-138477943"
+        },
+        {
+          "name": "B.B.C. (Uganda)",
+          "url": "https://www.bbc.co.uk/news/articles/cq4gnj2ldkyzo"
+        },
+        {
+          "name": "World Food Programme",
+          "url": "https://www.wfp.org/news/el-nino-adds-new-hunger-hotspots"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A Kenyan court found cult leader Paul Mackenzie guilty of manslaughter in the starvation deaths of more than one hundred twenty-three followers, the B.B.C. and Al Jazeera report."
+        },
+        {
+          "who": "joe",
+          "text": "In Niger, the Defence Ministry says armed men killed thirteen National Guard members and wounded twenty at an outpost in Tillaberi."
+        },
+        {
+          "who": "vex",
+          "text": "Uganda says it will withdraw troops from a town in the Democratic Republic of Congo after a row over its army chief's threat. And the U.N. and F.A.O. expanded their hunger-hotspot list to sixteen places, with famine risk in parts of Sudan and South Sudan."
+        }
+      ]
+    },
+    {
+      "id": "asia",
+      "kind": "story",
+      "strap": "INDIA CABINET BACKS BIGGER LOK SABHA",
+      "headline": "India, Afghanistan, Korea",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ASIA",
+        "title": "India's seat-increase bill; school blast in Kunar"
+      },
+      "sources": [
+        {
+          "name": "The Hindu",
+          "url": "https://www.thehindu.com/"
+        },
+        {
+          "name": "Al Jazeera (Kunar)",
+          "url": "https://www.aljazeera.com/news/2026/11/28/students-killed-injured-in-school-explosion-in-afghanistans-kunar-region"
+        },
+        {
+          "name": "Japan Times (Kim)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/28/asia-pacific/politics/seoul-north-korea-kim-visit-china/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "India's Union Cabinet approved a constitutional amendment adding about fifty percent more seats across all states, with the Women's Reservation Bill taking effect alongside it, The Hindu reports. It needs a two-thirds majority in both houses. The Hindu also says a similar attempt failed in April, and that the D.M.K. party backs this one."
+        },
+        {
+          "who": "joe",
+          "text": "Elsewhere: Al Jazeera reports students were killed or hurt in a school explosion in Afghanistan's Kunar region. India reports a bus and truck collision in Assam that killed at least twenty-four. And Seoul is watching for a possible visit to China by North Korea's Kim Jong Un."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "MALININ BREAKS WORLD RECORD; STEELERS BEAT BRONCOS",
+      "headline": "Sports",
+      "category": "SPORTS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Malinin's record, Steelers 27-5"
+      },
+      "sources": [
+        {
+          "name": "I.S.U.",
+          "url": "https://isu-skating.com/en/figure-skating/events/eventdetail/isu-gp-nhk-trophy-2026/?tab=results_15989&type=15736&round=SP"
+        },
+        {
+          "name": "A.P. (Steelers)",
+          "url": "https://www.the-journal.com/articles/associated-press/inspired-steelers-move-on-from-rodgers-exit-with-cathartic-27-5-win-over-sloppy-broncos/"
+        },
+        {
+          "name": "Japan Times (Reed)",
+          "url": "https://www.japantimes.co.jp/sports/2026/11/28/more-sports/bronson-reed-wwe-wrestling/"
+        },
+        {
+          "name": "The Race",
+          "url": "https://www.the-race.com/motogp/marc-marquez-stuns-motogp-with-retirement-announcement/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ilia Malinin scored one fourteen point eight one in the NHK Trophy short program, a world record, per the International Skating Union."
+        },
+        {
+          "who": "joe",
+          "text": "In the N.F.L., A.P. says Pittsburgh beat Denver twenty-seven to five. T.J. Watt recovered a fumble in the end zone and Jalen Ramsey returned an interception for a touchdown. Today, Michigan visits Ohio State at noon Eastern."
+        },
+        {
+          "who": "vex",
+          "text": "Sad news: WWE says Australian wrestler Bronson Reed has died at thirty-eight. And Marc Marquez announced that the Valencia finale will end his racing career."
+        }
+      ]
+    },
+    {
+      "id": "people",
+      "kind": "story",
+      "strap": "KATE DOCUMENTARY; STEWART-COUSINS DIES",
+      "headline": "People in the news",
+      "category": "TODAY",
+      "status": "claim",
+      "graphic": {
+        "kicker": "PEOPLE",
+        "title": "A documentary clip, and two losses"
+      },
+      "sources": [
+        {
+          "name": "Guardian (Kate)",
+          "url": "https://www.theguardian.com/uk-news/2026/nov/27/catherine-princess-of-wales-heal-documentary-cancer"
+        },
+        {
+          "name": "N.B.C. (Mamdani)",
+          "url": "https://www.nbcnews.com/news/us-news/zohran-mamdani-surgery-torn-achilles-successful-ll-make-full-recovery-rcna611501"
+        },
+        {
+          "name": "N.B.C. (Fischer)",
+          "url": "https://www.nbcnews.com/news/us-news/nebraska-sen-deb-fischers-husband-died-suicide-spokesperson-says-rcna611591"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A documentary clip reveals new details of the Princess of Wales's cancer journey, per the Guardian and C.B.S."
+        },
+        {
+          "who": "joe",
+          "text": "Andrea Stewart-Cousins, New York's first female Senate majority leader, has died, the New York Times and Politico report. Mayor Zohran Mamdani had surgery for a torn Achilles tendon and is expected to recover fully."
+        },
+        {
+          "who": "vex",
+          "text": "And a sad note: a spokesperson says Nebraska Senator Deb Fischer's husband died by suicide. If you are struggling, call or text nine eight eight in the U.S."
+        }
+      ]
+    },
+    {
+      "id": "quick",
+      "kind": "story",
+      "strap": "ALSO TODAY",
+      "headline": "Quick hits",
+      "category": "TODAY",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "Also today"
+      },
+      "sources": [
+        {
+          "name": "A.B.C. (Albanese)",
+          "url": "https://abcnews.com/International/wireStory/rapporteur-albanese-limbo-airport-after-denied-entry-costa-138484778"
+        },
+        {
+          "name": "A.B.C. (Mexico)",
+          "url": "https://abcnews.com/International/wireStory/mexico-files-formal-complaint-us-dea-tip-line-138484649"
+        },
+        {
+          "name": "N.B.C. (Florida)",
+          "url": "https://www.nbcnews.com/news/us-news/thanksgiving-shooting-airbnb-teen-party-ends-1-dead-6-wounded-florida-rcna611538"
+        },
+        {
+          "name": "B.B.C. (Kenneth Law)",
+          "url": "https://www.bbc.co.uk/news/articles/cmx2898wq2qjo"
+        },
+        {
+          "name": "Reuters via Investing.com (Adobe)",
+          "url": "https://www.investing.com/news/stock-market-news/us-black-friday-online-sales-to-cross-13-billion-adobe-says-5054031"
+        },
+        {
+          "name": "W.H.O.",
+          "url": "https://www.who.int/tokelau/news/detail-global/27-11-2026-historic-low-in-measles-deaths--but-immunization-gaps-threaten-progress"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Mexico filed a formal complaint with the U.S. over a D.E.A. tip line. Costa Rica denied entry to U.N. rapporteur Francesca Albanese."
+        },
+        {
+          "who": "joe",
+          "text": "At least eight people were found dead on a migrant boat off Spain's Canary Islands. A Thanksgiving shooting at a teen party in Florida left one dead and six hurt. Prosecutors seek twenty-five years for Kenneth Law, the so-called poison seller."
+        },
+        {
+          "who": "vex",
+          "text": "Online Black Friday spending hit nine point seven billion dollars by six thirty Eastern, Adobe says. Greg Abbott lifted a Texas data center pause. And the W.H.O. says measles deaths fell to seventy-two thousand in twenty twenty-five."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines from the wire",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "Live headlines"
+      },
+      "sources": null,
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Sign-off",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "GOODNIGHT",
+        "title": "That's Heartbeat News"
+      },
+      "sources": null,
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News for Saturday. A new show every day by morning. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. A ship disabled at a blockade, and Iran says it will break it. A hundred fifty-five drones over Ukraine. A reported hack, and a Pentagon that says no. Two sides in every account. We will tell you what happened, and who said it. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
