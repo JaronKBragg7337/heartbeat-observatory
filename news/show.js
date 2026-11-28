@@ -367,11 +367,21 @@ function showClock() {
 }
 const longDate = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 let todayIsReady = false, noticeKey = null;
+// 11/28 (Jaron 11/26: the news is Claude's show, no substitute writer): when Claude's writer can't run (plan lapsed, usage or
+// login limit) the MSI writer publishes /news/break.json = {"date": "<that day>", "note": "..."} instead of an episode. On that
+// day the last show keeps playing and the Heads up note says the news is on a short break. Any other day it is ignored, so the
+// next morning's show clears it by itself.
+let brk = null;
+async function loadBreak() {
+  try { const r = await timeout(fetch("/news/break.json", { cache: "no-store" }), 4000); return r.ok ? await r.json() : null; } catch (e) { return null; }
+}
 function updateNotice() {
   const btn = $("noticeBtn"), panel = $("noticePanel");
   if (!btn || !panel || !ep || !ep.date) return;
   const c = showClock(), notes = [];
-  if (ep.date < c.today) {
+  const onBreak = !!(brk && brk.date === c.today && ep.date < c.today && !todayIsReady);
+  if (onBreak) notes.push({ t: "The news is taking a short break", b: `${esc(brk.note || "The news is taking a short break - back soon.")} Until then, the show from ${longDate(ep.date)} keeps playing.` });
+  else if (ep.date < c.today) {
     const which = ep.date === c.yesterday ? "yesterday's show" : "an older show";
     if (todayIsReady) notes.push({ t: `This is ${which}`, b: `You're watching the show from ${longDate(ep.date)}. Today's show is up now: <a href="/news/">reload to watch it</a>.` });
     else if (c.hour < 8) notes.push({ t: `This is ${which}`, b: `You're watching the show from ${longDate(ep.date)}. Today's show is on its way: it's written and filmed overnight and goes up by 8 AM Eastern. Until then, the last show keeps playing.` });
@@ -387,10 +397,12 @@ function updateNotice() {
   btn.hidden = !notes.length;
   $("noticeLabel").textContent = notes.length > 1 ? `Heads up (${notes.length})` : "Heads up";
   panel.innerHTML = notes.map((n) => `<h3>${n.t}</h3><p>${n.b}</p>`).join("");
+  if (onBreak) { panel.hidden = false; btn.setAttribute("aria-expanded", "true"); }   // a break is shown open, not behind a tap
   if (!notes.length) { panel.hidden = true; btn.setAttribute("aria-expanded", "false"); }
 }
 $("noticeBtn").addEventListener("click", () => { const p = $("noticePanel"); p.hidden = !p.hidden; $("noticeBtn").setAttribute("aria-expanded", String(!p.hidden)); });
 setInterval(updateNotice, 60 * 1000);
+setInterval(async () => { brk = await loadBreak(); updateNotice(); }, 10 * 60 * 1000);
 if (new URLSearchParams(location.search).get("grid") === "1") $("dbgBtn").hidden = false;   // the AIs' debug layer
 
 let lastT = now();
@@ -622,6 +634,7 @@ async function boot() {
   onResize();
   const fontsReady = document.fonts ? timeout(Promise.all([document.fonts.load('800 40px "Barlow Condensed"'), document.fonts.load('600 40px "Barlow Condensed"')]), 2500).catch(() => {}) : Promise.resolve();
   let date = null;
+  const brkP = loadBreak().then((b) => { brk = b; });
   try { const idx = await loadIndex(); date = idx.latest; } catch (e) { date = null; }
   const [episode, w] = await Promise.all([
     (date ? loadEpisode(date) : Promise.reject(new Error("no index"))).catch(() => loadEpisode("2026-09-24")),
@@ -629,7 +642,7 @@ async function boot() {
     loadAds()
   ]).then(([e, wl, a]) => { adsCat = a; return [e, wl]; });
   ep = episode; wire = w;
-  await fontsReady;
+  await fontsReady; await brkP;
   // The rendered (Unreal) episode, when the MSI has made today's: play the video instead of drawing the studio live.
   const rendered = await renderedFor(ep.date);
   if (rendered && rendered.date !== ep.date) { try { ep = await loadEpisode(rendered.date); } catch (e) {} }   // yesterday's words with yesterday's video
